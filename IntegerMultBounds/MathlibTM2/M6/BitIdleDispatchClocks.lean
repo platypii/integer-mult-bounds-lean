@@ -111,6 +111,117 @@ theorem idleDispatchClocks {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime
   change _ + tapeCharge cleanupWeight js {S with R := clocks} ≤ tapeCharge cleanupWeight js S+_
   omega
 
+/-- Write the canonical binary child radix from its unary atom clock. A
+single unit initializes the product, and each clock tick multiplies by the fixed prime. -/
+theorem childRadixFromClock {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (r : Fin 10 ↪ Fin T) :
+    ∃ code : Pr P T Q prime U, ∀ a u (S : Stacks T prime),
+      (S.R (r 0)).length = 1 → (S.R (r 1)).length = a →
+      (∀ i : Fin 10, 2 ≤ i.val → S.R (r i) = []) →
+      let M := prime^a
+      let final := {S with R := Function.update S.R (r 2) (binSyms M.size M)}
+      ∃ z t, Exec body code (mk u S) t (mk z final) ∧ z.user = u.user ∧
+        CleanupBound S final t (80*M) := by
+  let power : Pr P T Q prime U := expProg 0 prime (r 0) (r 1) (r 3) (r 4) (r 5) (r 6)
+  let encode : Pr P T Q prime U := unaryBinary (r 3) (r 2) (r 4) (r 5) (r 6) (r 7) (r 8) (r 9)
+  refine ⟨power.seq (encode.seq (bclear (r 3))),?_⟩
+  intro a u S unit clock empty M final
+  have seqPower (i : ℕ) : expSeq 0 prime 1 i = prime^i := by
+    induction i with
+    | zero => rfl
+    | succ i ih => simp only [expSeq,Nat.zero_add,ih,pow_succ,Nat.mul_comm prime]
+  obtain ⟨v,n,user,time,run⟩ := expProg_exec body 0 prime
+    (uR := r 0) (jR := r 1) (eR := r 3) (t₁ := r 4) (t₂ := r 5) (t₃ := r 6)
+    (by simp [r.injective.eq_iff]) u S (empty 3 (by decide)) (empty 4 (by decide))
+    (empty 5 (by decide)) (empty 6 (by decide))
+  simp only [unit,clock,seqPower] at time run
+  let D := {S with R := Function.update S.R (r 3) (List.replicate M tick)}
+  obtain ⟨y,b,same,binary,convert⟩ := unaryBinary_exec (body := body)
+    (src := r 3) (dst := r 2) (a := r 4) (h := r 5) (par := r 6) (bits := r 7) (cnt := r 8) (saved := r 9)
+    (by simp [r.injective.eq_iff]) M v D (by simp [D]) (by
+      intro j mem
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at mem
+      rcases mem with rfl|rfl|rfl|rfl|rfl|rfl|rfl <;> simp [D,r.injective.eq_iff,empty])
+  let E := {D with R := Function.update D.R (r 2) (binSyms M.size M)}
+  obtain ⟨z,done,_,clear⟩ := bclear_exec (body := body) (r 3) y E
+  have len : (E.R (r 3)).length = M := by simp [E,D,r.injective.eq_iff]
+  have reset : Function.update E.R (r 3) [] = final.R := by
+    funext j
+    by_cases h : j = r 3
+    · subst j; simp [final,r.injective.eq_iff,empty]
+    · simp [E,D,final,Function.update_apply,h]
+  rw [len,reset] at clear
+  refine ⟨z,_,run.seq (convert.seq clear),done.trans (same.trans user),?_⟩
+  intro js nd
+  have growth := prependedWordCharge S (r 2) (binSyms M.size M) js nd
+  simp only [empty 2 (by decide),List.append_nil,length_binSyms] at growth
+  change tapeCharge cleanupWeight js final ≤ tapeCharge cleanupWeight js S+2*M.size at growth
+  have sum (k : ℕ) : ∑ i ∈ Finset.range k, (8*prime^i+12) ≤ 8*prime^k+12*k := by
+    induction k with
+    | zero => simp
+    | succ k ih =>
+      rw [Finset.sum_range_succ,pow_succ]
+      have twice := Nat.mul_le_mul_left (prime^k) Shared50ModularControl.prime_prime.one_lt
+      omega
+  have history := sum a
+  change _ ≤ 8*M+12*a at history
+  have clockLe : a ≤ M := (Nat.lt_pow_self Shared50ModularControl.prime_prime.one_lt).le
+  have positive : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
+  have bits : M.size ≤ M := Nat.size_le.mpr Nat.lt_two_pow_self
+  change _+tapeCharge cleanupWeight js final ≤ tapeCharge cleanupWeight js S+_
+  omega
+
+/-- Read an aligned binary child width and leave just the radix on the destination tape. -/
+theorem childRadixFromWidth {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (r : Fin 11 ↪ Fin T) :
+    ∃ code : Pr P T Q prime U, ∀ a, 0 < a → ∀ u (S : Stacks T prime),
+      (S.R (r 0)).length = 1 → S.R (r 10) = binSyms (64*a).size (64*a) →
+      (∀ i : Fin 11, 0 < i.val → i.val < 10 → S.R (r i) = []) →
+      let M := prime^a
+      let final := {S with R := Function.update S.R (r 2) (binSyms M.size M)}
+      ∃ z t, Exec body code (mk u S) t (mk z final) ∧ z.user = u.user ∧
+        CleanupBound S final t (110*M) := by
+  obtain ⟨decode,read⟩ := alignedWidthUnary (src := r 10) (dst := r 1) (work := r 3)
+    (tmp := r 4) (saved := r 5) body (by simp [r.injective.eq_iff])
+  let core := (Fin.castAddEmb 1 (n := 10)).trans r
+  obtain ⟨power,write⟩ := childRadixFromClock body core
+  refine ⟨decode.seq (power.seq (bclear (r 1))),?_⟩
+  intro a pos u S one width empty M final
+  obtain ⟨v,n,run,user,time⟩ := read a pos u S width (empty 3 (by decide) (by decide))
+    (empty 4 (by decide) (by decide)) (empty 5 (by decide) (by decide))
+  rw [empty 1 (by decide) (by decide),List.append_nil] at run
+  let D := {S with R := Function.update S.R (r 1) (List.replicate a tick)}
+  have keep i (ne : i ≠ 1) : D.R (r i) = S.R (r i) := Function.update_of_ne (r.injective.ne ne) ..
+  obtain ⟨y,b,exec,same,paid⟩ := write a v D (by change (D.R (r 0)).length = 1; rw [keep 0 (by decide),one])
+    (by change (D.R (r 1)).length = a; simp [D]) (by
+      intro i hi
+      change D.R (r (i.castAdd 1)) = []
+      apply (keep _ (by intro h; have := congrArg Fin.val h; change i.val = 1 at this; omega)).trans
+      exact empty _ (by change 0 < i.val; omega) i.isLt)
+  let E := {D with R := Function.update D.R (r 2) (binSyms M.size M)}
+  obtain ⟨z,last,_,clear⟩ := bclear_exec (body := body) (r 1) y E
+  have len : (E.R (r 1)).length = a := by simp [E,D,r.injective.eq_iff]
+  have reset : Function.update E.R (r 1) [] = final.R := by
+    funext j
+    by_cases h : j = r 1
+    · subst j; simp [final,r.injective.eq_iff,empty]
+    · simp [E,D,final,Function.update_apply,h]
+  rw [len,reset] at clear
+  refine ⟨z,_,run.seq (exec.seq clear),last.trans (same.trans user),?_⟩
+  intro js nd
+  have cost := paid [] (by simp)
+  simp only [tapeCharge,List.map_nil,List.sum_nil,Nat.add_zero,Nat.zero_add] at cost
+  have grow := prependedWordCharge S (r 2) (binSyms M.size M) js nd
+  simp only [empty 2 (by decide) (by decide),List.append_nil,length_binSyms] at grow
+  change tapeCharge cleanupWeight js final ≤ tapeCharge cleanupWeight js S+2*M.size at grow
+  have bits (k : ℕ) : k.size ≤ k := Nat.size_le.mpr Nat.lt_two_pow_self
+  have room : a < M := Nat.lt_pow_self Shared50ModularControl.prime_prime.one_lt
+  have radixBits := bits M
+  have atomBits := bits a
+  change b ≤ 80*M at cost
+  change _+tapeCharge cleanupWeight js final ≤ tapeCharge cleanupWeight js S+_
+  omega
+
 /-- Initialize the remainder bank directly from the aligned width and the
 four persistent master words. Both clocks remain available after the load. -/
 theorem loadRemainderFromWidth {P U : Type} {H N T Q : ℕ} (body : P → Pr P T Q prime U)
