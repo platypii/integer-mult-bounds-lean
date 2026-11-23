@@ -142,7 +142,7 @@ end CutoffNodeInput
 
 /-- The installed remainder call pays for its runtime seed with a constant per lane symbol. -/
 theorem callCutoffRemainder {P A U : Type} {H N T Q : ℕ}
-    (body : P → Pr P H Q prime U) (entry : P) (label : P → A)
+    (body : P → Pr P H Q prime U) (program : Pr P H Q prime U) (label : P → A)
     (host : A → Pr A T Q prime U) (bank : Fin H ↪ Fin T)
     (installed : ∀ f, host (label f) = embProg bank label (body f))
     (origin : Fin H → Option (Fin (72+N))) (src dst : Fin (142081+2) ↪ Fin H)
@@ -153,7 +153,7 @@ theorem callCutoffRemainder {P A U : Type} {H N T Q : ℕ}
       let L := c.root.width.size
       let cutoff := c.cutoff
       let V := c.cells
-      PackedPieceHandoffWithCharge cleanupWeight V effect body (body entry) src dst
+      PackedPieceHandoffWithCharge cleanupWeight V effect body program src dst
         (remainderDispatchSeed origin w W L cutoff) price →
       ∀ x u (S : Stacks T prime),
       ParentStageWords (fun i => src (i.castAdd 2)) src V x (embStk bank S) →
@@ -165,7 +165,7 @@ theorem callCutoffRemainder {P A U : Type} {H N T Q : ℕ}
       ∃ z F t y, Exec host code (mk u S) t (mk z F) ∧ z.user = u.user ∧
         ParentStageWords (fun i => dst (i.castAdd 2)) dst V y (embStk bank F) ∧ effect x y ∧
         CleanupBound S F t (price+(49+93*H)*V) := by
-  obtain ⟨code,run⟩ := callRemainderFromWidth body entry label host bank installed origin src dst r apart
+  obtain ⟨code,run⟩ := callRemainderFromWidth body program label host bank installed origin src dst r apart
   refine ⟨code,?_⟩
   intro c effect price w W L cutoff V child x u S words width empty radix unit spectator cut fresh
   obtain ⟨z,F,t,y,exec,user,out,result,paid⟩ := run w W L cutoff V effect price child x u S words
@@ -352,7 +352,7 @@ private theorem cutoffSpectatorFromRadix {P U : Type} {T Q : ℕ} (body : P → 
 
 /-- Compute the spectator header and both child clocks on the way into the installed remainder. -/
 private theorem callCutoffRemainderWithWidth {P A U : Type} {H N T Q : ℕ}
-    (body : P → Pr P H Q prime U) (entry : P) (label : P → A)
+    (body : P → Pr P H Q prime U) (program : Pr P H Q prime U) (label : P → A)
     (host : A → Pr A T Q prime U) (bank : Fin H ↪ Fin T)
     (installed : ∀ f, host (label f) = embProg bank label (body f))
     (origin : Fin H → Option (Fin (72+N))) (src dst : Fin (142081+2) ↪ Fin H)
@@ -365,7 +365,7 @@ private theorem callCutoffRemainderWithWidth {P A U : Type} {H N T Q : ℕ}
       let L := c.root.width.size
       let cutoff := c.cutoff
       let V := c.cells
-      PackedPieceHandoffWithCharge cleanupWeight V effect body (body entry) src dst
+      PackedPieceHandoffWithCharge cleanupWeight V effect body program src dst
         (remainderDispatchSeed origin w W L cutoff) price →
       ∀ x u (S : Stacks T prime),
       ParentStageWords (fun i => src (i.castAdd 2)) src V x (embStk bank S) →
@@ -379,7 +379,7 @@ private theorem callCutoffRemainderWithWidth {P A U : Type} {H N T Q : ℕ}
         ParentStageWords (fun i => dst (i.castAdd 2)) dst V y (embStk bank F) ∧ effect x y ∧
         CleanupBound S F t (price+(2000304+93*H)*V) := by
   obtain ⟨divide,quotient⟩ := cutoffSpectatorFromRadix host division (r 7) baseOff
-  obtain ⟨code,run⟩ := callCutoffRemainder body entry label host bank installed origin src dst r apart
+  obtain ⟨code,run⟩ := callCutoffRemainder body program label host bank installed origin src dst r apart
   let row := bank (src ((0 : Fin 142081).castAdd 2))
   let measure : Pr A T Q prime U := unaryBinary row (division 0) (division 3) (division 4)
     (division 5) (division 6) (division 7) (division 8)
@@ -456,7 +456,7 @@ private theorem callCutoffRemainderWithWidth {P A U : Type} {H N T Q : ℕ}
 
 /-- Run the packed remainder from its live row, the parent clock, unit and cutoff. -/
 theorem callCutoffRemainderFromLane {P A U : Type} {H N T Q : ℕ}
-    (body : P → Pr P H Q prime U) (entry : P) (label : P → A)
+    (body : P → Pr P H Q prime U) (program : Pr P H Q prime U) (label : P → A)
     (host : A → Pr A T Q prime U) (bank : Fin H ↪ Fin T)
     (installed : ∀ f, host (label f) = embProg bank label (body f))
     (origin : Fin H → Option (Fin (72+N))) (src dst : Fin (142081+2) ↪ Fin H)
@@ -472,7 +472,7 @@ theorem callCutoffRemainderFromLane {P A U : Type} {H N T Q : ℕ}
       let L := c.root.width.size
       let cutoff := c.cutoff
       let V := c.cells
-      PackedPieceHandoffWithCharge cleanupWeight V effect body (body entry) src dst
+      PackedPieceHandoffWithCharge cleanupWeight V effect body program src dst
         (remainderDispatchSeed origin w W L cutoff) price →
       ∀ x u (S : Stacks T prime),
       ParentStageWords (fun i => src (i.castAdd 2)) src V x (embStk bank S) →
@@ -487,7 +487,7 @@ theorem callCutoffRemainderFromLane {P A U : Type} {H N T Q : ℕ}
         ParentStageWords (fun i => dst (i.castAdd 2)) dst V y (embStk bank F) ∧ effect x y ∧
         CleanupBound S F t (price+(2000470+93*H)*V) := by
   obtain ⟨power,write⟩ := childRadixFromWidth host rad
-  obtain ⟨next,enter⟩ := callCutoffRemainderWithWidth body entry label host bank installed origin src dst
+  obtain ⟨next,enter⟩ := callCutoffRemainderWithWidth body program label host bank installed origin src dst
     r apart division outside baseOff target
   refine ⟨(moveWidthProgram work rank).seq (power.seq next),?_⟩
   intro c parentClock effect price w W L cutoff V child x u S words shape clock scratch empty free unit cut vacant fresh
@@ -541,7 +541,7 @@ theorem callCutoffRemainderFromLane {P A U : Type} {H N T Q : ℕ}
 
 /-- A fixed sixteen-tape placement keeps the parent clock, unit and cutoff on its first three ports. -/
 theorem placedCutoffRemainderFromLane {P A U : Type} {H N T Q : ℕ}
-    (body : P → Pr P H Q prime U) (entry : P) (label : P → A)
+    (body : P → Pr P H Q prime U) (program : Pr P H Q prime U) (label : P → A)
     (host : A → Pr A T Q prime U) (bank : Fin H ↪ Fin T)
     (installed : ∀ f, host (label f) = embProg bank label (body f))
     (origin : Fin H → Option (Fin (72+N))) (src dst : Fin (142081+2) ↪ Fin H)
@@ -552,7 +552,7 @@ theorem placedCutoffRemainderFromLane {P A U : Type} {H N T Q : ℕ}
       let L := c.root.width.size
       let cutoff := c.cutoff
       let V := c.cells
-      PackedPieceHandoffWithCharge cleanupWeight V effect body (body entry) src dst
+      PackedPieceHandoffWithCharge cleanupWeight V effect body program src dst
         (remainderDispatchSeed origin w W L cutoff) price →
       ∀ x u (S : Stacks T prime),
       ParentStageWords (fun i => src (i.castAdd 2)) src V x (embStk bank S) →
@@ -567,7 +567,7 @@ theorem placedCutoffRemainderFromLane {P A U : Type} {H N T Q : ℕ}
   let width : Fin 10 ↪ Fin 16 := ⟨![0,2,4,3,5,6,7,8,9,10],by decide⟩
   let div : Fin 11 ↪ Fin 16 := ⟨![4,5,11,6,7,8,9,12,13,14,15],by decide⟩
   let power : Fin 11 ↪ Fin 16 := ⟨![1,4,10,5,6,7,8,9,11,12,3],by decide⟩
-  obtain ⟨code,run⟩ := callCutoffRemainderFromLane body entry label host bank installed origin src dst
+  obtain ⟨code,run⟩ := callCutoffRemainderFromLane body program label host bank installed origin src dst
     (clocks.trans aux) (fun i j => apart i _) (width.trans aux) rfl rank live (div.trans aux)
     (fun i => apart _ _) (fun i => aux.injective.ne (show div i ≠ clocks 7 by fin_cases i <;> decide))
     rfl (power.trans aux) rfl rfl rfl (fun i => aux.injective.ne (show div i ≠ clocks 0 by fin_cases i <;> decide))
@@ -585,7 +585,7 @@ theorem placedCutoffRemainderFromLane {P A U : Type} {H N T Q : ℕ}
 
 /-- Enter from a live parent record, reading its clock, unit and cutoff archive in place. -/
 theorem callCutoffRemainderFromRecord {P A U : Type} {H N T Q : ℕ}
-    (body : P → Pr P H Q prime U) (entry : P) (label : P → A)
+    (body : P → Pr P H Q prime U) (program : Pr P H Q prime U) (label : P → A)
     (host : A → Pr A T Q prime U) (bank : Fin H ↪ Fin T)
     (installed : ∀ f, host (label f) = embProg bank label (body f))
     (origin : Fin H → Option (Fin (72+N))) (src dst : Fin (142081+2) ↪ Fin H)
@@ -598,7 +598,7 @@ theorem callCutoffRemainderFromRecord {P A U : Type} {H N T Q : ℕ}
       let L := c.root.width.size
       let cutoff := c.cutoff
       let V := c.cells
-      PackedPieceHandoffWithCharge cleanupWeight V effect body (body entry) src dst
+      PackedPieceHandoffWithCharge cleanupWeight V effect body program src dst
         (remainderDispatchSeed origin w W L cutoff) price →
       ∀ x u (S : Stacks T prime),
       ParentStageWords (fun i => src (i.castAdd 2)) src V x (embStk bank S) →
@@ -615,7 +615,7 @@ theorem callCutoffRemainderFromRecord {P A U : Type} {H N T Q : ℕ}
     (Set.disjoint_range_iff.mpr (fun i j => separate (fields i) j) : Disjoint (Set.range (fields.trans raw)) (Set.range scratch))
   have left i : aux (Fin.castAdd 13 i) = raw (fields i) := by simp [aux,Fin.Embedding.append]
   have right j : aux (Fin.natAdd 3 j) = scratch j := by simp [aux,Fin.Embedding.append]
-  obtain ⟨code,run⟩ := placedCutoffRemainderFromLane body entry label host bank installed origin src dst
+  obtain ⟨code,run⟩ := placedCutoffRemainderFromLane body program label host bank installed origin src dst
     aux (by
       intro i j
       induction j using Fin.addCases (m := 3) (n := 13) with
@@ -632,65 +632,30 @@ theorem callCutoffRemainderFromRecord {P A U : Type} {H N T Q : ℕ}
   | left i => change 3 ≤ i.val at high; omega
   | right i => rw [right]; exact free i
 
-/-- A dispatch bank already holds both unary clocks. Copy its six masters into
-the compiled remainder, preserving the caller's record and headers throughout. -/
-theorem callCutoffRemainderOnBank {P A U : Type} {H N T Q : ℕ}
-    (body : P → Pr P H Q prime U) (program : Pr P H Q prime U) (label : P → A)
-    (host : A → Pr A T Q prime U) (bank : Fin H ↪ Fin T)
-    (installed : ∀ f, host (label f) = embProg bank label (body f))
-    (origin : Fin H → Option (Fin (72+N))) (src dst : Fin (142081+2) ↪ Fin H)
-    (raw : Fin 72 ↪ Fin T) (apart : ∀ j i, bank j ≠ raw i) :
-    ∃ code : Pr A T Q prime U, ∀ (c : CutoffNodeInput) effect price,
-      let seed := remainderDispatchSeed origin c.w c.idleWidth c.root.width.size c.cutoff
-      PackedPieceHandoffWithCharge cleanupWeight c.cells effect body program src dst seed price →
-      ∀ x u (S : Stacks T prime),
-      ParentStageWords (fun i => src (i.castAdd 2)) src c.cells x (embStk bank S) →
-      (∀ i : Fin 72, i ≠ 24 → S.R (raw i) = idleDispatchWord c.w c.idleWidth c.root.width.size c.cutoff i.val) →
-      (∀ j, (∀ i, src i ≠ j) → S.L (bank j) = [] ∧ S.R (bank j) = []) →
-      ∃ q G t y, Exec host code (mk u S) t (mk q G) ∧ q.user = u.user ∧
-        ParentStageWords (fun i => dst (i.castAdd 2)) dst c.cells y (embStk bank G) ∧ effect x y ∧
-        CleanupBound S G t (price+(49+93*H)*c.cells) ∧
-        ∀ j, (∀ i, bank i ≠ j) → G.L j = S.L j ∧ G.R j = S.R j := by
-  obtain ⟨load,prepare⟩ := loadRemainderDispatchSeed host origin src bank (raw ∘ idleSeedPorts)
-    (raw 59) (raw 60) (fun j i => apart j _) (by
-      intro i j
-      have a : idleSeedPorts i ≠ 59 := by fin_cases i <;> decide
-      have b : idleSeedPorts i ≠ 60 := by fin_cases i <;> decide
-      simp [List.nodup_cons,raw.injective.eq_iff,Function.comp_apply,a,b,apart,Ne.symm (apart j _)])
-  refine ⟨load.seq (embProg bank label program),?_⟩
-  intro c effect price seed child x u S words master fresh
-  obtain ⟨v,D,a,exec,user,paid,filled,live,off⟩ :=
-    prepare c.w c.idleWidth c.root.width.size c.cutoff u S
-      (fun i => master _ (by fin_cases i <;> decide)) fresh
-      ((master 59 (by decide)).trans rfl) ((master 60 (by decide)).trans rfl)
-  obtain ⟨q,G,b,y,run,same,out,result,charge,frame⟩ :=
-    execPreparedRemainder body program label host bank installed child words filled live (v := v)
-  refine ⟨q,G,_,y,exec.seq run,same.trans user,out,result,?_,?_⟩
-  · intro js nd
-    have h := paid.seq charge js nd
-    have bound := c.remainderSetup_le H
-    omega
-  · intro j away
-    exact ⟨(frame j away).1.trans (off j away).1,(frame j away).2.trans (off j away).2⟩
+-- Restore the preloaded six-header wrapper from 073d33d8.
+/-- The assembler supplies a unary clock, unit and cutoff to each remainder. -/
+noncomputable def remainderEntryWord (c : CutoffNodeInput) (i : Fin 16) : List (Fin (prime+4)) :=
+  if i = 0 then List.replicate c.w 0 else if i = 1 then binSyms 1 1 else
+    if i = 2 then binSyms c.root.width.size c.cutoff else []
 
-/-- Present the loaded remainder to the packed stage assembler with only the caller header bank seeded. -/
+
 theorem packedCutoffRemainderOnBank {P A U : Type} {H N T Q : ℕ}
     (body : P → Pr P H Q prime U) (program : Pr P H Q prime U) (label : P → A)
     (host : A → Pr A T Q prime U) (bank : Fin H ↪ Fin T)
     (installed : ∀ f, host (label f) = embProg bank label (body f))
     (origin : Fin H → Option (Fin (72+N))) (src dst : Fin (142081+2) ↪ Fin H)
-    (raw : Fin 72 ↪ Fin T) (apart : ∀ j i, bank j ≠ raw i) :
+    (raw : Fin 16 ↪ Fin T) (apart : ∀ j i, bank j ≠ raw i) :
     ∃ code : Pr A T Q prime U, ∀ (c : CutoffNodeInput) effect price,
-      let contents := fun i : Fin 72 => idleDispatchWord c.w c.idleWidth c.root.width.size c.cutoff i.val
+      let contents := remainderEntryWord c
       let initial : Stacks T prime := ⟨[],[],fun _ => [],Function.extend raw contents (fun _ => [])⟩
       PackedPieceHandoffWithCharge cleanupWeight c.cells effect body program src dst
         (remainderDispatchSeed origin c.w c.idleWidth c.root.width.size c.cutoff) price →
       PackedPieceHandoffWithCharge cleanupWeight c.cells effect host code (src.trans bank) (dst.trans bank)
-        initial (price+(49+93*H)*c.cells) := by
-  obtain ⟨code,run⟩ := callCutoffRemainderOnBank body program label host bank installed origin src dst raw apart
+        initial (price+(2000470+93*H)*c.cells) := by
+  obtain ⟨code,run⟩ := placedCutoffRemainderFromLane body program label host bank installed origin src dst raw apart 64 (by decide)
   refine ⟨code,?_⟩
   intro c effect price contents initial child x u S words privatePorts
-  have master (i : Fin 72) (_ : i ≠ 24) : S.R (raw i) = contents i := by
+  have master (i : Fin 16) : S.R (raw i) = contents i := by
     have h := (privatePorts _ (fun j => apart (src j) i)).2
     exact h.trans (raw.injective.extend_apply contents (fun _ => []) i)
   have empty (j : Fin H) (away : ∀ i, src i ≠ j) : S.L (bank j) = [] ∧ S.R (bank j) = [] := by
@@ -698,8 +663,12 @@ theorem packedCutoffRemainderOnBank {P A U : Type} {H N T Q : ℕ}
     exact ⟨h.1,h.2.trans (Function.extend_apply' contents (fun _ => []) _ (by
       rintro ⟨i,eq⟩
       exact apart j i eq.symm))⟩
-  obtain ⟨z,F,t,y,exec,user,out,result,bill,_⟩ := run c effect price child x u S
-    (words.next bank src (fun _ => rfl) (fun _ => rfl)) master empty
+  obtain ⟨z,F,t,y,exec,user,out,result,bill⟩ := run c c.w effect price child x u S
+    (words.next bank src (fun _ => rfl) (fun _ => rfl)) (by rw [c.width,Nat.mul_comm])
+    (by rw [master]; simp [contents,remainderEntryWord]) ((master 1).trans (by rfl))
+    ((master 2).trans (by rfl)) (fun j high => (master j).trans (by
+      have h : j ≠ 0 ∧ j ≠ 1 ∧ j ≠ 2 := by omega
+      simp [contents,remainderEntryWord,h.1,h.2.1,h.2.2])) empty
   exact ⟨z,F,t,y,exec,bill,user,⟨out.left,out.right,out.controls⟩,result⟩
 
 private theorem stageCast {P U : Type} {T Q w W V Z price : ℕ} (n : Fin 9)
@@ -787,7 +756,7 @@ theorem selectedCutoffNode [M8.Machine.Net] (P U Config : Type) : CutoffNodeExec
   obtain ⟨assemblyRate,join⟩ := assemble ((le_max_left _ _).trans room)
   choose H S table remainderCode inputFan outputFan origin step using fun n : Fin 9 =>
     idle idleBody Sum.inl (fun _ => rfl) n (.inr (idleEntry n))
-  let headerRate := 49+93*Finset.univ.sup H
+  let headerRate := 2000470+93*Finset.univ.sup H
   refine ⟨body,idleBody,active,fun _ => rfl,localWork,assemblyRate+9*headerRate,CutoffNodeInput.localCharge_bound _ _ localBound,?_⟩
   intro input d
   choose positions coords runSweep using fun c n => sweep n (input c).node (input c).w (input c).B
@@ -821,8 +790,8 @@ theorem selectedCutoffNode [M8.Machine.Net] (P U Config : Type) : CutoffNodeExec
       intro c
       exact stageCast n (input c).stageTail _ (localWork n (input c).w) (run c)) (by
       intro n
-      let bank := Fin.castAddEmb 72 (n := H n)
-      let raw := Fin.natAddEmb (H n) (m := 72)
+      let bank := Fin.castAddEmb 16 (n := H n)
+      let raw := Fin.natAddEmb (H n) (m := 16)
       let outer := fun f => embProg bank id (table n f)
       obtain ⟨loaded,enter⟩ := packedCutoffRemainderOnBank (table n) (remainderCode n) id outer bank
         (fun _ => rfl) (origin n) (inputFan n) (outputFan n) raw (by
@@ -831,8 +800,8 @@ theorem selectedCutoffNode [M8.Machine.Net] (P U Config : Type) : CutoffNodeExec
           change j.val = H n+i.val at h
           omega)
       let seed := fun c => (⟨[],[],fun _ => [],Function.extend raw
-        (fun i => idleDispatchWord (input c).w (input c).idleWidth (input c).root.width.size (input c).cutoff i.val)
-        (fun _ => [])⟩ : Stacks (H n+72) prime)
+        (remainderEntryWord (input c))
+        (fun _ => [])⟩ : Stacks (H n+16) prime)
       refine ⟨S n,_,outer,loaded,(inputFan n).trans bank,(outputFan n).trans bank,seed,?_⟩
       intro c
       have prepared := step n (input c).root (input c).path (input c).depth (input c).b (input c).cutoff
@@ -844,11 +813,11 @@ theorem selectedCutoffNode [M8.Machine.Net] (P U Config : Type) : CutoffNodeExec
       refine ⟨z,F,t,y,exec,?_,user,out,result⟩
       intro js nd
       have h := paid js nd
-      have bound : 49+93*H n ≤ headerRate := Nat.add_le_add_left
+      have bound : 2000470+93*H n ≤ headerRate := Nat.add_le_add_left
         (Nat.mul_le_mul_left _ (Finset.le_sup (Finset.mem_univ n))) _
       have growth := Nat.mul_le_mul_right (input c).cells bound
       change _ ≤ _+(((∑ j : Fin idleCopies.length, dispatch c (idleDirectoryIndex (n,j)))+1+
-        (142081*(10*(input c).cells+10)+1))+(49+93*H n)*(input c).cells) at h
+        (142081*(10*(input c).cells+10)+1))+(2000470+93*H n)*(input c).cells) at h
       dsimp only [remainder,extra]
       omega)
   refine ⟨R,T,host,program,src',dst',seed,?_⟩
