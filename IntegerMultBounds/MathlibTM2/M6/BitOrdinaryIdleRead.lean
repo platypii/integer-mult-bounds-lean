@@ -761,7 +761,7 @@ theorem copyRoute_host [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
       RepT (bank x) (embStk ports S).L (embStk ports S).R →
       ∃ y z F t, Exec body (embProg ports (Empty.elim : Empty → P) (foreign (liftQ route.program fits)))
           (mk u S) t (mk z F) ∧
-        t ≤ (C*V+(63+252*life.targets.length)*LeafCore.coreCost V (w*64)+life.targets.length+1)*(route.tapes+5)+6 ∧
+        t ≤ (C*V+(63+28*life.targets.length)*LeafCore.coreCost V (w*64)+life.targets.length+1)*(route.tapes+5)+6 ∧
         z.user = u.user ∧ RepT (bank y) (embStk ports F).L (embStk ports F).R ∧
         LabelPermutation.Transport v B w (fun g => g*(if enter then A.transpose else A)) (ext (x src)) (ext (y src)) ∧
         (∀ j ∈ life.targets, LabelPermutation.Transport v B w
@@ -967,7 +967,7 @@ theorem routedCopyWindow_host [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin
     let owner := fun i => b (slot i)
     let privateEntry := fun j => ∀ i : Fin 142081, enter.slots (i.castAdd 24) ≠ j
     let privateSlot := fun j => ∀ i, slot i ≠ j
-    let price := fun c t => (c*V+(63+252*life.targets.length)*LeafCore.coreCost V (w*64)+life.targets.length+1)*(t+5)+6
+    let price := fun c t => (c*V+(63+28*life.targets.length)*LeafCore.coreCost V (w*64)+life.targets.length+1)*(t+5)+6
     (∀ i, a (enter.slots (Fin.castAdd 24 i)) = fan (Fin.castAdd 2 i)) →
     (∀ i : Fin 2, ∀ j, a j ≠ fan (i.natAdd 142081)) →
     (∀ i, owner i = fan (Fin.castAdd 2 i)) →
@@ -2578,7 +2578,7 @@ theorem scheduledCopyWindow_layout [M8.Machine.Net]
   let basisRate := fun (stages : List (FlatCoordinateSchedule.Op 16)) =>
     FlatCoordinateCleanSchedule.constant stages*(1+FlatCoordinateCleanSchedule.tapeCount stages+5)
   let base := P₀*(enter.tapes+5)+Q₀*(leave.tapes+5)+basisRate A+basisRate B'+setup+16+76*(life.targets.length+2)*142088
-  let leaf := (63+252*life.targets.length)*(enter.tapes+5+ (leave.tapes+5))
+  let leaf := (63+28*life.targets.length)*(enter.tapes+5+ (leave.tapes+5))
   let fixed := (life.targets.length+1)*(enter.tapes+5+(leave.tapes+5))+24
   refine ⟨base,swaps,leaf,fixed,?_⟩
   intro node w parentB rows B K i width split label M W layout hW desc
@@ -2629,7 +2629,7 @@ theorem scheduledCopyWindow_layout [M8.Machine.Net]
     simp only [prepared,if_pos privateR,charts,embOvr,embExt_apply right.injective,Stacks.get,and_self]
   refine ⟨prepared,?_⟩
   intro budget fanReady stored recurse
-  let price := fun (c t : ℕ) => (c*volume prime v+(63+252*life.targets.length)*M8.RevMachine.LeafCore.coreCost (volume prime v) ((w+1)*64)+life.targets.length+1)*(t+5)+6
+  let price := fun (c t : ℕ) => (c*volume prime v+(63+28*life.targets.length)*M8.RevMachine.LeafCore.coreCost (volume prime v) ((w+1)*64)+life.targets.length+1)*(t+5)+6
   let slots := (Fin.castAddEmb 2).trans fan
   let off := fun j => privatePort j ∧ ∀ l, fan l ≠ j
   let pack := fun js => statePlacedNormalized (U := U) ports capacity swapStates_pos (Empty.elim : Empty → P) (packSchedule 16 js)

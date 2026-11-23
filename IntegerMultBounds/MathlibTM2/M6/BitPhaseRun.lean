@@ -1787,7 +1787,7 @@ theorem invocationScatter_stage [Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
       let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
       let view := fun (data : Fin 142081 → Fin V → ZMod 2) k i => data k (Fin.cast (copyLabel_volume w B K) i)
       ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
-        stage.cost ≤ C*V + 2*(63*9+252*527)*M8.RevMachine.LeafCore.coreCost V (w*64) +
+        stage.cost ≤ C*V + 2*(63*9+28*527)*M8.RevMachine.LeafCore.coreCost V (w*64) +
           9*engine.time (copyChild w W) hs + 9 ∧
         ∀ data, CopyScheduleEffect n r d w B K Copy.lifecycles (view data) (view (stage.transform data)) := by
   obtain ⟨C,run⟩ := routedCopy_schedule n r d engine
@@ -1877,7 +1877,7 @@ theorem invocation_stage [Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
       let phaseCost := fun done => ((instructions done).map (scalarWork V)).sum +
         ((edges done).map (phaseEdgeBudget owner w W)).sum + (instructions done).length
       let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
-      let scatterCost := C*V + 2*(63*9+252*527)*M8.RevMachine.LeafCore.coreCost V (w*64) +
+      let scatterCost := C*V + 2*(63*9+28*527)*M8.RevMachine.LeafCore.coreCost V (w*64) +
         9*engine.time (copyChild w W) hs + 9
       let view := fun (data : Fin 142081 → Fin V → ZMod 2) k i => data k (Fin.cast (copyLabel_volume w B K) i)
       let phase := fun done (x y : Fin 142081 → Fin V → ZMod 2) =>
@@ -1891,7 +1891,7 @@ theorem invocation_stage [Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
           (∀ p ∈ Geometry.Moves.phaseEdges, Geometry.moveRank p.1 p.2 ≠ 0 →
             phaseChildCost w W p ≤ price (Geometry.moveRank p.1 p.2)) →
           engine.time (copyChild w W) hs ≤ price 7 →
-          stage.cost ≤ D*V + 2*(63*9+252*527)*M8.RevMachine.LeafCore.coreCost V (w*64) +
+          stage.cost ≤ D*V + 2*(63*9+28*527)*M8.RevMachine.LeafCore.coreCost V (w*64) +
             ((Geometry.Moves.phaseValues.filter (· != 0)).map price).sum + 9*price 7) ∧
         (∀ data (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B),
           phaseRead owner (stage.transform data) (labelSpectator g z) =
@@ -3234,7 +3234,7 @@ theorem invocationPiece_stage [Net] (n : Fin 9) (engine : CopyTranspose := CopyT
         (∀ price : ℕ → ℕ, (∀ p ∈ Geometry.Moves.phaseEdges, Geometry.moveRank p.1 p.2 ≠ 0 →
           phaseChildCost w W p ≤ price (Geometry.moveRank p.1 p.2)) →
           engine.time (copyChild w W) hs ≤ price 7 →
-          piece.cost ≤ D*V + 160*(2*(63*9+252*527)*M8.RevMachine.LeafCore.coreCost V (w*64) +
+          piece.cost ≤ D*V + 160*(2*(63*9+28*527)*M8.RevMachine.LeafCore.coreCost V (w*64) +
             ((Geometry.Moves.phaseValues.filter (· != 0)).map price).sum + 9*price 7)) ∧
         ∃ run : (Fin 32 × Fin 5) → (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2), (∀ (k : Fin 32 × Fin 5) x, InvocationEffect n k.1 k.2 w B K x (run k x)) ∧
           ∀ x, piece.transform x = stageRuns.foldl (fun y k => run k y) x := by
@@ -3249,7 +3249,7 @@ theorem invocationPiece_stage [Net] (n : Fin 9) (engine : CopyTranspose := CopyT
     (phaseOwners (N := V)) (by decide : 0 < 142081) (ks.map stages)
   refine ⟨compile stageRuns,?_,fun k => (stages k).transform,?_,?_⟩
   · intro price phaseBound copyBound
-    let extra := 2*(63*9+252*527)*M8.RevMachine.LeafCore.coreCost V (w*64) +
+    let extra := 2*(63*9+28*527)*M8.RevMachine.LeafCore.coreCost V (w*64) +
       ((Geometry.Moves.phaseValues.filter (· != 0)).map price).sum + 9*price 7
     have pos : 0 < V := by
       dsimp only [V,W]
@@ -3311,7 +3311,7 @@ theorem invocationPieces_nodeCost [Net] (engine : CopyTranspose := CopyTranspose
           phaseChildCost w W p ≤ price (Geometry.moveRank p.1 p.2)) →
           engine.time (copyChild w W) hs ≤ price 7 →
           (∑ n, (pieces n).cost) + 160*(BitOccurrences.remainders.map price).sum ≤ D*V +
-            1440*(2*(63*9+252*527)*M8.RevMachine.LeafCore.coreCost V (w*64)) + (nodeChildren5.map price).sum) ∧
+            1440*(2*(63*9+28*527)*M8.RevMachine.LeafCore.coreCost V (w*64)) + (nodeChildren5.map price).sum) ∧
         ∀ n, ∃ run : (Fin 32 × Fin 5) → (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2),
           (∀ (k : Fin 32 × Fin 5) x, InvocationEffect n k.1 k.2 w B K x (run k x)) ∧
           ∀ x, (pieces n).transform x = stageRuns.foldl (fun y k => run k y) x := by
@@ -3421,7 +3421,7 @@ theorem invocationPieces_normalized [Net] (engine : CopyTranspose := CopyTranspo
           (∀ k x, InvocationEffect n k.1 k.2 w B K x (run k x)) ∧
           ∀ x, (pieces n).transform x = stageRuns.foldl (fun y k => run k y) x := by
   obtain ⟨D,make⟩ := invocationPieces_nodeCost engine
-  obtain ⟨C,route⟩ := labelRoute_cost_bound D (1440*(2*(63*9+252*527)))
+  obtain ⟨C,route⟩ := labelRoute_cost_bound D (1440*(2*(63*9+28*527)))
   refine ⟨C/142080,?_⟩
   intro v w B rows positive hw hB width split label K W V hs
   obtain ⟨before,row,_,mid,after⟩ := positive
@@ -3441,7 +3441,7 @@ theorem invocationPieces_normalized [Net] (engine : CopyTranspose := CopyTranspo
   have size := invocationVolume v w B rows width split label
   have sizeR : (volume prime v : ℝ) = V*142080 := by exact_mod_cast size.symm
   have bill := time price phaseBound copyBound
-  rw [← Nat.mul_assoc 1440 (2*(63*9+252*527))] at bill
+  rw [← Nat.mul_assoc 1440 (2*(63*9+28*527))] at bill
   have paid := (Nat.cast_le (α := ℝ)).mpr bill
   conv at paid => rhs; rw [Nat.cast_add]
   exact (paid.trans (add_le_add (route V w hw) (children _ childBound))).trans_eq (by rw [sizeR]; ring)

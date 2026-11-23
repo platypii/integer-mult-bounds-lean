@@ -143,12 +143,8 @@ theorem stageRoute_runs [M8.Machine.Net] {T : ℕ} (io : Fin T) (c : PortCertifi
         LabelPermutation.Transport v B w (fun g => g * route.transpose) (ext x) (ext y) ∧
         GraphContract.Runs program (LabelCall.bank roles v d)
           (LabelCall.bank (setTape roles io (sourceWord y) 0) v d)
-          (C * volume prime v + 252 * LeafCore.coreCost (volume prime v) (w*64)) := by
-  obtain ⟨program,C,leading,run⟩ := stageRoute_rows_runs 64 (by decide) io c checked s
-  refine ⟨program,C,leading,?_⟩
-  intro v w B hw hb hv hp roles x head tape d route
-  obtain ⟨y,read,h⟩ := run v w B hw hb hv hp roles x head tape
-  exact ⟨y,read,Blocks.runs_mono h (by omega)⟩
+          (C * volume prime v + 28 * LeafCore.coreCost (volume prime v) (w*64)) :=
+  stageRoute_rows_runs 64 (by decide) io c checked s
 
 local instance (w : ℕ) : NeZero (prime^w) :=
   ⟨pow_ne_zero _ Shared50ModularControl.prime_prime.ne_zero⟩
@@ -250,7 +246,7 @@ theorem dataRegister_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9)
         LabelPermutation.Transport v B w (fun g => g*A) (ext x) (ext y) ∧
         GraphContract.Runs program (LabelCall.bank roles v d)
           (LabelCall.bank (setTape roles io (sourceWord y) 0) v d)
-          (if n.val = 0 then 0 else C*volume prime v + 252*LeafCore.coreCost (volume prime v) (w*64)) := by
+          (if n.val = 0 then 0 else C*volume prime v + 28*LeafCore.coreCost (volume prime v) (w*64)) := by
   let c := port (j % 111)
   have chartEq := chart_data n j data
   by_cases firstStage : n.val = 0
@@ -294,7 +290,7 @@ theorem copyTargets_route [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
         (fun g => g*registerChart w n j) (ext (x (io j))) (ext (y (io j)))) ∧
         (∀ k, k ∉ life.targets.map io → y k = x k) ∧
         GraphContract.Runs program (bank x) (bank y)
-          (C*volume prime v + life.targets.length*(252*LeafCore.coreCost (volume prime v) (w*64)+1)) := by
+          (C*volume prime v + life.targets.length*(28*LeafCore.coreCost (volume prime v) (w*64)+1)) := by
   intro io
   have distinct : Set.InjOn io {j | j ∈ life.targets} := by
     intro j hj k hk eq
@@ -342,8 +338,8 @@ theorem copyTargets_route [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
     · intro k hk
       simp only [List.map_cons,List.mem_cons,not_or] at hk
       simpa [next,hk.1] using other _ hk.2
-    · have bound : (if n.val = 0 then 0 else C*volume prime v + 252*LeafCore.coreCost (volume prime v) (w*64))
-          ≤ C*volume prime v + 252*LeafCore.coreCost (volume prime v) (w*64) := by split <;> omega
+    · have bound : (if n.val = 0 then 0 else C*volume prime v + 28*LeafCore.coreCost (volume prime v) (w*64))
+          ≤ C*volume prime v + 28*LeafCore.coreCost (volume prime v) (w*64) := by split <;> omega
       simp only [List.length_cons,Nat.add_mul,Nat.mul_add,Nat.one_mul,Nat.mul_one]
       omega
 
@@ -353,7 +349,7 @@ and charges the local call once. -/
 theorem dataPort_call [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (j : Fin 222) (body : Graph.Block (T+24) prime) (leading : Blocks.Leading body) :
     ChartCall io n j body (fun C v w budget =>
       if n.val = 0 then budget else budget + 2*(C*volume prime v +
-        252*LeafCore.coreCost (volume prime v) (w*64))+2) := by
+        28*LeafCore.coreCost (volume prime v) (w*64))+2) := by
   unfold ChartCall
   let c := port (j.val % 111)
   have checked := port_checked (j.val % 111) (Nat.mod_lt _ (by decide))
@@ -616,7 +612,7 @@ theorem register_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (ente
         LabelPermutation.Transport v B w (fun g => g*(if enter then A.transpose else A)) (ext x) (ext y) ∧
         GraphContract.Runs program (LabelCall.bank roles v d)
           (LabelCall.bank (setTape roles io (sourceWord y) 0) v d)
-          (C*volume prime v + 252*LeafCore.coreCost (volume prime v) (w*64)) := by
+          (C*volume prime v + 63*LeafCore.coreCost (volume prime v) (w*64)) := by
   by_cases data : j.val < 222
   · obtain ⟨program,C,leading,run⟩ := dataRegister_route io n j.val data
     refine ⟨program,C,leading,?_⟩
@@ -645,7 +641,7 @@ theorem ownerChartRoutes [M8.Machine.Net] {T : ℕ} (io : Fin 661 ↪ Fin T) (n 
           (ext (x (io j))) (ext (y (io j)))) ∧
         (∀ k, k ∉ js.map io → y k = x k) ∧
         GraphContract.Runs program (bank x) (bank y)
-          (C*volume prime v + js.length*(252*LeafCore.coreCost (volume prime v) (w*64)+1)) := by
+          (C*volume prime v + js.length*(63*LeafCore.coreCost (volume prime v) (w*64)+1)) := by
   induction js with
   | nil =>
     refine ⟨SharedBankSkeleton.identity _ _ (by omega),0,fun _ => rfl,?_⟩
@@ -699,7 +695,7 @@ theorem copyWindow_routes [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) 
           (fun g => g*registerChart w n j) (ext (x (io j))) (ext (y (io j)))) ∧
         (∀ k, k ≠ src → k ∉ life.targets.map io → y k = x k) ∧
         GraphContract.Runs program (bank x) (bank y)
-          (C*volume prime v + (63+252*life.targets.length)*LeafCore.coreCost (volume prime v) (w*64)
+          (C*volume prime v + (63+28*life.targets.length)*LeafCore.coreCost (volume prime v) (w*64)
             + life.targets.length+1) := by
   intro io src
   obtain ⟨srcBlock,C,srcLeading,sourceRun⟩ := helperRegister_route src n enter ⟨life.source,(Copy.source_bounds life scheduled).2⟩ (Copy.source_bounds life scheduled).1
@@ -779,7 +775,7 @@ theorem register_call [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (j : F
       let V := volume prime v
       let leaf := LeafCore.coreCost V (w*64)
       if j.val < 222 then
-        if n.val = 0 then budget else budget + 2*(C*V + 252*leaf)+2
+        if n.val = 0 then budget else budget + 2*(C*V + 28*leaf)+2
       else budget + C*V + 126*leaf+2) := by
   by_cases data : j.val < 222
   · simpa only [ite_eq_left data] using dataPort_call io n ⟨j.val,data⟩ body leading

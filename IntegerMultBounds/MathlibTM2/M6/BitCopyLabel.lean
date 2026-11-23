@@ -869,7 +869,7 @@ theorem routedCopy_runs [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
       let W := B*prime^(64*(w*64))*K
       let V := volume prime v
       let bank := fun data => LabelCall.bank (copyOwners (v := v) data) v (M8.Stage2Machine.Straight.words (LabelSchedule.base v w))
-      let routeCost := fun C => C*V+(63+252*life.targets.length)*LeafCore.coreCost V (w*64)+life.targets.length+1
+      let routeCost := fun C => C*V+(63+28*life.targets.length)*LeafCore.coreCost V (w*64)+life.targets.length+1
       let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
       ∀ (x : Fin 142081 → Fin V → ZMod 2) (bs : List Bool), Counter.value bs = V →
       let controls := CountedLoopReuseAlphabet.controls (a := prime) CountedLoopReuseAlphabet.empty (CountedLoopReuseAlphabet.binary bs) 1 1
@@ -921,10 +921,10 @@ theorem routedCopy_runs [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
 
 private theorem routedCopy_work (P Q basis targets V core child : ℕ) (pos : 0 < V) :
     let bs := FlatCoordinateSchedule.bits V
-    (P*V+(63+252*targets)*core+targets+1) +
+    (P*V+(63+28*targets)*core+targets+1) +
       (copyWindowWork basis targets V bs.length + child) + 1 +
-      (Q*V+(63+252*targets)*core+targets+1) + 1 ≤
-      (P+Q+(504+basis+76*(targets+2))+2*targets+4)*V + 2*(63+252*targets)*core + child := by
+      (Q*V+(63+28*targets)*core+targets+1) + 1 ≤
+      (P+Q+(504+basis+76*(targets+2))+2*targets+4)*V + 2*(63+28*targets)*core + child := by
   dsimp only
   have localWork := copyWindowWork_linear basis targets pos _ (FlatCoordinateSchedule.bits_value V)
     (FlatCoordinateSchedule.bits_canonical V)
@@ -935,12 +935,12 @@ the recursive transpose contributes exactly its own bill. -/
 theorem routedCopy_cost_bound [M8.Machine.Net] (P Q basis targets : ℕ) :
     ∃ C : ℝ, ∀ (V w child : ℕ), 0 < V → 0 < w →
       let core := M8.RevMachine.LeafCore.coreCost V (w*64)
-      let route := fun R => R*V+(63+252*targets)*core+targets+1
+      let route := fun R => R*V+(63+28*targets)*core+targets+1
       let digits := (FlatCoordinateSchedule.bits V).length
       ((route P + (copyWindowWork basis targets V digits + child) + 1 + route Q + 1 : ℕ) : ℝ) ≤
         C*V*(w : ℝ)^M8.Machine.BudgetBound.tau + child := by
   obtain ⟨C, bound⟩ := labelRoute_cost_bound (P+Q+(504+basis+76*(targets+2))+2*targets+4)
-    (2*(63+252*targets))
+    (2*(63+28*targets))
   refine ⟨C, fun V w child pos hw => ?_⟩
   have bill := routedCopy_work P Q basis targets V (M8.RevMachine.LeafCore.coreCost V (w*64)) child pos
   exact (Nat.cast_le.mpr bill).trans (by simpa only [Nat.cast_add] using add_le_add (bound V w hw) (le_refl (child : ℝ)))
@@ -969,7 +969,7 @@ theorem routedCopy_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
       let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
       ∃ stage : SharedBankStage.Stage _ 142081 prime (copyOwners (v := v)),
         (∀ x, CopyWindowEffect n r d life w B K x (stage.transform x)) ∧
-        stage.cost ≤ C*V + 2*(63+252*life.targets.length)*LeafCore.coreCost V (w*64) + engine.time (copyChild w W) hs := by
+        stage.cost ≤ C*V + 2*(63+28*life.targets.length)*LeafCore.coreCost V (w*64) + engine.time (copyChild w W) hs := by
   obtain ⟨entry,leave,P,Q,A,D,states,body,eLead,lLead,runs⟩ := routedCopy_runs (engine := engine) n r d life scheduled
   let basis := FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant D
   refine ⟨P+Q+(504+basis+76*(life.targets.length+2))+2*life.targets.length+4,?_⟩
@@ -1000,9 +1000,9 @@ theorem routedCopy_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
   refine ⟨{ tapes := _, states := _, program := machine, transform := transform, input := input, output := output,
             slots := slots, slots_injective := SharedBankFrames.commonSlots_injective ..,
             metadata := SharedBank.strip (input 0) slots,
-            cost := (P*V+(63+252*life.targets.length)*LeafCore.coreCost V (w*64)+life.targets.length+1) +
+            cost := (P*V+(63+28*life.targets.length)*LeafCore.coreCost V (w*64)+life.targets.length+1) +
               (copyWindowWork basis life.targets.length V bs.length + engine.time (copyChild w W) hs) + 1 +
-              (Q*V+(63+252*life.targets.length)*LeafCore.coreCost V (w*64)+life.targets.length+1) + 1,
+              (Q*V+(63+28*life.targets.length)*LeafCore.coreCost V (w*64)+life.targets.length+1) + 1,
             realizes := fun x => run x,
             input_payload := ?_, output_payload := ?_, strip_input := ?_ },fun x => ((result x).choose_spec).2,?_⟩
   · intro x
@@ -1043,7 +1043,7 @@ theorem routedCopy_schedule [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5
       let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
       ∃ stage : SharedBankStage.Stage _ 142081 prime (copyOwners (v := v)),
         (∀ x, CopyScheduleEffect n r d w B K Copy.lifecycles x (stage.transform x)) ∧
-        stage.cost ≤ C*V + 2*(63*9+252*527)*LeafCore.coreCost V (w*64) + 9*engine.time (copyChild w W) hs + 9 := by
+        stage.cost ≤ C*V + 2*(63*9+28*527)*LeafCore.coreCost V (w*64) + 9*engine.time (copyChild w W) hs + 9 := by
   let Life := {l // l ∈ Copy.lifecycles}
   let spec := fun l : Life => routedCopy_stage (engine := engine) n r d l.val l.property
   let coeff := fun l : Life => (spec l).choose
@@ -1059,19 +1059,19 @@ theorem routedCopy_schedule [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5
   let core := LeafCore.coreCost V (w*64)
   let child := engine.time (copyChild w W) hs
   have bound (ls : List Life) : (compile ls).cost ≤ (ls.map coeff).sum*V +
-      2*(63*ls.length+252*(ls.map (fun l => l.val.targets.length)).sum)*core + ls.length*child + ls.length := by
+      2*(63*ls.length+28*(ls.map (fun l => l.val.targets.length)).sum)*core + ls.length*child + ls.length := by
     induction ls with
     | nil => simp [compile, SharedBankStage.compile_cost]
     | cons l ls ih =>
       change (stage l).cost + (compile ls).cost + 1 ≤ _
-      have localCost : (stage l).cost ≤ coeff l*V + 2*(63+252*l.val.targets.length)*core + child :=
+      have localCost : (stage l).cost ≤ coeff l*V + 2*(63+28*l.val.targets.length)*core + child :=
         (window l).choose_spec.2
       simp only [List.map_cons,List.sum_cons,List.length_cons]
       nlinarith only [localCost,ih]
   refine ⟨compile Copy.lifecycles.attach, ?_, ?_⟩
   · simpa using effect Copy.lifecycles.attach
   · have specialize (ls : List Life) (count : ls.length = 9)
-        (fanout : (ls.map (fun l => l.val.targets.length)).sum = 527) : (compile ls).cost ≤ (ls.map coeff).sum*V + 2*(63*9+252*527)*core + 9*child + 9 := by
+        (fanout : (ls.map (fun l => l.val.targets.length)).sum = 527) : (compile ls).cost ≤ (ls.map coeff).sum*V + 2*(63*9+28*527)*core + 9*child + 9 := by
           have h := bound ls
           rw [count, fanout] at h
           exact h
@@ -1095,7 +1095,7 @@ theorem routedCopy_parent [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) 
         child.width*64 = 7*v.width ∧ volume prime child*142080 = volume prime v ∧
         (stage.cost : ℝ) ≤ C*volume prime child*(w : ℝ)^M8.Machine.BudgetBound.tau + 9*engine.time child hs + 9 := by
   obtain ⟨P, schedule⟩ := routedCopy_schedule (engine := engine) n r d
-  obtain ⟨C, route⟩ := labelRoute_cost_bound P (2*(63*9+252*527))
+  obtain ⟨C, route⟩ := labelRoute_cost_bound P (2*(63*9+28*527))
   refine ⟨C, ?_⟩
   intro v w B rows pos hw hB width splitRows label K W child hs
   obtain ⟨before, rowPos, _, mid, after⟩ := pos

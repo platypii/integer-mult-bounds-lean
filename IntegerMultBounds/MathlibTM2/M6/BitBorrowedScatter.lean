@@ -53,7 +53,7 @@ theorem borrowedRoute_fixed [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5
     ∃ stage : SharedBankStage.Stage _ 142081 prime (copyOwners (v := v)),
       stage.tapes = tapes ∧ stage.states = states ∧
       stage.input 0 = SharedBankStageInput.raw (LabelCall.bank (copyOwners (T := 142081) (v := v) 0) v
-        (M8.Stage2Machine.Straight.words (LabelSchedule.base v w))) stage.tapes ∧ stage.cost ≤ C*V + 661*(252*LeafCore.coreCost V (w*64)+1) ∧
+        (M8.Stage2Machine.Straight.words (LabelSchedule.base v w))) stage.tapes ∧ stage.cost ≤ C*V + 661*(63*LeafCore.coreCost V (w*64)+1) ∧
       (∀ x (i : Fin 661), let A := registerChart w n i.val
         LabelPermutation.Transport v B w (fun g => g*(if enter then A.transpose else A))
           (ext (x (ownerTape n r d i))) (ext (stage.transform x (ownerTape n r d i)))) ∧
@@ -73,7 +73,7 @@ theorem borrowedRoute_fixed [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5
   refine ⟨{ tapes := _, states := _, program := block.program, transform := fun x => (result x).choose,
             input := bank, output := fun x => bank (result x).choose, slots := slots,
             slots_injective := block.slots_injective.comp (Fin.castAdd_injective _ _),
-            metadata := SharedBank.strip (bank 0) slots, cost := C*V+661*(252*LeafCore.coreCost V (w*64)+1),
+            metadata := SharedBank.strip (bank 0) slots, cost := C*V+661*(63*LeafCore.coreCost V (w*64)+1),
             input_payload := fun _ => copyRoute_payload block leading _ _ _,
             output_payload := fun _ => copyRoute_payload block leading _ _ _,
             strip_input := fun _ => routePrivate block leading _ _ _ _,
@@ -90,7 +90,7 @@ theorem borrowedRoute_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5
     let v := copyLabelLayout w B K
     let V := volume prime v
     ∃ stage : SharedBankStage.Stage _ 142081 prime (copyOwners (v := v)),
-      stage.cost ≤ C*V + 661*(252*LeafCore.coreCost V (w*64)+1) ∧
+      stage.cost ≤ C*V + 661*(63*LeafCore.coreCost V (w*64)+1) ∧
       (∀ x (i : Fin 661), let A := registerChart w n i.val
         LabelPermutation.Transport v B w (fun g => g*(if enter then A.transpose else A))
           (ext (x (ownerTape n r d i))) (ext (stage.transform x (ownerTape n r d i)))) ∧
@@ -109,7 +109,7 @@ theorem borrowedScatter_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin
     let W := B*prime^(64*(w*64))*K
     let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
     ∃ stage : SharedBankStage.Stage _ 142081 prime (copyOwners (v := v)),
-      stage.cost ≤ C*V + (2*(63*9+252*527)+1322*252)*LeafCore.coreCost V (w*64) +
+      stage.cost ≤ C*V + (2*(63*9+28*527)+1322*63)*LeafCore.coreCost V (w*64) +
         9*engine.time (copyChild w W) hs + 1333 ∧
       (∀ x g z (i : Fin 661), let frame := fun j => selectedFrame w (Frames.beforeScatter j)
         borrowedRead n r d g z (stage.transform x) i.val = frame i.val (FramedCircuit.moduleRun

@@ -1046,7 +1046,7 @@ theorem compiledNode_parentCost [M8.Machine.Net] (engine : CopyTranspose := Copy
         ∀ i x, (∀ k, IdleTransport i k w B K (fun t => x (idleTape i k) (Fin.cast size t))
           (fun t => (idle i).transform x (idleTape i k) (Fin.cast size t))) ∧
           ∀ j, (∀ k, j ≠ idleTape i k) → (idle i).transform x j = x j := by
-  exact compiledNode_cost_of_sweeps engine (2*(63*9+252*527)) (fun w B spectators inv =>
+  exact compiledNode_cost_of_sweeps engine (2*(63*9+28*527)) (fun w B spectators inv =>
     ∀ n, ∃ run : (Fin 32 × Fin 5) → (Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*spectators)) → ZMod 2) → (Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*spectators)) → ZMod 2),
           (∀ k x, InvocationEffect n k.1 k.2 w B spectators x (run k x)) ∧
           ∀ x, (inv n).transform x = stageRuns.foldl (fun y k => run k y) x)
