@@ -168,6 +168,24 @@ theorem scheduledBillPerVolume (node : Descriptor) (width : 64 ∣ node.width)
   rw [← size]
   ring_nf
 
+/-- A local cost at packed width and volume meets the parent-width toll
+used by the variable-width recurrence. -/
+theorem packedCost_le_parent [M8.Machine.Net] (node : Descriptor) (w m : ℕ)
+    (width : node.width = 64*w) (size : m*142080 = volume prime node)
+    (D cost : ℝ) (hD : 0 ≤ D)
+    (paid : cost ≤ D*m*(w : ℝ)^M8.Machine.BudgetBound.tau) :
+    cost ≤ (D/142080)*(node.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime node := by
+  have hw : w ≤ node.width := by omega
+  have power := Real.rpow_le_rpow (Nat.cast_nonneg w) (show (w : ℝ) ≤ node.width by exact_mod_cast hw)
+    M8.Machine.BudgetBound.exponent_range.1.le
+  have vol : (m : ℝ)*142080 = volume prime node := by exact_mod_cast size
+  apply paid.trans
+  rw [← vol]
+  calc
+    _ ≤ D*m*(node.width : ℝ)^M8.Machine.BudgetBound.tau :=
+      mul_le_mul_of_nonneg_left power (mul_nonneg hD (Nat.cast_nonneg _))
+    _ = _ := by ring
+
 /-- All nine sweeps, idle intervals, and scalar handoffs cost at most a
 fixed multiple of the packed stage volume times the leaf width power. -/
 theorem alignedLocalCost_bound [M8.Machine.Net] (base nt : ℕ) (rate : Fin 9 → ℝ) :
@@ -251,5 +269,86 @@ theorem stoppedAlignedNode [M8.Machine.Net] {U : Type} :
     (fun d v => ⌊(rate*(d : ℝ)^M8.Machine.BudgetBound.tau)*v⌋₊)
   rw [← costs]
   simpa only [budget,ite_self,Finset.sum_const,Finset.card_univ,Fintype.card_fin,smul_eq_mul] using run
+
+/-- Execute an aligned node with every child stopped. Charge local work at parent width and volume. -/
+theorem stoppedAlignedNode_bound [M8.Machine.Net] {U : Type} :
+    ∃ (states : ℕ) (rate : ℝ), ∀ {Q : ℕ}, states ≤ Q →
+      ∃ D : ℝ, 0 ≤ D ∧ ∀ (node : Descriptor) (h B groups : ℕ),
+      node.width = 64*(h+1) → node.rows = 142080*(142080*groups) →
+      node.beforeH = B*prime^(64*((h+1)*64)) →
+      let w := h+1
+      let rows := 142080*groups
+      let K := node.beforeRows*rows*node.between*node.afterD
+      0 < B → 0 < K → ({node with rows := rows} : Descriptor).Positive →
+      let leafBill := ∑ i : Fin nodeChildren5.length, let child := scheduledChild prime node i
+        ⌊rate*(child.width : ℝ)^M8.Machine.BudgetBound.tau*(volume prime child : ℕ)⌋₊
+      ∃ localCost : ℕ, (localCost : ℝ) ≤ D*(node.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime node ∧
+        let roleVolume := volume prime node / 142080
+        PackedWindowHandoff U Q roleVolume (packedChildOutput w roleVolume) (localCost+leafBill) := by
+  obtain ⟨states,base,nt,rate,C,build⟩ := stoppedAlignedNode (U := U)
+  refine ⟨states,rate,?_⟩
+  intro Q cap
+  obtain ⟨coeff,execute⟩ := build cap
+  let stageRate := fun i => C+|stagePackingRate i+(stageRuns.map (coeff i)).sum|
+  obtain ⟨D,localBound⟩ := alignedLocalCost_bound base nt stageRate
+  refine ⟨|D|/142080,by positivity,?_⟩
+  intro node h B groups width split label w rows K hB hK positive leafBill
+  let W := B*prime^(64*(w*64))*(node.beforeRows*groups*node.between*node.afterD)
+  let V := (prime^w)^128*W
+  let m := (prime^w)^128*(W*142080)
+  have run := execute node h B groups width split label hB hK positive
+  have size : m*142080 = volume prime node := by
+    simpa only [label] using alignedPackedVolume node groups w width split
+  have packed : V*142080 = m := by dsimp only [V,m]; exact Nat.mul_assoc _ _ _
+  have volumePos : 0 < volume prime node := by
+    obtain ⟨ha,hr,_,hc,he⟩ := positive
+    have hRows : 0 < node.rows := split ▸ Nat.mul_pos (by decide) hr
+    have hLabel : 0 < node.beforeH := label ▸ Nat.mul_pos hB (pow_pos Shared50ModularControl.prime_prime.pos _)
+    change 0 < node.beforeRows at ha
+    change 0 < node.between at hc
+    change 0 < node.afterD at he
+    dsimp only [volume]
+    have hp := Shared50ModularControl.prime_prime.pos
+    positivity
+  have hm : 0 < m := Nat.pos_of_mul_pos_right (size.symm ▸ volumePos)
+  have hV : V ≤ m := by omega
+  have paid := localBound m V w hm hV (Nat.succ_pos h)
+  refine ⟨_,packedCost_le_parent node w m width size |D| _ (abs_nonneg _) (paid.trans
+    (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right (le_abs_self D) (Nat.cast_nonneg _))
+      (Real.rpow_nonneg (Nat.cast_nonneg _) _))),?_⟩
+  have reorder (s i l k : ℕ) : s+i+l+k+2 = (s+i+k+2)+l := by omega
+  have roleVolume : volume prime node / 142080 = m := by rw [← size, Nat.mul_div_cancel _ (by decide)]
+  dsimp only [leafBill]
+  rw [roleVolume]
+  rw [scheduledRankBill node w width ⟨_,split⟩ (fun width size =>
+    ⌊rate*(width : ℝ)^M8.Machine.BudgetBound.tau*size⌋₊)]
+  exact (congrArg (PackedWindowHandoff U Q m (packedChildOutput w m))
+    (reorder _ _ _ _)).mp run
+
+/-- Root stock supplies the local alignment wherever the recursion reaches an
+active node. At its last level, charge the leaf execution on each actual child. -/
+theorem stoppedPathNode [M8.Machine.Net] {U : Type} :
+    ∃ (states : ℕ) (rate : ℝ), ∀ {Q : ℕ}, states ≤ Q →
+      ∃ D : ℝ, 0 ≤ D ∧ ∀ (root : Descriptor) (depth cutoff blocks : ℕ),
+      root.Positive → 0 < root.width → 64^depth ∣ root.width →
+      142080^(depth+1) ∣ root.rows → root.beforeH = blocks*prime^(64*root.width) →
+      root.width*42^depth ≤ cutoff*64^depth → ∀ path : List (Fin nodeChildren5.length),
+      let node := path.foldl (scheduledChild prime) root
+      cutoff < node.width →
+      let m := volume prime node / 142080
+      let leafBill := ∑ i : Fin nodeChildren5.length, let child := scheduledChild prime node i
+        ⌊rate*(child.width : ℝ)^M8.Machine.BudgetBound.tau*(volume prime child : ℕ)⌋₊
+      ∃ localCost : ℕ, (localCost : ℝ) ≤ D*(node.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime node ∧
+        PackedWindowHandoff U Q m (packedChildOutput (node.width/64) m) (localCost+leafBill) := by
+  obtain ⟨states,rate,build⟩ := stoppedAlignedNode_bound (U := U)
+  refine ⟨states,rate,?_⟩
+  intro Q cap
+  obtain ⟨D,hD,run⟩ := build cap
+  refine ⟨D,hD,?_⟩
+  intro root depth cutoff blocks pos live widths stock labels stop path node active
+  obtain ⟨h,groups,B,width,rows,label,hB,hK,positive⟩ :=
+    activeFlatDimensions root depth cutoff blocks pos live widths stock labels stop path active
+  have atom : node.width/64 = h+1 := by rw [width,Nat.mul_div_cancel_left _ (by decide)]
+  simpa only [atom] using run node h B groups width rows label hB hK positive
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
