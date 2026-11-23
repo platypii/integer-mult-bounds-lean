@@ -85,6 +85,20 @@ theorem deferD (x : ℕ → ZMod 2) :
 private theorem dHelperSources : sectionD.all (fun g => g.sources.all (fun i => decide (222 ≤ i ∧ i < 661))) = true := by
   decide +kernel
 
+/-- The increment at a zero accumulator depends only on the 439 helpers.
+Their values may be taken from any bank that agrees there. -/
+theorem d_accumulator (x acc : ℕ → ZMod 2) (i : ℕ) (zero : acc i = 0)
+    (helpers : ∀ j, 222 ≤ j → j < 661 → acc j = x j) :
+    Circuit.run (sectionD.map RawGate.toCircuit) x i - x i =
+      Circuit.run (sectionD.map RawGate.toCircuit) acc i := by
+  let delta := fun j => x j - acc j
+  have shift : x = fun j => acc j + delta j := by funext j; dsimp [delta]; abel
+  have reads g (hg : g ∈ sectionD) j (hj : j ∈ g.sources) : delta j = 0 := by
+    have h := of_decide_eq_true (List.all_eq_true.mp (List.all_eq_true.mp dHelperSources g hg) j hj)
+    exact sub_eq_zero.mpr (helpers j h.1 h.2).symm
+  conv_lhs => lhs; rw [shift,carry sectionD delta reads acc]
+  simp [delta,zero]
+
 /-- The suffix restores every helper used by D. Consequently D itself can run
 last, reading the current registers and requiring no saved helper values. -/
 theorem run_D_last (stored : Fin 661 → ZMod 2) :
