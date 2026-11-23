@@ -73,12 +73,11 @@ theorem alignedPackedNodeFamily {U Config : Type} :
     sweep idle sweeps (by
       intro i
       choose tapes P slot inner code seed each using workers i
-      obtain ⟨H,host,worker,src,dst,prep⟩ := uniformRemainderWindow (U := U) i tapes P slot inner code
+      obtain ⟨H,host,worker,src,dst,origin,prep⟩ := uniformRemainderWindow (U := U) i tapes P slot inner code
       have installed c := prep (w c) (W c) (fun k => seed k c) (dispatch c) (fun k => each k c)
-      choose initial execute using installed
-      refine ⟨_,H,host,worker,src,dst,initial,?_⟩
+      refine ⟨_,H,host,worker,src,dst,fun c => idleWindowSeed origin (fun k => seed k c),?_⟩
       intro c
-      simpa only [idle,overhead,V,Equiv.refl_apply,Fin.cast_refl,id_eq,Nat.add_assoc] using execute c)
+      simpa only [idle,overhead,V,Equiv.refl_apply,Fin.cast_refl,id_eq,Nat.add_assoc] using installed c)
   refine ⟨P,T,body,code,src,dst,seed,?_⟩
   intro c x u S words fresh
   obtain ⟨z,F,n,y,exec,paid,rest⟩ := run c x u S words fresh

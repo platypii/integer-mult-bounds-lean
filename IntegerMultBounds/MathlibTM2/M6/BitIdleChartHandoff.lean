@@ -38,7 +38,7 @@ theorem uniformRemainderWindow {U : Type} {Q : ℕ} (i : Fin 9) :
     ∀ (T : Job → ℕ) (P : Job → Type) (slot : ∀ k, Fin (T k))
       (inner : ∀ k, P k → Pr (P k) (T k) Q prime U) (code : ∀ k, Pr (P k) (T k) Q prime U),
     ∃ (H : ℕ) (host : (Σ k, P k) → Pr (Σ k, P k) H Q prime U) (worker : Pr (Σ k, P k) H Q prime U)
-      (src dst : Fin (142081+2) ↪ Fin H),
+      (src dst : Fin (142081+2) ↪ Fin H) (origin : Fin H → Option (Σ k, Fin (T k))),
     ∀ w W, let V := (prime^w)^128*W
       ∀ (seed : ∀ k, Stacks (T k) prime) (budget : Fin nodeChildren5.length → ℕ),
       (∀ k (word : Fin V → ZMod 2) v (D : Stacks (T k) prime), D.L (slot k) = [] →
@@ -48,22 +48,36 @@ theorem uniformRemainderWindow {U : Type} {Q : ℕ} (i : Fin 9) :
           (∀ js : List _, js.Nodup → n+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js D+
             budget (idleDirectoryIndex (i,idleCopyIndex k))) ∧ z.user = v.user ∧
           Fallback.RecordPayload (slot k) (fun _ => blank) 0 y F ∧ parentIntervalRead i k.2 w W word y) →
-      ∃ prepared, PackedPieceHandoffWithCharge cleanupWeight V (fun x y => ∀ j : Fin W,
+      let prepared := idleWindowSeed origin seed
+      PackedPieceHandoffWithCharge cleanupWeight V (fun x y => ∀ j : Fin W,
         let addr := fun z => flatWindowEquiv w W (windowState w z,j)
         readRoles addr y = (Piece.remainder i.val).run (readRoles addr x))
         host worker src dst prepared
           ((∑ j : Fin idleCopies.length, budget (idleDirectoryIndex (i,j)))+1+(142081*(10*V+10)+1)) := by
   intro Job T P slot inner code
-  obtain ⟨H,fan,host,program,allocate⟩ := uniformIdleWindowWithCharge i cleanupWeight T P slot inner code
-  obtain ⟨worker,pack⟩ := uniformWordStageWithCharge fan host program
+  obtain ⟨H,fan,host,program,source,allocate⟩ := uniformIdleWindowWithCharge i cleanupWeight T P slot inner code
+  obtain ⟨worker,pack⟩ := flatWordStageWithSeedCharge fan host program
   let place := SweepFile.Exit.chart 0 H
-  refine ⟨_,fun f => embProg place id (host f),worker,fan.trans place,returnedFan fan,?_⟩
+  classical
+  let origin := Function.extend place source (fun _ => none)
+  refine ⟨_,fun f => embProg place id (host f),worker,fan.trans place,returnedFan fan,origin,?_⟩
   intro w W V seed budget each
   let price := fun k => budget (idleDirectoryIndex (i,idleCopyIndex k))
-  obtain ⟨initial,run⟩ := allocate seed price (fun k => parentIntervalRead i k.2 w W) each
+  let initial := idleWindowSeed source seed
+  have run := allocate seed price (fun k => parentIntervalRead i k.2 w W) each
+  have prepared : idleWindowSeed origin seed = flatStageSeed initial := by
+    have lookup (f : (Σ k, Fin (T k)) → List (Fin (prime+4))) (j) :
+        (origin j).elim [] f = Function.extend place (fun k => (source k).elim [] f) (fun _ => []) j := by
+      by_cases hit : ∃ k, place k = j
+      · obtain ⟨k,rfl⟩ := hit
+        simp [origin,place.injective.extend_apply]
+      · simp [origin,Function.extend,hit]
+    exact congrArg₂ (fun l r => Stacks.mk [] [] l r)
+      (funext (lookup (fun p => (seed p.1).L p.2))) (funext (lookup (fun p => (seed p.1).R p.2)))
   have ledger := sumIndexed idleCopies idleCopyIndex idleCopyIndex_at (fun j => budget (idleDirectoryIndex (i,j)))
   change (idleCopies.map price).sum = _ at ledger
   rw [← ledger]
+  rw [prepared]
   apply pack initial
   intro x u S words fresh
   obtain ⟨F,z,n,y,ran,paid,user,out,acts,off⟩ := run x S u words.helperFan

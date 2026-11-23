@@ -9,16 +9,23 @@ namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host
 open Shared50ModularControl (prime)
 
-/-- A window host made from the caller tapes and one block per copy. The
-initial stacks are the caller's on shared owners and the worker seed elsewhere. -/
+/-- Each private tape takes its initial stack from one occurrence. Other
+tapes start blank and receive their live owner words at entry. -/
+def idleWindowSeed {ι : Type} {T : ι → ℕ} {H A : ℕ}
+    (origin : Fin H → Option (Σ i, Fin (T i))) (seed : ∀ i, Stacks (T i) A) : Stacks H A :=
+  ⟨[],[],fun j => (origin j).elim [] (fun p => (seed p.1).L p.2),
+    fun j => (origin j).elim [] (fun p => (seed p.1).R p.2)⟩
+
+/-- A window host made from the caller tapes and one block per copy.
+Its fixed layout identifies the source of each private tape. -/
 theorem idleWorkspace {ι : Type} [Fintype ι] {B A : ℕ} (T : ι → ℕ)
     (owner : ι ↪ Fin B) (slot : ∀ i, Fin (T i)) :
     ∃ (H : ℕ) (caller : Fin B ↪ Fin H) (place : ∀ i, Fin (T i) ↪ Fin H),
       (∀ i, place i (slot i) = caller (owner i)) ∧
       (∀ i t, t ≠ owner i → ∀ k, place i k ≠ caller t) ∧
       (∀ i j, i ≠ j → ∀ k l, place i k ≠ place j l) ∧
-      ∀ (S : Stacks B A) (seed : ∀ i, Stacks (T i) A),
-      ∃ F : Stacks H A, embStk caller F = S ∧
+      ∃ origin : Fin H → Option (Σ i, Fin (T i)), ∀ seed : ∀ i, Stacks (T i) A,
+        let F := idleWindowSeed origin seed
         ∀ i k, k ≠ slot i → F.L (place i k) = (seed i).L k ∧ F.R (place i k) = (seed i).R k := by
   classical
   let Bank := Fin B ⊕ (Σ i, Fin (T i))
@@ -40,14 +47,9 @@ theorem idleWorkspace {ι : Type} [Fintype ι] {B A : ℕ} (T : ι → ℕ)
     have hit := number.injective eq
     by_cases hk : k = slot i <;> by_cases hl : l = slot j <;>
       simp_all [route,owner.injective.eq_iff] <;> first | exact ne (owner.injective (Sum.inl.inj hit)) | exact ne (congrArg Sigma.fst (Sum.inr.inj hit))
-  · intro S seed
-    let assemble (f : Fin B → List (Fin (A+4))) (g : ∀ i, Fin (T i) → List (Fin (A+4))) :=
-      fun j => Sum.elim f (fun p => g p.1 p.2) (number.symm j)
-    refine ⟨⟨S.inp,S.out,assemble S.L (fun i => (seed i).L),assemble S.R (fun i => (seed i).R)⟩,?_,?_⟩
-    · cases S
-      simp [embStk,assemble,base,Function.comp_def]
-    · intro i k ne
-      simp [place,route,ne,assemble]
+  · refine ⟨fun j => (number.symm j).elim (fun _ => none) some,?_⟩
+    intro seed F i k ne
+    simp [F,idleWindowSeed,place,route,ne]
 
 /-- Allocate the copy programs and their procedure labels together. Starting
 from exact owner words, each program receives its own seed outside its target. -/
@@ -57,7 +59,7 @@ theorem uniformIdleWindowWithCharge {Q : ℕ} {U : Type} (i : Fin 9)
     ∀ (T : Job → ℕ) (P : Job → Type) (slot : ∀ k, Fin (T k))
       (inner : ∀ k, P k → Pr (P k) (T k) Q prime U) (code : ∀ k, Pr (P k) (T k) Q prime U),
     ∃ (H : ℕ) (fan : Fin (142081+2) ↪ Fin H) (host : (Σ k, P k) → Pr (Σ k, P k) H Q prime U)
-      (program : Pr (Σ k, P k) H Q prime U),
+      (program : Pr (Σ k, P k) H Q prime U) (origin : Fin H → Option (Σ k, Fin (T k))),
     ∀ {V : ℕ} (seed : ∀ k, Stacks (T k) prime) (price : Job → ℕ)
       (effect : Job → (Fin V → ZMod 2) → (Fin V → ZMod 2) → Prop),
     (∀ k word v (D : Stacks (T k) prime), D.L (slot k) = [] →
@@ -65,7 +67,7 @@ theorem uniformIdleWindowWithCharge {Q : ℕ} {U : Type} (i : Fin 9)
       (∀ j, j ≠ slot k → D.L j = (seed k).L j ∧ D.R j = (seed k).R j) →
       ∃ z F n y, Exec (inner k) (code k) (mk v D) n (mk z F) ∧ (∀ js : List (Fin (T k)), js.Nodup → n+tapeCharge weight js F ≤ tapeCharge weight js D+price k) ∧
         z.user = v.user ∧ Cover.Fallback.RecordPayload (slot k) (fun _ => blank) 0 y F ∧ effect k word y) →
-    ∃ initial : Stacks H prime,
+    let initial := idleWindowSeed origin seed
     ∀ (x : Fin 142081 → Fin V → ZMod 2) (D : Stacks H prime)
       (u : HS H Q prime U), HelperFan fan x D →
       (∀ k, let t := fan ((idleTape i k).castAdd 2)
@@ -78,14 +80,13 @@ theorem uniformIdleWindowWithCharge {Q : ℕ} {U : Type} (i : Fin 9)
   intro Job T P slot inner code
   let owner : Job ↪ Fin (142081+2) :=
     (⟨idleTape i,idleTape_injective i⟩ : Job ↪ Fin 142081).trans (Fin.castAddEmb 2)
-  obtain ⟨H,fan,place,shared,outside,apart,prepare⟩ := idleWorkspace (A := prime) T owner slot
+  obtain ⟨H,fan,place,shared,outside,apart,origin,prepare⟩ := idleWorkspace (A := prime) T owner slot
   let host : (Σ k, P k) → Pr (Σ k, P k) H Q prime U :=
     fun p => embProg (place p.1) (Sigma.mk p.1) (inner p.1 p.2)
-  refine ⟨H,fan,host,Prog.seqList (idleCopies.map fun k => embProg (place k) (Sigma.mk k) (code k)),?_⟩
+  refine ⟨H,fan,host,Prog.seqList (idleCopies.map fun k => embProg (place k) (Sigma.mk k) (code k)),origin,?_⟩
   intro V seed price effect run
-  obtain ⟨initial,_,privateTapes⟩ := prepare ⟨[],[],fun _ => [],fun _ => []⟩ seed
-  refine ⟨initial,?_⟩
-  intro x D u ready words stock
+  have privateTapes := prepare seed
+  intro initial x D u ready words stock
   obtain ⟨y,F,z,n,exec,paid,user,final,acts,off⟩ := placedIdleWindowWithCharge i weight host fan x D u ready
     T P place slot inner Sigma.mk code price effect shared outside apart (fun _ _ => rfl) (by
       intro k v E keep
@@ -131,9 +132,8 @@ theorem allocatedIdleWindowWithCharge {Q V : ℕ} {U : Type} (i : Fin 9)
         (∀ k, effect k (x (idleTape i k)) (y (idleTape i k))) ∧
         ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j := by
   intro Job T P slot inner code seed price effect run
-  obtain ⟨H,fan,host,program,prepare⟩ := uniformIdleWindowWithCharge i weight T P slot inner code
-  obtain ⟨initial,execute⟩ := prepare seed price effect run
-  exact ⟨H,fan,host,program,initial,execute⟩
+  obtain ⟨H,fan,host,program,origin,prepare⟩ := uniformIdleWindowWithCharge i weight T P slot inner code
+  exact ⟨H,fan,host,program,idleWindowSeed origin seed,prepare seed price effect run⟩
 
 theorem allocatedIdleWindow_exec {Q V : ℕ} {U : Type} (i : Fin 9) :
     let Job := (Fin 32 × Fin 5) × Fin 222

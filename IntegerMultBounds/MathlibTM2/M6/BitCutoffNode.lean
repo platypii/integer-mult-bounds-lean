@@ -226,14 +226,14 @@ theorem selectedCutoffNode [M8.Machine.Net] (P U Config : Type) : CutoffNodeExec
       intro c
       exact stageCast n (input c).stageTail _ (localWork n (input c).w) (run c)) (by
       intro n
-      obtain ⟨H,S,table,program,src,dst,step⟩ := idle idleBody Sum.inl (fun _ => rfl) n (.inr (idleEntry n))
+      obtain ⟨H,S,table,program,src,dst,origin,step⟩ := idle idleBody Sum.inl (fun _ => rfl) n (.inr (idleEntry n))
       have prepared c := step (input c).root (input c).path (input c).depth (input c).b (input c).cutoff
         (input c).w (input c).groups (input c).levels (input c).base (input c).rootWidth (input c).stop
         (input c).active (input c).width (input c).rows (input c).idlePositive (fun k => budget c k.val) (idleRec c n)
-      choose initial run using prepared
-      refine ⟨S,H,table,program,src,dst,initial,?_⟩
+      refine ⟨S,H,table,program,src,dst,fun c => remainderDispatchSeed origin (input c).w
+        (input c).idleWidth (input c).root.width.size (input c).cutoff,?_⟩
       intro c
-      have h := run c
+      have h := prepared c
       rw [Nat.add_assoc _ 1] at h
       exact h)
   refine ⟨R,T,host,program,src',dst',seed,?_⟩

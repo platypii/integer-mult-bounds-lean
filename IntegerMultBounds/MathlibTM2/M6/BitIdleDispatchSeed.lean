@@ -9,13 +9,23 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover.Fallb
 open Shared50ModularControl (prime)
 open IntervalDescriptor RecursiveInterchangeLayout
 
+noncomputable def idleDispatchWord (w W L cutoff j : ℕ) : List (Fin (prime+4)) :=
+  let M := prime^(w+1)
+  if j = 2 then binSyms M.size M else if j = 28 then binSyms 1 1 else
+  if j = 53 then binSyms W.size W else if j = 71 then List.replicate (w+1) blank else
+  if j = 5 then List.replicate w blank else if j = 6 then binSyms L cutoff else []
+
+noncomputable def idleDispatchStacks (N w W L cutoff : ℕ) : Stacks (72+N) prime :=
+  ⟨[],[],fun _ => [],fun j => idleDispatchWord w W L cutoff j.val⟩
+
 /-- Place the cutoff comparison on ordinary registers 5 through 14. The
 owner word on register 24 can change independently of all the private inputs. -/
 theorem idleDispatchSeed (N : ℕ) :
     let bank := Fin.castAddEmb N (n := 72)
     ∃ cmp : Fin 10 ↪ Fin (72+N), cmp 1 = bank 6 ∧ ∀ w W L cutoff : ℕ,
     let M := prime^(w+1)
-    ∃ seed : Stacks (72+N) prime, ∀ S : Stacks (72+N) prime,
+    let seed := idleDispatchStacks N w W L cutoff
+    ∀ S : Stacks (72+N) prime,
       (∀ j, j ≠ bank 24 → S.L j = seed.L j ∧ S.R j = seed.R j) →
       S.R (bank 2) = binSyms M.size M ∧ S.R (bank 28) = binSyms 1 1 ∧
       S.R (bank 53) = binSyms W.size W ∧ (S.R (bank 71)).length = w+1 ∧
@@ -28,24 +38,20 @@ theorem idleDispatchSeed (N : ℕ) :
   let cmp := ((Fin.natAddEmb 5 (m := 10)).trans (Fin.castLEEmb (by decide : 15 ≤ 72))).trans bank
   refine ⟨cmp,rfl,?_⟩
   intro w W L cutoff M
-  let contents (j : ℕ) : List (Fin (prime+4)) :=
-    if j = 2 then binSyms M.size M else if j = 28 then binSyms 1 1 else
-    if j = 53 then binSyms W.size W else if j = 71 then List.replicate (w+1) blank else
-    if j = 5 then List.replicate w blank else if j = 6 then binSyms L cutoff else []
-  refine ⟨⟨[],[],fun _ => [],fun j => contents j.val⟩,?_⟩
-  intro S frame
+  let contents := idleDispatchWord w W L cutoff
+  intro seed S frame
   have get (j : Fin (72+N)) (ne : j.val ≠ 24) : S.L j = [] ∧ S.R j = contents j.val :=
     frame j (fun h => ne (congrArg Fin.val h))
   have atReg (j : Fin 72) (ne : j.val ≠ 24) : S.R (bank j) = contents j.val := (get _ ne).2
   have emptyAt (n : ℕ) (h : n ≠ 2 ∧ n ≠ 28 ∧ n ≠ 53 ∧ n ≠ 71 ∧ n ≠ 5 ∧ n ≠ 6) : contents n = [] := by
-    simp [contents,h.1,h.2.1,h.2.2.1,h.2.2.2.1,h.2.2.2.2.1,h.2.2.2.2.2]
+    simp [contents,idleDispatchWord,h.1,h.2.1,h.2.2.1,h.2.2.2.1,h.2.2.2.2.1,h.2.2.2.2.2]
   refine ⟨(atReg 2 (by decide)).trans rfl,(atReg 28 (by decide)).trans rfl,(atReg 53 (by decide)).trans rfl,?_,?_,
     (get (bank 59) (by change 59 ≠ 24; decide)).1,?_,?_,?_,(get (cmp 1) (by change 6 ≠ 24; decide)).2.trans rfl,?_⟩
   · rw [atReg 71 (by decide)]
     exact List.length_replicate
   · intro j lo hi
     rw [atReg j (by omega)]
-    simp [contents,show j.val ≠ 71 by omega,show j.val ≠ 53 by omega,show j.val ≠ 28 by omega,
+    simp [contents,idleDispatchWord,show j.val ≠ 71 by omega,show j.val ≠ 53 by omega,show j.val ≠ 28 by omega,
       show j.val ≠ 2 by omega,show j.val ≠ 5 by omega,show j.val ≠ 6 by omega]
   · intro i
     have range : (bank (descriptorPorts i)).val = 33+i.val := rfl
@@ -68,6 +74,20 @@ theorem idleDispatchSeed (N : ℕ) :
     apply emptyAt
     omega
 
+/-- These are all the nonempty registers in a prepared remainder occurrence. -/
+def idleSeedPorts : Fin 6 ↪ Fin 72 := ⟨![2,28,53,71,5,6],by decide⟩
+
+private theorem idleDispatchWord_blank (w W L cutoff j : ℕ)
+    (outside : ∀ i, j ≠ (idleSeedPorts i).val) : idleDispatchWord w W L cutoff j = [] := by
+  have ne {r : ℕ} (i : Fin 6) (eq : (idleSeedPorts i).val = r) : j ≠ r := eq ▸ outside i
+  simp [idleDispatchWord,ne (r := 2) 0 rfl,ne (r := 28) 1 rfl,ne (r := 53) 2 rfl,ne (r := 71) 3 rfl,ne (r := 5) 4 rfl,ne (r := 6) 5 rfl]
+
+private theorem idleDispatchSeed_cost (w W L cutoff : ℕ) :
+    seedLoadBill (fun i => idleDispatchWord w W L cutoff (idleSeedPorts i).val) =
+      8*((prime^(w+1)).size+W.size+2*w+L)+53 := by
+  simp [seedLoadBill,Fin.sum_univ_succ,idleSeedPorts,idleDispatchWord,length_binSyms]
+  omega
+
 /-- Run an aligned idle directory occurrence with its payload as the only shared tape. -/
 theorem seededIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : columnCapacity ≤ Q)
     (mergeCap : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
@@ -87,7 +107,7 @@ theorem seededIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : col
       let e := idleInterval i idleCopies[j.val].2
       let lane := phaseIntervalChild (e.1+1) (e.2+1) a W 64
       let child := scheduledChild prime node (idleDirectoryIndex (i,j))
-      0 < W → ∃ seed : Stacks (72+N) prime,
+      0 < W → let seed := idleDispatchStacks N w W root.width.size cutoff
       ∀ (word : Fin ((prime^a)^128*(W*142080)) → ZMod 2) u S,
       S.L (bank 24) = [] → S.R (bank 24) = List.ofFn (fun k => SparseRoleCircuit.encode (word k)) →
       (∀ j, j ≠ bank 24 → S.L j = seed.L j ∧ S.R j = seed.R j) → ∀ recursiveBudget,
@@ -104,9 +124,8 @@ theorem seededIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : col
   refine ⟨code,?_⟩
   intro root path depth b cutoff w groups levels base alignment stop node a active width split W e lane child positive
   obtain ⟨_,_,_,call⟩ := run root path depth b cutoff w groups levels base alignment stop active width split positive
-  obtain ⟨seed,ready⟩ := prepare w W root.width.size cutoff
-  refine ⟨seed,?_⟩
-  intro word u S left right fresh budget recurse
+  have ready := prepare w W root.width.size cutoff
+  intro seed word u S left right fresh budget recurse
   obtain ⟨radix,unit,suffix,atom,scratch,tl,headers,unused,clock,stored,free⟩ := ready S fresh
   have payload : RecordPayload (bank 24) (fun _ => blank) 0 word S := by
     have encode (x : ZMod 2) : RadixToBinary.binaryEncoding.encode (SparseRoleCircuit.encode (a := 0) x) =
@@ -118,6 +137,88 @@ theorem seededIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : col
     budget clock stored free recurse
   exact ⟨z,F,t,y,exec,user,out,reads,paid⟩
 
+/-- Runtime contents of a complete remainder bank. Its tape layout is fixed
+when the program is compiled, independently of the node's dimensions. -/
+noncomputable def remainderDispatchSeed {H N : ℕ} (origin : Fin H → Option (Fin (72+N)))
+    (w W L cutoff : ℕ) : Stacks H prime :=
+  ⟨[],[],fun _ => [],fun j => (origin j).elim [] (fun k => idleDispatchWord w W L cutoff k.val)⟩
+
+private theorem seedLoadBill_le {k H price : ℕ} (slots : Fin k ↪ Fin H)
+    (words : Fin k → List (Fin (prime+4))) (each : ∀ i, 8*(words i).length+6 ≤ price) :
+    seedLoadBill words ≤ H*price+1 := by
+  have sum := Finset.sum_le_sum (fun i (_ : i ∈ Finset.univ) => each i)
+  simp only [Finset.sum_const,Finset.card_univ,Fintype.card_fin,nsmul_eq_mul] at sum
+  have count : k ≤ H := by simpa using Fintype.card_le_of_injective slots slots.injective
+  exact Nat.add_le_add_right (sum.trans (Nat.mul_le_mul_right price count)) 1
+
+/-- Load the private tapes of the compiled remainder. Live input tapes and
+the master words are preserved, including when many copies read the same master. -/
+theorem loadRemainderDispatchSeed {P U : Type} {H N T Q : ℕ} (body : P → Pr P T Q prime U)
+    (origin : Fin H → Option (Fin (72+N))) (src : Fin (142081+2) ↪ Fin H)
+    (bank : Fin H ↪ Fin T) (master : Fin 6 → Fin T) (tmp saved : Fin T)
+    (apart : ∀ j i, bank j ≠ master i)
+    (regs : ∀ i j, [master i,bank j,tmp,saved].Nodup) :
+    ∃ code : Pr P T Q prime U, ∀ w W L cutoff u (S : Stacks T prime),
+      let seed := remainderDispatchSeed origin w W L cutoff
+      (∀ i, S.R (master i) = idleDispatchWord w W L cutoff (idleSeedPorts i).val) →
+      (∀ j, (∀ i, src i ≠ j) → S.L (bank j) = [] ∧ S.R (bank j) = []) →
+      S.R tmp = [] → S.R saved = [] →
+      ∃ z F n, Exec body code (mk u S) n (mk z F) ∧ z.user = u.user ∧
+        CleanupBound S F n (H*(8*((prime^(w+1)).size+W.size+2*w+L)+53)+1) ∧
+        (∀ j, (∀ i, src i ≠ j) → F.L (bank j) = seed.L j ∧ F.R (bank j) = seed.R j) ∧
+        (∀ i, F.L (bank (src i)) = S.L (bank (src i)) ∧ F.R (bank (src i)) = S.R (bank (src i))) ∧
+        ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  classical
+  let active j := (∀ i, src i ≠ j) ∧ ∃ i, (origin j).map Fin.val = some (idleSeedPorts i).val
+  let number := Fintype.equivFin {j // active j}
+  let slots := number.symm.toEmbedding.trans (Function.Embedding.subtype active)
+  have privateSlot i : active (slots i) := (number.symm i).property
+  let field i := (privateSlot i).2.choose
+  have atSlot i : (origin (slots i)).map Fin.val = some (idleSeedPorts (field i)).val := (privateSlot i).2.choose_spec
+  obtain ⟨code,load⟩ := installChildSeed body bank slots (master ∘ field) tmp saved
+    (fun i j => apart _ _) (fun i => regs _ _)
+  refine ⟨code,?_⟩
+  intro w W L cutoff u S seed words fresh ht hs
+  have read (j i) (hit : (origin j).map Fin.val = some (idleSeedPorts i).val) :
+      seed.R j = idleDispatchWord w W L cutoff (idleSeedPorts i).val := by
+    change (origin j).elim [] _ = _
+    cases h : origin j with
+    | none => simp [h] at hit
+    | some t => simp [h] at hit; simp [hit]
+  obtain ⟨z,R,n,run,user,paid,filled,off⟩ := load seed u S
+    (fun i => (words _).trans (read _ _ (atSlot i)).symm)
+    (fun i => (fresh _ (privateSlot i).1).2) ht hs
+  refine ⟨z,_,n,run,user,?_,?_,?_,?_⟩
+  · intro js nd
+    apply (paid js nd).trans
+    apply Nat.add_le_add_left
+    let price := 8*((prime^(w+1)).size+W.size+2*w+L)+53
+    have each i : 8*(seed.R (slots i)).length+6 ≤ price := by
+      rw [read _ _ (atSlot i)]
+      have h := Finset.single_le_sum (f := fun j => 8*(idleDispatchWord w W L cutoff (idleSeedPorts j).val).length+6)
+        (fun _ _ => Nat.zero_le _) (Finset.mem_univ (field i))
+      have bill := idleDispatchSeed_cost w W L cutoff
+      simp only [seedLoadBill] at bill
+      dsimp only [price]
+      omega
+    exact seedLoadBill_le slots _ each
+  · intro j priv
+    refine ⟨(fresh j priv).1,filled j (fun absent => ?_)⟩
+    rw [(fresh j priv).2]
+    change [] = (origin j).elim [] _
+    cases h : origin j with
+    | none => rfl
+    | some t =>
+      apply Eq.symm
+      apply idleDispatchWord_blank
+      intro i eq
+      have hit : active j := ⟨priv,i,by simp [h,eq]⟩
+      exact absent (number ⟨j,hit⟩) (by simp [slots])
+  · intro i
+    exact ⟨rfl,off _ (fun j => bank.injective.ne ((privateSlot j).1 i).symm)⟩
+  · intro j outside
+    exact ⟨rfl,off _ (fun i => outside _)⟩
+
 /-- Compile the remainder once. All its idle occurrences dispatch on their own
 widths, sharing the same recursive procedure and stopped-leaf table. -/
 theorem dispatchedRemainder [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : columnCapacity ≤ Q)
@@ -126,7 +227,7 @@ theorem dispatchedRemainder [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : co
     ∀ {P : Type} (body : P → Pr P (72+N) Q prime U) (leaf : Unit → P),
     (∀ f, body (leaf f) = embProg (Function.Embedding.refl _) leaf (table f)) →
     ∀ (i : Fin 9) (label : P), ∃ (H : ℕ) (R : Type) (host : R → Pr R H Q prime U) (code : Pr R H Q prime U)
-      (src dst : Fin (142081+2) ↪ Fin H),
+      (src dst : Fin (142081+2) ↪ Fin H) (origin : Fin H → Option (Fin (72+N))),
     ∀ (root : Descriptor) (path : List (Fin nodeChildren5.length)) (depth b cutoff w groups : ℕ),
       0 < depth → 0 < b → root.width = 64^depth*b → 42^depth*b ≤ cutoff →
       let node := path.foldl (scheduledChild prime) root
@@ -141,7 +242,8 @@ theorem dispatchedRemainder [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : co
       (∀ j : Fin idleCopies.length, let k := idleDirectoryIndex (i,j)
         let e := idleInterval i idleCopies[j.val].2
         cutoff < (child k).width → IntervalWorkerExec body label (phaseIntervalChild (e.1+1) (e.2+1) a W 64) a W (recursiveBudget k) (binSyms root.width.size cutoff)) →
-      ∃ seed, PackedPieceHandoffWithCharge cleanupWeight V (fun x y => ∀ j : Fin (W*142080),
+      let seed := remainderDispatchSeed origin w W root.width.size cutoff
+      PackedPieceHandoffWithCharge cleanupWeight V (fun x y => ∀ j : Fin (W*142080),
         let addr := fun z => flatWindowEquiv a (W*142080) (windowState a z,j)
         readRoles addr y = (Piece.remainder i.val).run (readRoles addr x))
         host code src dst seed ((∑ j : Fin idleCopies.length, budget (idleDirectoryIndex (i,j)))+1+(142081*(10*V+10)+1)) := by
@@ -152,14 +254,26 @@ theorem dispatchedRemainder [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : co
   let Job := (Fin 32 × Fin 5) × Fin 222
   have worker (k : Job) := build body leaf installed i (idleCopyIndex k) label
   let slot := (Fin.castAddEmb N (n := 72)) 24
-  obtain ⟨H,host,code,src,dst,assemble⟩ := uniformRemainderWindow i (fun _ => 72+N) (fun _ => P)
+  obtain ⟨H,host,code,src,dst,origin,assemble⟩ := uniformRemainderWindow i (fun _ => 72+N) (fun _ => P)
     (fun _ => slot) (fun _ => body) (fun k => (worker k).choose)
-  refine ⟨H,_,host,code,src,dst,?_⟩
+  refine ⟨H,_,host,code,src,dst,fun j => (origin j).map Sigma.snd,?_⟩
   intro root path depth b cutoff w groups levels base alignment stop node a active width split W V positive recursiveBudget child budget recurse
   have ready (k : Job) := (worker k).choose_spec root path depth b cutoff w groups levels base alignment stop active width split positive
-  apply assemble a (W*142080) (fun k => (ready k).choose) budget
+  let init := idleDispatchStacks N w W root.width.size cutoff
+  have eq : remainderDispatchSeed (fun j => (origin j).map Sigma.snd) w W root.width.size cutoff =
+      idleWindowSeed origin (fun _ => init) := by
+    apply congrArg₂ (fun l r => Stacks.mk [] [] l r)
+    · funext j
+      change [] = (origin j).elim [] _
+      cases origin j <;> rfl
+    · funext j
+      change ((origin j).map Sigma.snd).elim [] _ = (origin j).elim [] _
+      cases origin j <;> rfl
+  dsimp only
+  rw [eq]
+  apply assemble a (W*142080) (fun _ => init) budget
   intro k word v D left right fresh
-  obtain ⟨z,F,t,y,exec,user,record,reads,paid⟩ := (ready k).choose_spec word v D left right fresh
+  obtain ⟨z,F,t,y,exec,user,record,reads,paid⟩ := ready k word v D left right fresh
     (recursiveBudget (idleDirectoryIndex (i,idleCopyIndex k))) (recurse (idleCopyIndex k))
   exact ⟨z,F,t,y,exec,by simpa only [budget,child,node,Nat.add_assoc] using paid,user,record,by simpa only [idleCopyIndex_get] using reads⟩
 

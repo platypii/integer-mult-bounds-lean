@@ -93,10 +93,10 @@ theorem dispatchedNodeFamily [M8.Machine.Net] {U Config : Type} :
   obtain ⟨code,run⟩ := dispatch body leaf installed i (idleCopyIndex k) label
   have prepared c := run root (path c) depth b cutoff (w c) (groups c) levels base alignment stop
     (active c) (widths c) (rows c) (live c)
-  refine ⟨72+N,P,(Fin.castAddEmb N (n := 72)) 24,body,code,fun c => (prepared c).choose,?_⟩
+  refine ⟨72+N,P,(Fin.castAddEmb N (n := 72)) 24,body,code,fun c => idleDispatchStacks N (w c) (W c) root.width.size cutoff,?_⟩
   intro c word v D left right fresh
   let index := idleDirectoryIndex (i,idleCopyIndex k)
-  obtain ⟨z,F,t,y,exec,user,record,reads,paid⟩ := (prepared c).choose_spec word v D left right fresh
+  obtain ⟨z,F,t,y,exec,user,record,reads,paid⟩ := prepared c word v D left right fresh
     (recursiveBudget c index) (recurse c i (idleCopyIndex k))
   exact ⟨z,F,t,y,exec,by simpa only [bill,price,child,node,Nat.add_assoc] using paid,
     user,record,by simpa only [idleCopyIndex_get] using reads⟩
