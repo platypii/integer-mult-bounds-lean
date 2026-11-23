@@ -127,6 +127,53 @@ theorem inheritedReturnMerge_exec {P U : Type} {N Q price : ℕ} (lane : Descrip
     (embStk caller S) u S split ⟨v,D,k,exec,paid,user,owners,fun i =>
       keep (mergeSaved 142080 i) (mergeSaved_outside _ i)⟩
 
+/-- Return the packed child's owner rows through the same cyclic merger,
+retaining the splitter's saved source and two inner counters. -/
+theorem packedReturnMerge_exec {P U : Type} {N Q price w : ℕ} (lane : Descriptor) (width : lane.width = 64*w)
+    (positive : 0 < volume prime lane)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
+    {body : P → Pr P N Q prime U} {code src dst seed}
+    (child : PackedPieceHandoff (volume prime lane) (packedChildOutput w (volume prime lane))
+      body code src dst seed price) :
+    let T := intervalSplitTapes
+    let H := 142082+T+N
+    let caller := (Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)
+    ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) H Q prime U) (program : Pr (Empty ⊕ P) H Q prime U)
+      (bank : Fin T ↪ Fin H), bank 0 = caller 0 ∧
+    ∀ (target : ℤ → Fin (prime+4)) (data : Fin 142080 → Fin (volume prime lane) → ZMod 2) u S,
+      RepT (intervalOwnerBank target data) (embStk caller S).L (embStk caller S).R →
+      (∀ i : Fin 142082, let j := (i.castAdd T).castAdd N
+        S.L j = [] ∧ S.R j = []) →
+      (∀ i : Fin N, let j := i.natAdd (142082+T)
+        S.L j = seed.L i ∧ S.R j = seed.R i) →
+      let V := volume prime lane
+      let position := packedChildPosition lane rfl
+      let output := fun r => Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (data r ∘ position) ∘ position.symm
+      let word := fun k : Fin (V*142080) => let p := finProdFinEquiv.symm k
+                                            SparseRoleCircuit.encode (a := prime) (output p.2 p.1)
+      ∃ z F n, Exec host program (mk u S) n (mk z F) ∧
+        n ≤ (142081*(8*V+10)+1+price)+(149*(V*142080)*(T+5)+6) ∧ z.user = u.user ∧
+        RepT (intervalOwnerBank (putWord target 0 (List.ofFn word)) output) (embStk bank F).L (embStk bank F).R := by
+  intro T H caller
+  let live := intervalOwners 142080
+  obtain ⟨childBank,host,program,apart,run⟩ := runSplitChild child live
+  let saved := (mergeSaved 142080).trans caller
+  let returned := (childReturnFan dst).trans childBank
+  have separate (i j) : saved i ≠ returned j := (apart _ (mergeSaved_outside _ i) _).symm
+  let bank := returnedMergeBank saved returned separate
+  let merge : Pr (Empty ⊕ P) H Q prime U := embProg bank Empty.elim (foreign (liftQ (CyclicRowNormalized.mergeProgram 142080 prime) capacity))
+  refine ⟨host,program.seq merge,bank,returnedMergeBank_target _ _ _,?_⟩
+  intro target data u S split empty prepared V position output word
+  have rep := intervalOwners_ready target data (embStk caller S) split
+  let rows := fun r : Fin 142080 => data r ∘ position
+  have ready : HelperFan (live.trans caller) (fun r => rows r ∘ position.symm) S := by
+    have base : HelperFan (live.trans caller) data S := rep
+    simpa [rows,Function.comp_def] using base
+  obtain ⟨v,D,k,_,exec,paid,user,_,owners,keep⟩ := run lane width rfl rows u S ready empty prepared
+  exact mergeAfterReturnedRows host program saved returned separate capacity positive target data output
+    (embStk caller S) u S split ⟨v,D,k,exec,paid,user,owners,fun i =>
+      keep (mergeSaved 142080 i) (mergeSaved_outside _ i)⟩
+
 
 private theorem caller_ne_front {a t n : ℕ} (j : Fin t) (i : Fin a) :
     (j.natAdd a).castAdd n ≠ (i.castAdd t).castAdd n := by
@@ -222,5 +269,118 @@ theorem inheritedInterval_exec {P U : Type} {N Q price : ℕ} (lane : Descriptor
     FlatControlledShiftArray.overwrite _ _ _ _ (by simp)
   rw [overwrite] at result
   exact ⟨z,F,t+n,placed.seq ran,Nat.add_le_add paid bill,same.trans user,result⟩
+
+/-- Packing a descriptor leaves the trailing cyclic row digit in place. -/
+theorem packedPosition_trailingRows (lane : Descriptor) (c : ℕ) :
+    let wide := {lane with afterD := lane.afterD*c}
+    let size : volume prime lane*c = volume prime wide := by simp [wide,volume,Nat.mul_assoc]
+    ∀ i (r : Fin c), packedChildPosition wide size.symm ((finProdFinEquiv (i,r)).cast size) =
+      finProdFinEquiv (packedChildPosition lane rfl i,r) := by
+  intro wide size i r
+  obtain ⟨a,rfl⟩ := (CopyChildLayout.flatAddress lane).surjective i
+  let b : RecursiveInterchangeScaling.Address wide :=
+    ⟨a.beforeRows,a.row,a.before,a.h,a.middle,a.d,finProdFinEquiv (a.after,r)⟩
+  have place : (finProdFinEquiv (RecursiveInterchangeScaling.index a,r)).cast size =
+      RecursiveInterchangeScaling.index b := by
+    apply Fin.ext
+    simp [b,wide,RecursiveInterchangeScaling.index_val,RecursiveInterchangeLayout.index,finProdFinEquiv]
+    ring
+  change packedChildPosition wide size.symm ((finProdFinEquiv (RecursiveInterchangeScaling.index a,r)).cast size) = _
+  rw [place]
+  apply Fin.ext
+  change (CopyChildLayout.packActive wide (RecursiveInterchangeScaling.index b)).val =
+    r.val + c*(CopyChildLayout.packActive lane (RecursiveInterchangeScaling.index a)).val
+  rw [CopyChildLayout.packActive_index,CopyChildLayout.packActive_index]
+  let outerIndex := a.middle.val + lane.between*(a.before.val + lane.beforeH*(a.row.val + lane.rows*a.beforeRows.val))
+  let hd := a.d.val + prime^lane.width*a.h.val
+  let left := lane.beforeRows*lane.rows*lane.beforeH*lane.between
+  change (r.val+c*a.after.val + (lane.afterD*c)*outerIndex) + (left*(lane.afterD*c))*hd =
+    r.val+c*((a.after.val+lane.afterD*outerIndex)+(left*lane.afterD)*hd)
+  ring
+
+/-- Starting at a represented payload, load the splitter, run the packed child
+and merge the transformed rows back onto the splitter's original target. -/
+theorem packedIntervalFromWord_exec {P U : Type} {M N Q price w : ℕ} (lane : Descriptor)
+    (width : lane.width = 64*w) (positive : 0 < volume prime lane)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
+    {body : P → Pr P N Q prime U} {code src dst seed}
+    (child : PackedPieceHandoff (volume prime lane) (packedChildOutput w _) body code src dst seed price) :
+    let T := intervalSplitTapes
+    let H := 142082+T+N
+    ∀ (place : Fin H ↪ Fin M),
+    let caller := ((Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)).trans place
+    let V := volume prime lane
+    ∀ (payload tmp : Fin M), [payload,tmp,caller 0].Nodup →
+    ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) M Q prime U) (program : Pr (Empty ⊕ P) M Q prime U)
+      (bank : Fin T ↪ Fin M), bank 0 = caller 0 ∧
+    let wide := {lane with afterD := lane.afterD*142080}
+    let size : V*142080 = volume prime wide := by simp [V,wide,volume,Nat.mul_assoc]
+    let logical := (packedChildPosition wide size.symm).symm
+    ∀ (word : Fin (volume prime wide) → ZMod 2) (u : HS M Q prime U) (S : Stacks M prime),
+      WordAtZero (word ∘ logical) (S.L payload) (S.R payload) → S.L tmp = [] → S.R tmp = [] →
+      (∀ i, S.L (caller i) = [] ∧ S.R (caller i) = []) →
+      (∀ i : Fin 142082, let j := place ((i.castAdd T).castAdd N)
+        S.L j = [] ∧ S.R j = []) →
+      (∀ i : Fin N, let j := place (i.natAdd (142082+T))
+        S.L j = seed.L i ∧ S.R j = seed.R i) →
+      let changed := Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word
+      let rows := fun (r : Fin 142080) (i : Fin V) => changed (logical (finProdFinEquiv (i,r)))
+      let output := fun k : Fin (V*142080) => let p := finProdFinEquiv.symm k
+                                              SparseRoleCircuit.encode (a := prime) (rows p.2 p.1)
+      ∃ z F n, Exec host program (mk u S) n (mk z F) ∧ z.user = u.user ∧
+        n ≤ (298*(T+5)+13)*(V*142080)+142081*(8*V+10)+price+41 ∧
+        RepT (intervalOwnerBank (putWord (fun _ => blank) 0 (List.ofFn output)) rows)
+          (embStk bank F).L (embStk bank F).R ∧
+        ∀ j, (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro T H place caller V payload tmp apart
+  obtain ⟨inner,worker,bank,target,run⟩ := packedReturnMerge_exec lane width positive capacity child
+  let host := fun f => embProg place id (inner f)
+  let split : Pr Empty T Q prime U := intervalPrepare.seq (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))
+  refine ⟨host,(loadCompactWord payload tmp (caller 0)).seq ((embProg caller Empty.elim split).seq (embProg place id worker)),bank.trans place,congrArg place target,?_⟩
+  intro wide size logical source u S read tl tr clear fresh prepared changed rows output
+  let input := source ∘ logical
+  obtain ⟨v,user,load⟩ := loadCompactWord_exec host payload tmp (caller 0) apart input u S read tl tr
+  let word := List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (input i)
+  let D := {S with R := Function.update S.R (caller 0) (word ++ S.R (caller 0))}
+  obtain ⟨a,E,k,placed,same,paid,start,off⟩ := splitEncoded_exec host caller capacity positive input v D
+    (by simp only [D,Function.update_self,(clear 0).2,List.append_nil]; rfl)
+    (fun i => (clear i).1) (fun i ne => by simpa [D,Function.update_of_ne (caller.injective.ne ne)] using (clear i).2)
+  let original := putWord (fun _ => blank) 0 (List.ofFn fun k => SparseRoleCircuit.encode (a := prime) (input k))
+  obtain ⟨z,F,n,ran,bill,zu,result⟩ := run original (fun r i => input (finProdFinEquiv (i,r))) (embDn place a) (embStk place E) start (fun i => by
+    have h := off _ (fun j => place.injective.ne (caller_ne_front j i))
+    exact ⟨h.1.trans (fresh i).1,h.2.trans ((Function.update_of_ne (place.injective.ne (caller_ne_front 0 i)).symm ..).trans (fresh i).2)⟩)
+    (fun i => by
+      have h := off _ (fun j => place.injective.ne (caller_ne_private j i))
+      exact ⟨h.1.trans (prepared i).1,h.2.trans ((Function.update_of_ne (place.injective.ne (caller_ne_private 0 i)).symm ..).trans (prepared i).2)⟩)
+  let position := packedChildPosition lane rfl
+  have address (i : Fin V) (r : Fin 142080) : logical (finProdFinEquiv (i,r)) =
+      (finProdFinEquiv (position.symm i,r)).cast size := by
+    apply (packedChildPosition wide size.symm).injective
+    exact ((packedChildPosition wide size.symm).apply_symm_apply _).trans
+      (by simpa only [position,Equiv.apply_symm_apply] using
+            (packedPosition_trailingRows lane 142080 (position.symm i) r).symm)
+  have rowEq : (fun (r : Fin 142080) => Shared50RecursiveNodeRows.transpose (one_dvd lane.rows)
+      ((fun i => input (finProdFinEquiv (i,r))) ∘ position) ∘ position.symm) = rows := by
+    funext r i
+    simpa only [rows,changed,input,Function.comp_def,address,Equiv.symm_apply_apply]
+      using (transpose_trailingRows lane 142080 source (position.symm i) r).symm
+  rw [rowEq] at result
+  change RepT (intervalOwnerBank (putWord original 0 (List.ofFn output)) rows) _ _ at result
+  have overwrite : putWord original 0 (List.ofFn output) = putWord (fun _ => blank) 0 (List.ofFn output) :=
+    FlatControlledShiftArray.overwrite _ _ _ _ (by simp)
+  rw [overwrite] at result
+  obtain ⟨z',F',lifted,_,sameUser,view,frame⟩ := exec_emb (body' := host) (ι := id)
+    place.injective (fun _ => rfl) ran a rfl E rfl
+  refine ⟨z',F',_,load.seq (placed.seq lifted),sameUser.trans (zu.trans (same.trans user)),?_,?_,?_⟩
+  · dsimp only [T,V] at paid bill ⊢
+    nlinarith only [paid,bill]
+  · rw [← view] at result
+    exact result
+  · intro j outside
+    have away : ∀ i, caller i ≠ j := fun i => outside _
+    have h := off j away
+    exact ⟨(frame j outside).1.trans h.1,(frame j outside).2.trans
+      (h.2.trans (Function.update_of_ne (away 0).symm ..))⟩
+
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

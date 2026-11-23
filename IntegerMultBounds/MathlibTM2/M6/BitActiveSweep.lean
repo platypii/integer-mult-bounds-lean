@@ -13,6 +13,67 @@ open Shared50ModularControl (prime)
 open Certificates.PR589
 local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
 
+/-- Read the scheduled payload in logical child coordinates. The physical tape
+still contains the caller's word, including its blank exterior. -/
+theorem activeRecordWord {T w W m : ℕ} (bank : Fin 35 ↪ Fin T)
+    (record : List (Fin (prime+4))) (word : Fin ((prime^(w+1))^16*W) → ZMod 2)
+    (S : Stacks T prime)
+    (ready : RecordReady (b := prime) (w := w) (d := 16) (W := W) bank
+      (prime^(w+1)).size W.size record SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 word S)
+    (position : Fin m ≃ Fin ((prime^(w+1))^16*W)) :
+    WordAtZero ((word ∘ position) ∘ position.symm) (S.L (bank 24)) (S.R (bank 24)) := by
+  intro j
+  rw [← encodedOwnerCell]
+  simpa only [Function.comp_def,Equiv.apply_symm_apply,sub_zero,List.map_ofFn] using ready.src j
+
+/-- Run the recursive interval directly from the scheduled record's payload.
+The merged tape is a positioned record payload in the parent's packed order. -/
+theorem activeIntervalFromRecord {P U : Type} {M N Q price a w W : ℕ} (lane : Descriptor)
+    (width : lane.width = 64*a) (positive : 0 < volume prime lane)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
+    {body : P → Pr P N Q prime U} {code src dst seed}
+    (child : PackedPieceHandoff (volume prime lane) (packedChildOutput a _) body code src dst seed price)
+    (bank : Fin 35 ↪ Fin M) (tmp : Fin M) :
+    let T := intervalSplitTapes
+    let V := volume prime lane
+    ∀ (span : V*142080 = (prime^(w+1))^16*W) (place : Fin (142082+T+N) ↪ Fin M),
+    let caller := ((Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)).trans place
+    [bank 24,tmp,caller 0].Nodup →
+    ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) M Q prime U) (program : Pr (Empty ⊕ P) M Q prime U),
+    ∀ record word u (S : Stacks M prime),
+      RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size record
+        SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 word S →
+      S.L tmp = [] → S.R tmp = [] →
+      (∀ i, S.L (caller i) = [] ∧ S.R (caller i) = []) →
+      (∀ i : Fin 142082, let j := place ((i.castAdd T).castAdd N); S.L j = [] ∧ S.R j = []) →
+      (∀ i : Fin N, let j := place (i.natAdd (142082+T)); S.L j = seed.L i ∧ S.R j = seed.R i) →
+      let wide := {lane with afterD := lane.afterD*142080}
+      let size : volume prime wide = V*142080 := by simp [wide,V,volume,Nat.mul_assoc]
+      let position := packedChildPosition wide (size.trans span)
+      ∃ z F n y, Exec host program (mk u S) n (mk z F) ∧ z.user = u.user ∧
+        n ≤ (298*(T+5)+13)*(V*142080)+142081*(8*V+10)+price+41 ∧
+        RecordPayload (caller 0) (fun _ => blank) 0 y F ∧
+        (∀ k, y (position k) = Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) (word ∘ position) k) ∧
+        ∀ j, (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro T V span place caller apart
+  obtain ⟨host,program,out,target,run⟩ := packedIntervalFromWord_exec lane width positive capacity child place (bank 24) tmp apart
+  refine ⟨host,program,?_⟩
+  intro record word u S ready tl tr clear fresh prepared wide size position
+  let changed := Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) (word ∘ position)
+  let y := changed ∘ position.symm
+  have castRead {l m : ℕ} (eq : l=m) (x : Fin m → ZMod 2) (L R) :
+      WordAtZero x L R → WordAtZero (fun k => x (k.cast eq)) L R := by subst m; exact id
+  have read := castRead span _ _ _ (activeRecordWord bank record word S ready position)
+  have coord (k : Fin (V*142080)) :
+      position.symm (k.cast span) = (packedChildPosition wide size).symm k := rfl
+  simp only [Function.comp_apply,coord] at read
+  obtain ⟨z,F,n,exec,user,paid,rep,frame⟩ := run (word ∘ position) u S read tl tr clear fresh prepared
+  refine ⟨z,F,n,y,exec,user,paid,?_,fun k => by simp [y,changed],frame⟩
+  rw [← target]
+  apply castPayload span
+  apply mergedPayload out F _ _
+  simpa only [finProdFinEquiv.apply_symm_apply,Equiv.apply_symm_apply,y,Function.comp_apply,coord] using rep
+
 /-- Copy the active record payload onto a fresh child input tape. Only the destination
 right stack changes, and the source keeps its original tape position. -/
 theorem loadActivePayload {P U : Type} {T Q w W : ℕ} (body : P → Pr P T Q prime U)
@@ -24,10 +85,7 @@ theorem loadActivePayload {P U : Type} {T Q w W : ℕ} (body : P → Pr P T Q pr
     (left : S.L tmp = []) (right : S.R tmp = []) (fresh : S.R dst = []) :
     ∃ z, z.user = u.user ∧ Exec body (loadCompactWord (bank 24) tmp dst) (mk u S)
       (8*((prime^(w+1))^16*W)+10) (mk z {S with R := Function.update S.R dst (List.ofFn fun i => SparseRoleCircuit.encode (word i))}) := by
-  have read : WordAtZero word (S.L (bank 24)) (S.R (bank 24)) := by
-    intro j
-    rw [← encodedOwnerCell]
-    simpa only [sub_zero,List.map_ofFn] using ready.src j
+  have read := activeRecordWord bank record word S ready (Equiv.refl _)
   simpa only [fresh,List.append_nil] using loadCompactWord_exec body (bank 24) tmp dst apart word u S read left right
 
 /-- Load a positioned active payload and distribute its successive cells
