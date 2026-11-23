@@ -31,6 +31,46 @@ theorem sumIndexed {α : Type} (xs : List α) (index : α → Fin xs.length)
   conv_lhs => rw [← List.ofFn_getElem (xs := xs)]
   simp only [List.map_ofFn,List.sum_ofFn,Function.comp_apply,atIndex]
 
+/-- Compile the physical remainder once from its single-owner workers. At
+each runtime width the budget follows the actual idle directory indices. -/
+theorem uniformRemainderWindow {U : Type} {Q : ℕ} (i : Fin 9) :
+    let Job := (Fin 32 × Fin 5) × Fin 222
+    ∀ (T : Job → ℕ) (P : Job → Type) (slot : ∀ k, Fin (T k))
+      (inner : ∀ k, P k → Pr (P k) (T k) Q prime U) (code : ∀ k, Pr (P k) (T k) Q prime U),
+    ∃ (H : ℕ) (host : (Σ k, P k) → Pr (Σ k, P k) H Q prime U) (worker : Pr (Σ k, P k) H Q prime U)
+      (src dst : Fin (142081+2) ↪ Fin H),
+    ∀ w W, let V := (prime^w)^128*W
+      ∀ (seed : ∀ k, Stacks (T k) prime) (budget : Fin nodeChildren5.length → ℕ),
+      (∀ k (word : Fin V → ZMod 2) v (D : Stacks (T k) prime), D.L (slot k) = [] →
+        D.R (slot k) = List.ofFn (fun j => SparseRoleCircuit.encode (word j)) →
+        (∀ j, j ≠ slot k → D.L j = (seed k).L j ∧ D.R j = (seed k).R j) →
+        ∃ z F n y, Exec (inner k) (code k) (mk v D) n (mk z F) ∧
+          (∀ js : List _, js.Nodup → n+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js D+
+            budget (idleDirectoryIndex (i,idleCopyIndex k))) ∧ z.user = v.user ∧
+          Fallback.RecordPayload (slot k) (fun _ => blank) 0 y F ∧ parentIntervalRead i k.2 w W word y) →
+      ∃ prepared, PackedPieceHandoffWithCharge cleanupWeight V (fun x y => ∀ j : Fin W,
+        let addr := fun z => flatWindowEquiv w W (windowState w z,j)
+        readRoles addr y = (Piece.remainder i.val).run (readRoles addr x))
+        host worker src dst prepared
+          ((∑ j : Fin idleCopies.length, budget (idleDirectoryIndex (i,j)))+1+(142081*(10*V+10)+1)) := by
+  intro Job T P slot inner code
+  obtain ⟨H,fan,host,program,allocate⟩ := uniformIdleWindowWithCharge i cleanupWeight T P slot inner code
+  obtain ⟨worker,pack⟩ := uniformWordStageWithCharge fan host program
+  let place := SweepFile.Exit.chart 0 H
+  refine ⟨_,fun f => embProg place id (host f),worker,fan.trans place,returnedFan fan,?_⟩
+  intro w W V seed budget each
+  let price := fun k => budget (idleDirectoryIndex (i,idleCopyIndex k))
+  obtain ⟨initial,run⟩ := allocate seed price (fun k => parentIntervalRead i k.2 w W) each
+  have ledger := sumIndexed idleCopies idleCopyIndex idleCopyIndex_at (fun j => budget (idleDirectoryIndex (i,j)))
+  change (idleCopies.map price).sum = _ at ledger
+  rw [← ledger]
+  apply pack initial
+  intro x u S words fresh
+  obtain ⟨F,z,n,y,ran,paid,user,out,acts,off⟩ := run x S u words.helperFan
+    (fun k => ⟨words.left (idleTape i k),words.right (idleTape i k)⟩) fresh
+  exact ⟨z,F,n,y,ran,fun js unique => by simpa only [Nat.add_assoc] using paid js unique,
+    user,out,parentIdleWindow_read i w W x y acts off⟩
+
 /-- A recursive handoff at each selected interval suffices for the complete
 flat remainder in parent coordinates. -/
 theorem inheritedRemainderHandoff (i : Fin 9) {U : Type} {Q : ℕ} :

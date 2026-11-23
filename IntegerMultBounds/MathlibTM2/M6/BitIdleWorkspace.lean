@@ -51,6 +51,62 @@ theorem idleWorkspace {ι : Type} [Fintype ι] {B A : ℕ} (T : ι → ℕ)
 
 /-- Allocate the copy programs and their procedure labels together. Starting
 from exact owner words, each program receives its own seed outside its target. -/
+theorem uniformIdleWindowWithCharge {Q : ℕ} {U : Type} (i : Fin 9)
+    (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ) :
+    let Job := (Fin 32 × Fin 5) × Fin 222
+    ∀ (T : Job → ℕ) (P : Job → Type) (slot : ∀ k, Fin (T k))
+      (inner : ∀ k, P k → Pr (P k) (T k) Q prime U) (code : ∀ k, Pr (P k) (T k) Q prime U),
+    ∃ (H : ℕ) (fan : Fin (142081+2) ↪ Fin H) (host : (Σ k, P k) → Pr (Σ k, P k) H Q prime U)
+      (program : Pr (Σ k, P k) H Q prime U),
+    ∀ {V : ℕ} (seed : ∀ k, Stacks (T k) prime) (price : Job → ℕ)
+      (effect : Job → (Fin V → ZMod 2) → (Fin V → ZMod 2) → Prop),
+    (∀ k word v (D : Stacks (T k) prime), D.L (slot k) = [] →
+      D.R (slot k) = List.ofFn (fun j => SparseRoleCircuit.encode (word j)) →
+      (∀ j, j ≠ slot k → D.L j = (seed k).L j ∧ D.R j = (seed k).R j) →
+      ∃ z F n y, Exec (inner k) (code k) (mk v D) n (mk z F) ∧ (∀ js : List (Fin (T k)), js.Nodup → n+tapeCharge weight js F ≤ tapeCharge weight js D+price k) ∧
+        z.user = v.user ∧ Cover.Fallback.RecordPayload (slot k) (fun _ => blank) 0 y F ∧ effect k word y) →
+    ∃ initial : Stacks H prime,
+    ∀ (x : Fin 142081 → Fin V → ZMod 2) (D : Stacks H prime)
+      (u : HS H Q prime U), HelperFan fan x D →
+      (∀ k, let t := fan ((idleTape i k).castAdd 2)
+        D.L t = [] ∧ D.R t = List.ofFn (fun j => SparseRoleCircuit.encode (x (idleTape i k) j))) →
+      (∀ t, (∀ j, fan j ≠ t) → D.L t = initial.L t ∧ D.R t = initial.R t) →
+      ∃ F z n y, Exec host program (mk u D) n (mk z F) ∧
+        (∀ js : List (Fin H), js.Nodup → n+tapeCharge weight js F ≤ tapeCharge weight js D+(idleCopies.map price).sum+1) ∧ z.user = u.user ∧ HelperFan fan y F ∧
+        (∀ k, effect k (x (idleTape i k)) (y (idleTape i k))) ∧
+        ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j := by
+  intro Job T P slot inner code
+  let owner : Job ↪ Fin (142081+2) :=
+    (⟨idleTape i,idleTape_injective i⟩ : Job ↪ Fin 142081).trans (Fin.castAddEmb 2)
+  obtain ⟨H,fan,place,shared,outside,apart,prepare⟩ := idleWorkspace (A := prime) T owner slot
+  let host : (Σ k, P k) → Pr (Σ k, P k) H Q prime U :=
+    fun p => embProg (place p.1) (Sigma.mk p.1) (inner p.1 p.2)
+  refine ⟨H,fan,host,Prog.seqList (idleCopies.map fun k => embProg (place k) (Sigma.mk k) (code k)),?_⟩
+  intro V seed price effect run
+  obtain ⟨initial,_,privateTapes⟩ := prepare ⟨[],[],fun _ => [],fun _ => []⟩ seed
+  refine ⟨initial,?_⟩
+  intro x D u ready words stock
+  obtain ⟨y,F,z,n,exec,paid,user,final,acts,off⟩ := placedIdleWindowWithCharge i weight host fan x D u ready
+    T P place slot inner Sigma.mk code price effect shared outside apart (fun _ _ => rfl) (by
+      intro k v E keep
+      obtain ⟨left,right⟩ := keep (slot k)
+      rw [shared] at left right
+      apply run k _ v E (left.trans (words k).1) (right.trans (words k).2)
+      intro j ne
+      have free : ∀ t, fan t ≠ place k j := by
+        intro t
+        by_cases h : t = owner k
+        · subst t
+          rw [← shared]
+          exact (place k).injective.ne ne.symm
+        · exact (outside k t h j).symm
+      obtain ⟨hl,hr⟩ := stock _ free
+      exact ⟨(keep j).1.trans (hl.trans (privateTapes k j ne).1),
+        (keep j).2.trans (hr.trans (privateTapes k j ne).2)⟩)
+  exact ⟨F,z,n,y,exec,paid,user,final,acts,off⟩
+
+/-- Allocate the copy programs and their procedure labels together. Starting
+from exact owner words, each program receives its own seed outside its target. -/
 theorem allocatedIdleWindowWithCharge {Q V : ℕ} {U : Type} (i : Fin 9)
     (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ) :
     let Job := (Fin 32 × Fin 5) × Fin 222
@@ -75,32 +131,9 @@ theorem allocatedIdleWindowWithCharge {Q V : ℕ} {U : Type} (i : Fin 9)
         (∀ k, effect k (x (idleTape i k)) (y (idleTape i k))) ∧
         ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j := by
   intro Job T P slot inner code seed price effect run
-  let owner : Job ↪ Fin (142081+2) :=
-    (⟨idleTape i,idleTape_injective i⟩ : Job ↪ Fin 142081).trans (Fin.castAddEmb 2)
-  obtain ⟨H,fan,place,shared,outside,apart,prepare⟩ := idleWorkspace (A := prime) T owner slot
-  let host : (Σ k, P k) → Pr (Σ k, P k) H Q prime U :=
-    fun p => embProg (place p.1) (Sigma.mk p.1) (inner p.1 p.2)
-  obtain ⟨initial,_,privateTapes⟩ := prepare ⟨[],[],fun _ => [],fun _ => []⟩ seed
-  refine ⟨H,fan,host,Prog.seqList (idleCopies.map fun k => embProg (place k) (Sigma.mk k) (code k)),initial,?_⟩
-  intro x D u ready words stock
-  obtain ⟨y,F,z,n,exec,paid,user,final,acts,off⟩ := placedIdleWindowWithCharge i weight host fan x D u ready
-    T P place slot inner Sigma.mk code price effect shared outside apart (fun _ _ => rfl) (by
-      intro k v E keep
-      obtain ⟨left,right⟩ := keep (slot k)
-      rw [shared] at left right
-      apply run k _ v E (left.trans (words k).1) (right.trans (words k).2)
-      intro j ne
-      have free : ∀ t, fan t ≠ place k j := by
-        intro t
-        by_cases h : t = owner k
-        · subst t
-          rw [← shared]
-          exact (place k).injective.ne ne.symm
-        · exact (outside k t h j).symm
-      obtain ⟨hl,hr⟩ := stock _ free
-      exact ⟨(keep j).1.trans (hl.trans (privateTapes k j ne).1),
-        (keep j).2.trans (hr.trans (privateTapes k j ne).2)⟩)
-  exact ⟨F,z,n,y,exec,paid,user,final,acts,off⟩
+  obtain ⟨H,fan,host,program,prepare⟩ := uniformIdleWindowWithCharge i weight T P slot inner code
+  obtain ⟨initial,execute⟩ := prepare seed price effect run
+  exact ⟨H,fan,host,program,initial,execute⟩
 
 theorem allocatedIdleWindow_exec {Q V : ℕ} {U : Type} (i : Fin 9) :
     let Job := (Fin 32 × Fin 5) × Fin 222
