@@ -109,6 +109,59 @@ noncomputable def helperSlotField (c : PortCertificate) (slot : Option (Fin 56))
   let H := (IntegerMultBounds.Swap.Modular.reduce (prime^w) c.fullChart).transpose
   (Sum.elim (H *ᵥ s.1) (H *ᵥ s.2)) ∘ helperFieldOrder slot
 
+/-- Read a slot in the column-major order of the two-row tape route.
+Each column contains the left and right digits of the same chart axis. -/
+noncomputable def helperRows {R : Type*} (slot : Option (Fin 56)) (digits : Fin 128 → R) :
+    Matrix (Fin 2) (Fin 64) R := fun r j =>
+  digits ((helperFieldOrder slot).symm
+    (if r = 0 then Sum.inl (remainderAxis j) else Sum.inr (remainderAxis j)))
+
+/-- Digit permutation from an inherited slot to adjacent two-row columns. -/
+noncomputable def helperColumnOrder (slot : Option (Fin 56)) : Equiv.Perm (Fin 128) := by
+  let f := M8.AtomOps.refine (fun j r => helperRows slot id r j)
+  have surj : Function.Surjective f := by
+    intro i
+    obtain ⟨a,rfl⟩ := (helperFieldOrder slot).symm.surjective i
+    cases a with
+    | inl a =>
+      exact ⟨M8.AtomOps.«at» (remainderAxis.symm a) (0 : Fin 2), by simp [f,helperRows]⟩
+    | inr a =>
+      exact ⟨M8.AtomOps.«at» (remainderAxis.symm a) (1 : Fin 2), by simp [f,helperRows]⟩
+  exact Equiv.ofBijective f ⟨(Finite.injective_iff_surjective_of_equiv (Equiv.refl _)).mpr surj,surj⟩
+
+theorem helperRows_slot (c : PortCertificate) (slot : Option (Fin 56)) (w : ℕ)
+    (s : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w))) :
+    let H := (IntegerMultBounds.Swap.Modular.reduce (prime^w) c.fullChart).transpose
+    helperRows slot (helperSlotField c slot w s) =
+      fun r j => if r = 0 then (H *ᵥ s.1) (remainderAxis j) else (H *ᵥ s.2) (remainderAxis j) := by
+  intro H
+  funext r j
+  by_cases hr : r = 0 <;> simp [helperRows,helperSlotField,hr,H]
+
+/-- In every inherited slot the compact label is the right chart product
+of the original two-row matrix, including on dependent input rows. -/
+theorem helperRows_chart (c : PortCertificate) (slot : Option (Fin 56)) (w : ℕ)
+    (g : Matrix (Fin 2) (Fin 64) (ZMod (prime^w))) :
+    helperRows slot (helperSlotField c slot w
+      (fun a => g 0 (stageAxis a), fun a => g 1 (stageAxis a))) =
+      g * IntegerMultBounds.Swap.Modular.reduce (prime^w)
+        (c.fullChart.submatrix stageAxis.symm remainderAxis) := by
+  rw [helperRows_slot]
+  funext r j
+  fin_cases r <;> simpa using (remainderChart_row c w g _ j).symm
+
+/-- The two-row label determines every digit in the inherited slot layout. -/
+theorem helperRows_injective {R : Type*} (slot : Option (Fin 56)) :
+    Function.Injective (helperRows (R := R) slot) := by
+  intro x y h
+  funext i
+  obtain ⟨a,rfl⟩ := (helperFieldOrder slot).symm.surjective i
+  cases a with
+  | inl a =>
+    simpa [helperRows] using congrFun (congrFun h 0) (remainderAxis.symm a)
+  | inr a =>
+    simpa [helperRows] using congrFun (congrFun h 1) (remainderAxis.symm a)
+
 /-- Recover a parent state by reading both chart fields and applying the
 original chart matrix to each. -/
 noncomputable def decodeHelperField (c : PortCertificate) (slot : Option (Fin 56))
@@ -405,6 +458,57 @@ theorem ownerFieldPerm_exec {k : ℕ} (owner : Fin k) (perm : Equiv.Perm (Fin 12
   exact ⟨z,F,n,out,user,time,run,records,(fun i hi => by rw [← privatePort i hi]; exact clear i hi),
     fun digits j => by simpa only [id_eq,acts] using read digits j,
     fun t ne => off _ (payloadPlacement_off _ owner t ne)⟩
+
+theorem helperColumns_exec {k : ℕ} (owner : Fin k) (slot : Option (Fin 56))
+    (body : P → Pr P ((N+35)+k) Q prime U) :
+    let clean := fun (S : Stacks ((N+35)+k) prime) => ∀ i : Fin (N+35), 35 ≤ i.val →
+      S.L (i.castAdd k) = [] ∧ S.R (i.castAdd k) = []
+    ∃ (code : Pr P ((N+35)+k) Q prime U) (C : ℝ), ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      ∀ (v : HS ((N+35)+k) Q prime U) (S : Stacks ((N+35)+k) prime)
+        (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+        (data : Fin k → Fin (M^128*W) → ZMod 2),
+      let ready := fun t => RecordReady (b := prime) (w := w) (d := 128) (W := W) (helperRecordBank t) M.size W.size record
+        SparseRoleCircuit.encode (fun _ => blank) dest 0 q
+      (∀ t, ready t (data t) S) → clean S → ∃ z F, ∃ n : ℕ, ∃ out, z.user = v.user ∧
+        (n : ℝ) ≤ C * ((M^128*W : ℕ) : ℝ) * ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ∧
+        Exec body code (mk v S) n (mk z F) ∧ (∀ t, ready t (Function.update data owner out t) F) ∧ clean F ∧
+        (∀ digits j, out (FlatCoordinateLayout.index
+          (M8.AtomOps.refine (fun c r => helperRows slot digits r c)) j) =
+          data owner (FlatCoordinateLayout.index digits j)) ∧
+        ∀ t : Fin k, t ≠ owner → F.L (t.natAdd (N+35)) = S.L (t.natAdd (N+35)) ∧
+          F.R (t.natAdd (N+35)) = S.R (t.natAdd (N+35)) := by
+  exact ownerFieldPerm_exec owner (helperColumnOrder slot) body
+
+theorem helperColumnsReturn_exec {k : ℕ} (owner : Fin k) (slot : Option (Fin 56))
+    (body : P → Pr P ((N+35)+k) Q prime U) :
+    let clean := fun (S : Stacks ((N+35)+k) prime) => ∀ i : Fin (N+35), 35 ≤ i.val →
+      S.L (i.castAdd k) = [] ∧ S.R (i.castAdd k) = []
+    ∃ (code : Pr P ((N+35)+k) Q prime U) (C : ℝ), ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      ∀ (v : HS ((N+35)+k) Q prime U) (S : Stacks ((N+35)+k) prime)
+        (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+        (data : Fin k → Fin (M^128*W) → ZMod 2),
+      let ready := fun t => RecordReady (b := prime) (w := w) (d := 128) (W := W) (helperRecordBank t) M.size W.size record
+        SparseRoleCircuit.encode (fun _ => blank) dest 0 q
+      (∀ t, ready t (data t) S) → clean S → ∃ z F, ∃ n : ℕ, ∃ out, z.user = v.user ∧
+        (n : ℝ) ≤ C * ((M^128*W : ℕ) : ℝ) * ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ∧
+        Exec body code (mk v S) n (mk z F) ∧ (∀ t, ready t (Function.update data owner out t) F) ∧ clean F ∧
+        (∀ digits j, out (FlatCoordinateLayout.index digits j) =
+          data owner (FlatCoordinateLayout.index
+            (M8.AtomOps.refine (fun c r => helperRows slot digits r c)) j)) ∧
+        ∀ t : Fin k, t ≠ owner → F.L (t.natAdd (N+35)) = S.L (t.natAdd (N+35)) ∧
+          F.R (t.natAdd (N+35)) = S.R (t.natAdd (N+35)) := by
+  intro clean
+  obtain ⟨code,C,run⟩ := ownerFieldPerm_exec owner (helperColumnOrder slot).symm body
+  refine ⟨code,C,?_⟩
+  intro w W hW M v S record dest q data ready start free
+  obtain ⟨z,F,n,out,user,time,exec,stored,clear,read,off⟩ := run w W hW v S record dest q data start free
+  refine ⟨z,F,n,out,user,time,exec,stored,clear,?_,off⟩
+  intro digits j
+  change out (FlatCoordinateLayout.index digits j) = data owner (FlatCoordinateLayout.index (digits ∘ helperColumnOrder slot) j)
+  have h := read (digits ∘ helperColumnOrder slot) j
+  simpa only [Function.comp_assoc,Equiv.self_comp_symm,Function.comp_id] using h
 
 theorem helperSlotPack_exec {k : ℕ} (owner : Fin k) (x y : Option (Fin 56))
     (body : P → Pr P ((N+35)+k) Q prime U) :

@@ -269,8 +269,8 @@ theorem remainderChart_runs [M8.Machine.Net] {T : ℕ} (io : Fin T) (c : PortCer
 
 /-- A row of the physically relabelled matrix reads exactly the modular digits
 used by the interval descriptor, with the port line at the last position. -/
-theorem remainderChart_row (c : PortCertificate) (w : ℕ)
-    (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (r i : Fin 64) :
+theorem remainderChart_row {ι : Type*} (c : PortCertificate) (w : ℕ)
+    (g : Matrix ι (Fin 64) (ZMod (prime^w))) (r : ι) (i : Fin 64) :
     (g * reduce (prime^w) (c.fullChart.submatrix stageAxis.symm remainderAxis)) r i =
       ((reduce (prime^w) c.fullChart)ᵀ *ᵥ (fun a => g r (stageAxis a))) (remainderAxis i) := by
   rw [Matrix.mul_apply]
