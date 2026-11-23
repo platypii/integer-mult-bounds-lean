@@ -275,7 +275,7 @@ private theorem orderedEffects_append {I X : Type} (xs ys : List I) (effect : I 
     · rintro ⟨b,⟨v,step,left⟩,right⟩
       exact ⟨v,step,(ih v).mpr ⟨b,left,right⟩⟩
 
-private theorem orderedEffects_sigma {I X : Type} {J : I → Type} (xs : List I) (ys : ∀ i, List (J i))
+theorem orderedEffects_sigma {I X : Type} {J : I → Type} (xs : List I) (ys : ∀ i, List (J i))
     (effect : Sigma J → X → X → Prop) (x y : X) :
     OrderedEffects (xs.sigma ys) effect x y ↔
       OrderedEffects xs (fun i => OrderedEffects (ys i) (fun j => effect ⟨i,j⟩)) x y := by
@@ -315,24 +315,14 @@ theorem orderedEffects_three {X : Type} (effect : Fin 3 → X → X → Prop) (x
   · rintro ⟨a,b,left,mid,right⟩
     exact ⟨a,left,b,mid,y,right,rfl⟩
 
-/-- Convert grouped machine effects into borrowed invocations on the same stage data. -/
-theorem stageBorrowedEffects {w B K l r : ℕ} (n : Fin 9)
-    (effect : (Σ _ : StageRun, Σ j : Fin 3, Fin (invocationCounts l r j)) →
-      (Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2) →
-      (Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2) → Prop)
-    (component : ∀ p j x y, OrderedEffects (List.finRange (invocationCounts l r j))
-      (fun i => effect ⟨p,j,i⟩) x y → InvocationComponentEffect n p w B K j x y) :
-    ∀ x y, OrderedEffects stageRuns (fun p => OrderedEffects (List.finRange 3) (fun j =>
-      OrderedEffects (List.finRange (invocationCounts l r j)) (fun i => effect ⟨p,j,i⟩))) x y →
-      OrderedEffects stageRuns (BorrowedStep n w B K) x y := by
-  generalize stageRuns = ps
-  induction ps with
+private theorem orderedEffects_mono {I X : Type} (xs : List I) {f g : I → X → X → Prop}
+    (step : ∀ i x y, f i x y → g i x y) :
+    ∀ x y, OrderedEffects xs f x y → OrderedEffects xs g x y := by
+  induction xs with
   | nil => exact fun _ _ h => h
-  | cons p ps ih =>
-    rintro x y ⟨v,run,tail⟩
-    obtain ⟨a,b,left,copy,right⟩ := (orderedEffects_three _ x v).mp run
-    exact ⟨v,invocationComponentEffects n p x a b v (component p 0 _ _ left)
-      (component p 1 _ _ copy) (component p 2 _ _ right),ih v y tail⟩
+  | cons i xs ih =>
+    rintro x y ⟨v,head,tail⟩
+    exact ⟨v,step i x v head,ih v y tail⟩
 
 def occurrenceSlots {X : Type} {l r : ℕ}
     (left : Fin l → X → X → Prop) (copy : Fin Copy.lifecycles.length → X → X → Prop)
@@ -441,6 +431,36 @@ theorem cutoffWorkerFamily [M8.Machine.Net] {I : Type} [Fintype I]
   rw [← c.stageCells]
   exact paid
 
+/-- One selected run completes its two MOVE phases and intervening COPY on the same data. -/
+theorem selectedRunEffect (n : Fin 9) (w B K : ℕ) (p : StageRun) :
+    let l := (selectedPhaseSchedule false).1.length
+    let r := (selectedPhaseSchedule true).1.length
+    ∀ x y, OrderedEffects (List.finRange 3) (fun j =>
+      OrderedEffects (List.finRange (invocationCounts l r j)) (selectedOccurrenceEffect n w B K p j)) x y →
+      BorrowedStep n w B K p x y := by
+  intro l r x y trace
+  obtain ⟨a,b,left,copy,right⟩ := (orderedEffects_three _ x y).mp trace
+  have component : ∀ j x y, OrderedEffects (List.finRange (invocationCounts l r j))
+      (selectedOccurrenceEffect n w B K p j) x y → InvocationComponentEffect n p w B K j x y := by
+    unfold selectedOccurrenceEffect
+    apply occurrenceComponents (l := l) (r := r) _ _ _ (InvocationComponentEffect n p w B K)
+    · intro x y trace
+      change y = invocationPhaseOutput n p false x
+      apply Eq.symm
+      apply (invocationPhaseOutput_fold n p false x (· = y)).mp
+      unfold InvocationPhaseTrace
+      exact trace
+    · intro x y trace
+      apply copyWindowTrace n p.1 p.2 x y
+      exact trace
+    · intro x y trace
+      change y = invocationPhaseOutput n p true x
+      apply Eq.symm
+      apply (invocationPhaseOutput_fold n p true x (· = y)).mp
+      unfold InvocationPhaseTrace
+      exact trace
+  exact invocationComponentEffects n p x a b y (component 0 _ _ left) (component 1 _ _ copy) (component 2 _ _ right)
+
 /-- The selected occurrence trace on the initialized stage realizes every borrowed invocation. -/
 theorem selectedStageEffects (n : Fin 9) (w B K : ℕ) :
     let l := (selectedPhaseSchedule false).1.length
@@ -448,27 +468,7 @@ theorem selectedStageEffects (n : Fin 9) (w B K : ℕ) :
     ∀ x y, OrderedEffects stageRuns (fun p => OrderedEffects (List.finRange 3) (fun j =>
       OrderedEffects (List.finRange (invocationCounts l r j)) (selectedOccurrenceEffect n w B K p j))) x y →
       OrderedEffects stageRuns (BorrowedStep n w B K) x y := by
-  intro l r
-  apply stageBorrowedEffects (l := l) (r := r) n (fun i => selectedOccurrenceEffect n w B K i.1 i.2.1 i.2.2)
-  intro p
-  unfold selectedOccurrenceEffect
-  dsimp only
-  apply occurrenceComponents (l := l) (r := r) _ _ _ (InvocationComponentEffect n p w B K)
-  · intro x y trace
-    change y = invocationPhaseOutput n p false x
-    apply Eq.symm
-    apply (invocationPhaseOutput_fold n p false x (· = y)).mp
-    unfold InvocationPhaseTrace
-    exact trace
-  · intro x y trace
-    apply copyWindowTrace n p.1 p.2 x y
-    exact trace
-  · intro x y trace
-    change y = invocationPhaseOutput n p true x
-    apply Eq.symm
-    apply (invocationPhaseOutput_fold n p true x (· = y)).mp
-    unfold InvocationPhaseTrace
-    exact trace
+  exact orderedEffects_mono stageRuns (selectedRunEffect n w B K)
 
 private theorem sumSigmaCosts {α : Type} {β : α → Type} (xs : List α) (ys : ∀ x, List (β x))
     (cost : Sigma β → ℕ) :
@@ -752,7 +752,7 @@ theorem runSelectedStageArchives [M8.Machine.Net] {U : Type} {Q l r owners : ℕ
     intro p
     rw [← align p j]
     exact (bank p).injective.ne (privateArchive p j).symm)
-  obtain ⟨z,F,t,y,run,bill,same,out,trace⟩ := runPlacedScheduleWithCharge tapes fan (shared.trans owner) placed
+  obtain ⟨z,F,t,y,run,bill,same,out,_,trace⟩ := runPlacedScheduleWithCharge tapes fan (shared.trans owner) placed
     (fun p j => congrArg owner (align p j)) (fun p k off q ne j => owner.injective.ne (apart p k off q ne j))
     body worker cleanupWeight state effect cost seed execute order (stageOccurrenceOrder_nodup l r) x v D (by
       change rep x (D.L ∘ (shared.trans owner)) (D.R ∘ (shared.trans owner))

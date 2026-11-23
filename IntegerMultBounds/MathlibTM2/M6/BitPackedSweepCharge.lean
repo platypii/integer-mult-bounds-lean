@@ -30,26 +30,32 @@ theorem runPlacedScheduleWithCharge {I : Type} {k T : ℕ} (tapes : I → ℕ)
       (∀ i ∈ order, ∀ l, (∀ j, ports i j ≠ l) → S.L (bank i l) = (initial i).L l ∧ S.R (bank i l) = (initial i).R l) →
       ∃ v D t y, Exec table (Prog.seqList (order.map placed)) (mk u S) t (mk v D) ∧
         (∀ js : List _, js.Nodup → t+tapeCharge weight js D ≤ tapeCharge weight js S+(order.map cost).sum+1) ∧ v.user = u.user ∧ represented y (embStk fan D) ∧
+        (∀ j, (∀ i ∈ order, ∀ l, bank i l ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) ∧
         order.foldr (fun i next a => ∃ b, effect i a b ∧ next b) (fun a => a = y) x := by
   intro X P U Q body code weight represented effect cost initial run table placed
   have project (i) (S : Stacks T prime) : embStk (ports i) (embStk (bank i) S) = embStk fan S := by
     simp only [embStk,Function.comp_def,selected]
   intro order unique x u S ready frames
   induction order generalizing x S u with
-  | nil => exact ⟨u,S,1,x,Exec.act .done _,by intro js _; simp; omega,rfl,ready,rfl⟩
+  | nil => exact ⟨u,S,1,x,Exec.act .done _,by intro js _; simp; omega,rfl,ready,fun _ _ => ⟨rfl,rfl⟩,rfl⟩
   | cons i rest ih =>
     obtain ⟨v,D,t,y,exec,time,user,mid,act⟩ := run i x (embDn (bank i) u) (embStk (bank i) S)
       ((project i S) ▸ ready) (frames i List.mem_cons_self)
     obtain ⟨z,F,first,_,same,view,untouched⟩ := exec_emb (ι := Prod.mk i) (body' := table)
       (bank i).injective (fun _ => rfl) exec u rfl S rfl
     rw [← view,project] at mid
-    obtain ⟨v',D',t',y',last,bill,final,out,acts⟩ := ih (List.nodup_cons.mp unique).2 y z F mid (by
+    obtain ⟨v',D',t',y',last,bill,final,out,frame,acts⟩ := ih (List.nodup_cons.mp unique).2 y z F mid (by
       intro j member l privateSlot
       have ne : i ≠ j := fun eq => (List.nodup_cons.mp unique).1 (eq ▸ member)
       obtain ⟨a,b⟩ := untouched _ (apart j l privateSlot i ne)
       obtain ⟨c,d⟩ := frames j (List.mem_cons_of_mem _ member) l privateSlot
       exact ⟨a.trans c,b.trans d⟩)
-    refine ⟨v',D',_,y',Exec.seq first last,?_,final.trans (same.trans user),out,y,act,acts⟩
+    refine ⟨v',D',_,y',Exec.seq first last,?_,final.trans (same.trans user),out,?_,y,act,acts⟩
+    case refine_2 =>
+      intro j outside
+      obtain ⟨a,b⟩ := frame j (fun m hm => outside m (List.mem_cons_of_mem _ hm))
+      obtain ⟨c,d⟩ := untouched j (outside i List.mem_cons_self)
+      exact ⟨a.trans c,b.trans d⟩
     intro js unique
     rw [← view] at time
     have head := placedCleanup_cost_le (bank i) S F weight t (cost i) untouched time js unique
@@ -84,12 +90,13 @@ private theorem scheduledBanksWithCharge {I : Type} [Fintype I] {k : ℕ}
   obtain ⟨prepared,owners,stock⟩ := prepare shared initial
   refine ⟨prepared,owners,?_⟩
   intro order distinct x u S live saved
-  apply runPlacedScheduleWithCharge tapes ports fan bank selected (fun i l h => (off i l h).2)
-    body code weight represented effect cost initial run order distinct x u S live
-  intro i _ l privateSlot
-  obtain ⟨a,b⟩ := saved _ (off i l privateSlot).1
-  obtain ⟨c,d⟩ := stock i l privateSlot
-  exact ⟨a.trans c,b.trans d⟩
+  obtain ⟨v,D,t,y,exec,bill,user,out,_,trace⟩ := runPlacedScheduleWithCharge tapes ports fan bank selected (fun i l h => (off i l h).2)
+    body code weight represented effect cost initial run order distinct x u S live (by
+    intro i _ l privateSlot
+    obtain ⟨a,b⟩ := saved _ (off i l privateSlot).1
+    obtain ⟨c,d⟩ := stock i l privateSlot
+    exact ⟨a.trans c,b.trans d⟩)
+  exact ⟨v,D,t,y,exec,bill,user,out,trace⟩
 
 /-- Execute all 160 invocations on a shared owner bank. The change in cleanup
 cost telescopes across runs and the child budgets form one directory interval. -/
