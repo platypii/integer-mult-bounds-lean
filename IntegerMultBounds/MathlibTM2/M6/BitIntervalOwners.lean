@@ -291,9 +291,10 @@ theorem intervalPackedInput_exec {P U : Type} {Q m : ℕ}
       Exec body (prepare.seq split) (mk u S) t (mk z F) ∧
       RepT (intervalOwnerBank (putWord (fun _ => blank) 0 (S.R (Fin.succ 0))) data)
         (embStk Fin.succ F).L (embStk Fin.succ F).R ∧
-      HelperFan (withHelperPort (intervalOwners 142080)) (Fin.lastCases (fun _ => 0) data) F := by
+      HelperFan (withHelperPort (intervalOwners 142080)) (Fin.lastCases (fun _ => 0) data) F ∧
+      ∀ j, (F.L j).length+(F.R j).length ≤ 301*(m*142080)+2 := by
   intro r init prepare split data
-  obtain ⟨v,D,k,user,time,prep,hl,hr,ready⟩ := intervalPrepareHelper_exec (m := m) body u S (by rw [source,List.length_ofFn]) left empty
+  obtain ⟨v,D,k,user,time,prep,hl,hr,ready,space⟩ := intervalPrepareHelper_exec (m := m) body u S (by rw [source,List.length_ofFn]) left empty
   let word := fun i => SparseRoleCircuit.encode (a := prime) (x i)
   let rows := fun (i : Fin m) (j : Fin 142080) => [word (finProdFinEquiv (i,j))]
   let bs := FlatCoordinateSchedule.bits 1
@@ -305,23 +306,38 @@ theorem intervalPackedInput_exec {P U : Type} {Q m : ℕ}
   change ∀ j, CyclicRowSplit.roleWord rows j = _ at px
   simp only [sx,px] at divide
   rw [source] at ready
-  obtain ⟨w,E,_,rfl,rep,same,_,_,_,t,paid,run⟩ := foreign_exec (P := Empty) (body := Empty.elim)
+  obtain ⟨w,E,_,rfl,rep,same,_,_,growth,t,paid,run⟩ := foreign_exec (P := Empty) (body := Empty.elim)
     (liftQ _ capacity) (HoareTime.liftQ capacity divide) (embDn Fin.succ v) _ _ rfl ready
   obtain ⟨z,F,placed,_,zu,view,off⟩ := exec_emb (body' := body) (ι := Empty.elim) (Fin.succ_injective _)
     (fun f => f.elim) run v rfl D rfl
   have keep := off 0 (fun i => Fin.succ_ne_zero i)
   have owners : RepT (intervalOwnerBank (putWord (fun _ => blank) 0 (S.R (Fin.succ 0))) data)
       (embStk Fin.succ F).L (embStk Fin.succ F).R := by rw [view,source]; exact rep
-  refine ⟨z,F,_,zu.trans (same.trans user),?_,Exec.seq prep placed,owners,
-    withHelperPort_ready _ _ _ (intervalOwners_ready _ _ _ owners) (keep.1.trans hl) (keep.2.trans hr)⟩
   have bound := CyclicRowNormalized.cost_linear 1 bs gs (by decide : 0 < 142080) positive (by decide)
     (FlatCoordinateSchedule.bits_value _) (FlatCoordinateSchedule.bits_value _)
     (FlatCoordinateSchedule.bits_canonical _) (FlatCoordinateSchedule.bits_canonical _)
   rw [Nat.mul_one] at bound
   have scale := Nat.mul_le_mul_right (intervalSplitTapes+5) bound
   change t ≤ CyclicRowNormalized.cost 142080 m 1 bs gs*(intervalSplitTapes+5)+6 at paid
-  dsimp only [intervalSplitTapes] at *
-  omega
+  refine ⟨z,F,_,zu.trans (same.trans user),?_,Exec.seq prep placed,owners,
+    withHelperPort_ready _ _ _ (intervalOwners_ready _ _ _ owners) (keep.1.trans hl) (keep.2.trans hr),?_⟩
+  · dsimp only [intervalSplitTapes] at *
+    omega
+  · intro j
+    induction j using Fin.cases with
+    | zero => rw [keep.1,keep.2,hl,hr]; simp; omega
+    | succ j =>
+      have start := space j
+      have gain := growth j
+      have digits := FlatCoordinateDimensions.bits_length_le_twice (le_refl m) positive
+      rw [← view] at gain
+      change (F.L j.succ).length+(F.R j.succ).length ≤
+        (D.L j.succ).length+(D.R j.succ).length+_ at gain
+      have original : (S.R j.succ).length ≤ m*142080 := by
+        by_cases h : j = 0
+        · subst j; rw [source,List.length_ofFn]
+        · rw [empty _ ((Fin.succ_injective _).ne h)]; simp
+      omega
 
 /-- Split the serialized payload directly into the live fan consumed by the
 child owner copy. The source index is the packed position followed by its owner. -/
@@ -383,6 +399,38 @@ theorem ownerSplitBank_source {c T : ℕ} (saved : Fin 3 ↪ Fin T) (fan : Fin (
 /-- Split the source directly on the caller's chosen owner tapes. The child
 starts with all rows, its zero helper, and its two volume controls. Tapes
 outside the placement, including a parked parent archive, are preserved. -/
+theorem placedChildInputSpace_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (bank : Fin (intervalSplitTapes+1) ↪ Fin T)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    ∃ program : Pr P T Q prime U, ∀ (m : ℕ), 0 < m → ∀ (x : Fin (m*142080) → ZMod 2)
+      (u : HS T Q prime U) (S : Stacks T prime),
+      S.R (bank (Fin.succ 0)) = List.ofFn (fun i => SparseRoleCircuit.encode (x i)) →
+      (∀ j, S.L (bank j) = []) → (∀ j, j ≠ Fin.succ 0 → S.R (bank j) = []) →
+      ∃ z F t, Exec body program (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        t ≤ (149*(intervalSplitTapes+5)+5)*(m*142080)+24 ∧
+        RepT (intervalOwnerBank (putWord (fun _ => blank) 0 (List.ofFn fun i => SparseRoleCircuit.encode (x i)))
+          (fun row i => x (finProdFinEquiv (i,row))))
+          (embStk Fin.succ (embStk bank F)).L (embStk Fin.succ (embStk bank F)).R ∧
+        HelperFan ((withHelperPort (intervalOwners 142080)).trans bank)
+          (Fin.lastCases (fun _ => 0) (fun row i => x (finProdFinEquiv (i,row)))) F ∧
+        (∀ j, (F.L (bank j)).length+(F.R (bank j)).length ≤ 301*(m*142080)+2) ∧
+        ∀ j, (∀ k, bank k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  let r := intervalCounterPorts.trans (Fin.succEmb _)
+  let init : Pr Empty _ Q prime U := (intervalHeaders r).seq (moveR (r 1) 0 (fun _ => bitSymbol false))
+  let prepare := init.seq (embProg Fin.succ (Empty.elim : Empty → Empty) intervalMarkers)
+  let split : Pr Empty _ Q prime U := embProg Fin.succ (Empty.elim : Empty → Empty)
+    (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))
+  refine ⟨embProg bank Empty.elim (prepare.seq split),?_⟩
+  intro m positive x u S source left empty
+  obtain ⟨z,F,t,user,paid,run,splitRows,rows,space⟩ := intervalPackedInput_exec (P := Empty) Empty.elim capacity
+    positive x (embDn bank u) (embStk bank S) source left empty
+  obtain ⟨v,D,placed,_,same,view,frame⟩ := exec_emb (body' := body) (ι := Empty.elim)
+    bank.injective (fun f => nomatch f) run u rfl S rfl
+  rw [← view] at rows splitRows space
+  change RepT (intervalOwnerBank (putWord (fun _ => blank) 0 (S.R (bank (Fin.succ 0)))) _) _ _ at splitRows
+  rw [source] at splitRows
+  exact ⟨v,D,t,placed,same.trans user,paid,splitRows,rows,space,frame⟩
+
 theorem placedChildInput_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
     (bank : Fin (intervalSplitTapes+1) ↪ Fin T)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
@@ -398,21 +446,11 @@ theorem placedChildInput_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q pr
         HelperFan ((withHelperPort (intervalOwners 142080)).trans bank)
           (Fin.lastCases (fun _ => 0) (fun row i => x (finProdFinEquiv (i,row)))) F ∧
         ∀ j, (∀ k, bank k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  let r := intervalCounterPorts.trans (Fin.succEmb _)
-  let init : Pr Empty _ Q prime U := (intervalHeaders r).seq (moveR (r 1) 0 (fun _ => bitSymbol false))
-  let prepare := init.seq (embProg Fin.succ (Empty.elim : Empty → Empty) intervalMarkers)
-  let split : Pr Empty _ Q prime U := embProg Fin.succ (Empty.elim : Empty → Empty)
-    (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))
-  refine ⟨embProg bank Empty.elim (prepare.seq split),?_⟩
+  obtain ⟨code,run⟩ := placedChildInputSpace_exec body bank capacity
+  refine ⟨code,?_⟩
   intro m positive x u S source left empty
-  obtain ⟨z,F,t,user,paid,run,splitRows,rows⟩ := intervalPackedInput_exec (P := Empty) Empty.elim capacity
-    positive x (embDn bank u) (embStk bank S) source left empty
-  obtain ⟨v,D,placed,_,same,view,frame⟩ := exec_emb (body' := body) (ι := Empty.elim)
-    bank.injective (fun f => nomatch f) run u rfl S rfl
-  rw [← view] at rows splitRows
-  change RepT (intervalOwnerBank (putWord (fun _ => blank) 0 (S.R (bank (Fin.succ 0)))) _) _ _ at splitRows
-  rw [source] at splitRows
-  exact ⟨v,D,t,placed,same.trans user,paid,splitRows,rows,frame⟩
+  obtain ⟨z,F,t,exec,user,paid,rep,rows,_,frame⟩ := run m positive x u S source left empty
+  exact ⟨z,F,t,exec,user,paid,rep,rows,frame⟩
 
 /-- Execute the split on the parked row bank and hand the represented child
 directly to that same fan, preserving every off-bank stack. -/

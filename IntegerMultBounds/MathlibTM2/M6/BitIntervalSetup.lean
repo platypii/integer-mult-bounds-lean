@@ -121,14 +121,16 @@ theorem intervalPrepareHelper_exec {P U : Type} {Q m : ℕ}
       F.L 0 = [] ∧ F.R 0 = List.replicate m (bitSymbol false) ∧
       RepT (CyclicRowSplit.bank (CyclicRowCopy.bank (putWord (fun _ => blank) 0 (S.R (Fin.succ 0)))
         (fun _ _ => blank) 0 (fun _ => 0) (FlatCoordinateSchedule.bits 1)) (FlatCoordinateSchedule.bits m))
-        (embStk Fin.succ F).L (embStk Fin.succ F).R := by
+        (embStk Fin.succ F).L (embStk Fin.succ F).R ∧
+      ∀ j : Fin intervalSplitTapes, (F.L j.succ).length+(F.R j.succ).length ≤
+        (S.R j.succ).length+(FlatCoordinateSchedule.bits m).length+2 := by
   intro r init
   have apart (i) : (0 : Fin (intervalSplitTapes+1)) ≠ r i := Ne.symm (Fin.succ_ne_zero _)
   obtain ⟨v,t,user,time,fill⟩ := intervalHeadersHelper_exec body r 0 apart m u S size
     (fun i hi => empty _ (r.injective.ne hi)) (empty _ (Ne.symm (Fin.succ_ne_zero _)))
   let B := {S with R := Function.update (Function.update S.R (r 2) ((FlatCoordinateSchedule.bits m).map bitSymbol)) 0 (List.replicate m (bitSymbol false))}
   let small := embStk Fin.succ S
-  obtain ⟨D,mark,ready⟩ := intervalMarkers_exec (P := Empty) Empty.elim m (embDn Fin.succ v) small
+  obtain ⟨D,mark,ready,space⟩ := intervalMarkersSpace_exec (P := Empty) Empty.elim m (embDn Fin.succ v) small
     (fun i => left _) (fun i hi => empty _ (Fin.succ_injective _ |>.ne hi))
   have view : embStk Fin.succ B = {small with R := Function.update small.R (roleSplitControls 142080 3) ((FlatCoordinateSchedule.bits m).map bitSymbol)} := by
     unfold embStk
@@ -141,9 +143,12 @@ theorem intervalPrepareHelper_exec {P U : Type} {Q m : ℕ}
   obtain ⟨z,F,run,_,zu,slice,off⟩ := exec_emb (body' := body) (ι := Empty.elim)
     (Fin.succ_injective _) (fun f => f.elim) mark v rfl B view
   have keep := off 0 (fun i => Fin.succ_ne_zero i)
-  refine ⟨z,F,_,zu.trans user,by omega,Exec.seq fill run,keep.1.trans (left _),?_,?_⟩
+  refine ⟨z,F,_,zu.trans user,by omega,Exec.seq fill run,keep.1.trans (left _),?_,?_,?_⟩
   · simp [keep.2,B]
   · rw [slice]; exact ready
+  · intro j
+    rw [← slice] at space
+    exact space j
 
 /-- Split an inherited payload starting with empty workspace. The host bill includes
 both counter generation and the simulation of every splitter transition. -/
