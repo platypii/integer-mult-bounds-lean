@@ -139,4 +139,34 @@ theorem stageCallerLayout {H T : ℕ} (owner : Fin T ↪ Fin H)
     change [ext _,place _,ext 21,ext 22].Nodup
     simp [List.nodup_cons,apart,Ne.symm (apart _ _),ext.injective.eq_iff,clean]
 
+/-- Fill the compact stage archive from the six descriptor words in the
+caller's header bank. Every stage tape outside the archive keeps its contents. -/
+theorem compactCallerArchive {P U : Type} {T R Q : ℕ} :
+    let H := 80+((T+273)+R)
+    let place := Fin.castAddEmb 37 (n := H)
+    let archive := archiveSetupPlacement 80 T R
+    ∀ host : P → Pr P (H+37) Q prime U, ∃ code, ∀ (c : CutoffNodeInput) u S,
+      (∀ i : Fin 37, S.R (i.natAdd H) =
+        callerHeaderBank (fun j => (Routines.hdr c.node j).map bitSymbol) i) →
+      (∀ j, S.L (place (archive j)) = [] ∧ S.R (place (archive j)) = []) →
+      ∃ z F t, Exec host code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        CleanupBound S F t (314*volume prime c.node) ∧
+        ParentArchiveInput c.node c.w (embStk archive (embStk place F)) ∧
+        ∀ j, (∀ i, archive i ≠ j) → F.L (place j) = S.L (place j) ∧ F.R (place j) = S.R (place j) := by
+  intro H place archive host
+  let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb R)).trans (Fin.natAddEmb 80)
+  obtain ⟨source,r,power,tmp,saved,dim,division,input,_,_,_,_,_,_,_,_,_,width,long,short,
+    sources,outputs,tmpOff,savedOff,apart,regs⟩ := stageCallerLayout owner archive
+      (fun i j => (archiveSetupPlacement_frame i).1 j)
+  obtain ⟨code,load⟩ := loadStageArchive host place source r power tmp saved width long short
+    sources outputs tmpOff savedOff apart regs
+  refine ⟨code,?_⟩
+  intro c u S words free
+  obtain ⟨fields,clock,modulus,ht,hs,_⟩ := input _ S.R words
+  obtain ⟨z,F,t,run,user,bill,ready,frame⟩ := load c u S fields clock modulus free ht hs
+  refine ⟨z,F,t,run,user,bill,?_,fun j off => frame _ (outputs j) (fun i => place.injective.ne (off i))⟩
+  have left : (F.L ∘ place) ∘ archive = (parentArchiveSeed c.node c.w).L := funext fun i => (ready i).1
+  have right : (F.R ∘ place) ∘ archive = (parentArchiveSeed c.node c.w).R := funext fun i => (ready i).2
+  simpa only [ParentArchiveInput,embStk,left,right] using parentArchiveSeed_ready c.node c.w
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

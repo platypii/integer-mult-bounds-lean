@@ -59,7 +59,7 @@ private theorem stageArchiveCost (c : CutoffNodeInput) :
   change _ ≤ 133*V at headers
   omega
 
-private theorem loadStageArchive {P U : Type} {T R H Q : ℕ} (body : P → Pr P H Q prime U)
+theorem loadStageArchive {P U : Type} {T R H Q : ℕ} (body : P → Pr P H Q prime U)
     (place : Fin (80+((T+273)+R)) ↪ Fin H)
     (source : Fin 6 → Fin H) (r : Fin 7 ↪ Fin H) (power : Fin 10 ↪ Fin H) (tmp saved : Fin H) :
     let archive := archiveSetupPlacement 80 T R

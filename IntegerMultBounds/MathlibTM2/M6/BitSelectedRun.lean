@@ -120,7 +120,7 @@ theorem selectedRestoredSweep [M8.Machine.Net] {P U : Type} {T Q : ℕ} (n : Fin
     exact ⟨a.trans c,b.trans d⟩
   obtain ⟨z,F,t,y,exec,bill,user,out,step,keep⟩ := selectedRunWithCharge n w blocks K tapes ports shared bank
     aligned apart body worker rep cost seed run p a v D (carry p previous) ⟨data,cutReady⟩
-  exact ⟨z,F,t,y,exec,by intro js distinct; simpa only [order,List.map_map,Function.comp_def,price,xs,l,r] using bill js distinct,
+  exact ⟨z,F,t,y,exec,by intro js distinct; simpa only [order,List.map_map,Function.comp_def,price,xs,l,r,tapeCharge,List.map_nil,List.sum_nil,Nat.add_zero] using bill js distinct,
     user,out.1,step,fun q ne h => ⟨out.2,keep q ne (carry q h)⟩⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
