@@ -9,17 +9,16 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover.Fallb
 open Shared50ModularControl (prime)
 open RecursiveInterchangeLayout
 
-noncomputable def packedMoveCall {P U : Type} {T Q : ℕ} (entry : P) (bank : Fin 35 ↪ Fin T)
-    (spectator : Fin T) (rank : ℕ) (work : List (Fin T)) : Pr P T Q prime U :=
+noncomputable def openedPackedMoveCall {P U : Type} {T Q : ℕ} (entry : P) (bank : Fin 35 ↪ Fin T)
+    (rank : ℕ) (work : List (Fin T)) : Pr P T Q prime U :=
   let r := moveWidthPorts.trans bank
-  let prepare : Pr P T Q prime U := (DFT.takeField (bank 34) spectator (bank 0)).seq (moveWidthProgram r rank)
-  let closeFrame : Pr P T Q prime U := (Prog.act (DFT.pushSep (bank 34))).seq
-    ((moveR spectator (bank 0) id).seq (moveR (bank 0) (bank 34) id))
-  prepare.seq (((Prog.call entry).seq (clearWorkTapes work)).seq ((bclear (r 3)).seq closeFrame))
+  (moveWidthProgram r rank).seq (((Prog.call entry).seq (clearWorkTapes work)).seq (bclear (r 3)))
+
+-- The version that opens and restores the archive itself is in ba03791a.
 
 /-- Call a packed transpose from a scheduled MOVE record and restore the caller's
 headers. The recursive procedure receives the physical payload in packed order. -/
-theorem packedMoveCaller {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
+theorem openedPackedMoveCaller {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
     (bank : Fin 35 ↪ Fin T) (spectator : Fin T) (apart : ∀ i, bank i ≠ spectator) (rank : ℕ)
     (work : List (Fin T)) (distinct : work.Nodup)
     (disjoint : ∀ j ∈ work, j ≠ bank 1 ∧ j ≠ bank 24 ∧ j ≠ bank 34 ∧ j ≠ spectator) :
@@ -30,9 +29,8 @@ theorem packedMoveCaller {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U
       let n := CopyChildLayout.spectators child
       let lane := packedDescriptor child.width n
       let header := binSyms (A := prime) L cutoff
-      let archive := binSyms n.size n ++ separator :: header
       let stored := fun x S => RecordReady (b := prime) (w := w) (d := 16) (W := W) bank
-        (prime^(w+1)).size W.size archive SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 x S
+        (prime^(w+1)).size W.size header SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 x S
       ∀ (position : Fin (volume prime child) ≃ Fin V),
       let size : volume prime lane = V := by
         have h := Fintype.card_congr position
@@ -48,30 +46,28 @@ theorem packedMoveCaller {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U
           RecordPayload (bank 24) (fun _ => blank) 0 (fun k => Shared50RecursiveNodeRows.transpose
             (v := lane) (one_dvd _) (fun i => x (i.cast size)) (k.cast size.symm)) G ∧
           ∀ j, j ≠ bank 24 → j ∉ work → G.L j = D.L j ∧ G.R j = D.R j) →
-      ∀ u S x, stored x S → S.R spectator = [] → (∀ j ∈ work, S.L j = [] ∧ S.R j = []) →
-      ∃ z F t y, Exec body (packedMoveCall entry bank spectator rank work) (mk u S) t (mk z F) ∧
-        CleanupBound S F t (price+4*work.length+14*(4*n.size+5)+4*w+23*child.width+16*child.width.size+39) ∧
+      ∀ u S x, stored x S → S.R spectator = binSyms n.size n → (∀ j ∈ work, S.L j = [] ∧ S.R j = []) →
+      ∃ z F t y, Exec body (openedPackedMoveCall entry bank rank work) (mk u S) t (mk z F) ∧
+        CleanupBound S F t (price+4*work.length+4*w+23*child.width+16*child.width.size+39) ∧
         z.user = u.user ∧ stored y F ∧
         (∀ j, j ≠ bank 24 → F.L j = S.L j ∧ F.R j = S.R j) ∧
         ∀ i, y (position i) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x ∘ position) i := by
-  intro r fields child w W L cutoff price V n lane header archive stored position size width packed recur u S x ready empty free
+  intro r fields child w W L cutoff price V n lane header stored position size width packed recur u S x ready countAt free
   let : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
-  let count := binSyms (A := prime) n.size n
-  let opened := {S with R := Function.update (Function.update S.R (bank 34) header) spectator count}
   let widthWord := binSyms (A := prime) child.width.size child.width
-  let D := {opened with R := Function.update opened.R (r 3) widthWord}
+  let D := {S with R := Function.update S.R (r 3) widthWord}
   have dst : r 3 = bank 1 := rfl
   have ne (i j : Fin 35) (h : i ≠ j) := bank.injective.ne h
-  have dataRight : D.R (bank 24) = S.R (bank 24) := by simp [D,opened,dst,apart,bank.injective.eq_iff]
+  have dataRight : D.R (bank 24) = S.R (bank 24) := by simp [D,dst,apart,bank.injective.eq_iff]
   have payload : RecordPayload (bank 24) (fun _ => blank) 0 x D := by
     intro i
     rw [dataRight]
     simpa only [List.map_ofFn] using ready.src i
-  obtain ⟨v,k,prep,vu,setup,headers⟩ := packedMoveDimensions body bank spectator apart rank child w W L cutoff u S x width ready empty
-  have cut : D.R (bank 34) = header := by simp [D,opened,dst,apart,bank.injective.eq_iff]
+  obtain ⟨v,k,prep,vu,setup,headers⟩ := openedMoveDimensions body bank spectator apart rank child w W L cutoff u S x width ready countAt
+  have cut : D.R (bank 34) = header := by simpa [D,dst,bank.injective.eq_iff] using ready.archive
   have emptyWork (j) (hj : j ∈ work) : D.L j = [] ∧ D.R j = [] := by
     obtain ⟨hw,_,hr,ha⟩ := disjoint j hj
-    simpa [D,opened,dst,hw,hr,ha] using free j hj
+    simpa [D,dst,hw,hr,ha] using free j hj
   obtain ⟨a,B,m,called,childCost,au,childOut,childFrame⟩ := recur v D x headers emptyWork cut payload
   obtain ⟨z,za,eraseWork⟩ := clearWorkTapes_exec body work distinct a B
   let G := {B with L := fun j => if j ∈ work then [] else B.L j, R := fun j => if j ∈ work then [] else B.R j}
@@ -100,49 +96,99 @@ theorem packedMoveCaller {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U
     ((off _ (dst ▸ ne 1 24 (by decide))).2).trans (Function.update_self ..)
   obtain ⟨q,qu,_,clear⟩ := bclear_exec body (r 3) z G
   let E := {G with R := Function.update G.R (r 3) []}
-  have normal (j) (hj : j ≠ bank 24) : E.L j = opened.L j ∧ E.R j = opened.R j := by
+  have normal (j) (hj : j ≠ bank 24) : E.L j = S.L j ∧ E.R j = S.R j := by
     refine ⟨(off j hj).1,?_⟩
     by_cases h : j = r 3
     · subst j
       have blankAt : S.R (bank 1) = [] := (ready.scratch 1 (by decide)).2
-      simp [E,opened,dst,apart,bank.injective.eq_iff,blankAt]
+      simp [E,dst,apart,bank.injective.eq_iff,blankAt]
     · simpa [E,D,h] using (off j hj).2
   have clearedPayload : RecordPayload (bank 24) (fun _ => blank) 0 y E := by
     intro i
     simpa [E,dst,Function.update_of_ne (ne 24 1 (by decide))] using out i
-  have base := replaceArchive bank archive header x S ready
-  have restoreHeaders (j : Fin 35) (hj : j ≠ 24) :
-      E.L (bank j) = S.L (bank j) ∧ E.R (bank j) = Function.update S.R (bank 34) header (bank j) := by
-    simpa [opened,apart] using normal (bank j) (bank.injective.ne hj)
-  have record := base.returnPayload restoreHeaders (fun i => by simpa only [List.map_ofFn] using (clearedPayload i).symm)
-  have countAt : E.R spectator = count := (normal _ (apart 24).symm).2.trans (Function.update_self ..)
-  obtain ⟨v',close,last,done⟩ := restoreMoveArchive body bank spectator apart w W L cutoff n y q E record countAt
+  have record := ready.returnPayload (fun j hj => normal (bank j) (bank.injective.ne hj))
+    (fun i => by simpa only [List.map_ofFn] using (clearedPayload i).symm)
   have coord : InheritedIntervalPositions child lane size position := fun i =>
     (packed i).symm.trans (packActive_packed child.width n ((position i).cast size.symm)).symm
-  refine ⟨v',_,_,y,prep.seq (run.seq (clear.seq close)),?_,last.trans (qu.trans (user.trans vu)),
-    done,?_,(coord.transpose_iff rfl x y).2 rfl⟩
+  refine ⟨q,E,_,y,prep.seq (run.seq clear),?_,qu.trans (user.trans vu),record,normal,(coord.transpose_iff rfl x y).2 rfl⟩
   · have erase := nativeCleanupBound (c := 1) clear (by
       unfold bclear
-      repeat first | apply And.intro | (change _ ≤ (1 : ℕ); exact of_decide_eq_true rfl))
-    have finish := nativeCleanupBound (c := 1) close (by
       repeat first | apply And.intro | (change _ ≤ (1 : ℕ); exact of_decide_eq_true rfl))
     intro js nd
     have a := setup js nd
     have b := bill js nd
     have c := erase js nd
-    have d := finish js nd
     rw [savedWidth] at c ⊢
     simp only [widthWord,length_binSyms] at c ⊢
-    dsimp only [D,opened,E,count,n,header,archive,lane,widthWord,r] at a b c d ⊢
-    dsimp only [tapeCharge,cleanupWeight] at a b c d ⊢
+    dsimp only [D,E,n,header,lane,widthWord,r] at a b c ⊢
+    dsimp only [tapeCharge,cleanupWeight] at a b c ⊢
     omega
-  · intro j hj
-    refine ⟨(normal j hj).1,?_⟩
-    by_cases ha : j = spectator
-    · subst j; simpa using empty.symm
-    · by_cases hr : j = bank 34
-      · subst j; simp [ha,ready.archive,archive,header]
-      · simpa [opened,ha,hr] using (normal j hj).2
+
+/-- Dispatch the stopped MOVE leaf or run the packed recursive procedure
+using the spectator word extracted by the same dispatcher. -/
+theorem packedMoveDispatch [M8.Machine.Net] {T Q N : ℕ} {P U : Type}
+    (ports : Fin (N+35) ↪ Fin T) (spectator : Fin T) (apart : ∀ i, ports i ≠ spectator)
+    (fitsLeaf : 44+M8.RevMachine.LeafCore.small ≤ N+35) (capacity : columnCapacity ≤ Q)
+    (rank : ℕ) (positive : 0 < rank) (bounded : rank ≤ 64)
+    (work : List (Fin T)) (distinct : work.Nodup)
+    (high : ∀ j ∈ work, ∃ i, 35 ≤ i.val ∧ ports i = j) :
+    let bank := scheduledRecordPorts ports
+    let fields : Fin 6 → Fin T := ![bank 28,bank 28,bank 28,bank 1,bank 28,spectator]
+    ∃ leafCode : Pr P T Q prime U, ∀ (body : P → Pr P T Q prime U) (large leaf entry : P),
+      body large = openedPackedMoveCall entry bank rank work → body leaf = leafCode →
+      ∀ (node child : Descriptor) (w W L cutoff price : ℕ),
+      let V := (prime^(w+1))^16*W
+      let n := CopyChildLayout.spectators child
+      let lane := packedDescriptor child.width n
+      let header := binSyms (A := prime) L cutoff
+      ∀ position : Fin (volume prime child) ≃ Fin V,
+      let size : volume prime lane = V := by
+        have h := Fintype.card_congr position
+        simp only [Fintype.card_fin] at h
+        rw [← h]
+        simp only [lane,n,volume,packedDescriptor,CopyChildLayout.spectators,one_mul,mul_one]
+        ring
+      child.width = (w+1)*rank → (∀ i, (position i).val = (CopyChildLayout.packActive child i).val) →
+      (cutoff < child.width → ∀ (v : HS T Q prime U) (D : Stacks T prime) (x : Fin V → ZMod 2),
+        (∀ i, D.R (fields i) = (M8.RevMachine.Routines.hdr lane i).map bitSymbol) →
+        (∀ j ∈ work, D.L j = [] ∧ D.R j = []) → D.R (bank 34) = header → RecordPayload (bank 24) (fun _ => blank) 0 x D →
+        ∃ z G t, Exec body (body entry) (mk v D) t (mk z G) ∧ CleanupBound D G t price ∧ z.user = v.user ∧
+          RecordPayload (bank 24) (fun _ => blank) 0 (fun k => Shared50RecursiveNodeRows.transpose
+            (v := lane) (one_dvd _) (fun i => x (i.cast size)) (k.cast size.symm)) G ∧
+          ∀ j, j ≠ bank 24 → j ∉ work → G.L j = D.L j ∧ G.R j = D.R j) →
+      cutoff < 2^L → child.width.size ≤ L → 0 < W → child.width < node.width →
+      let core : ℝ := (M8.RevMachine.LeafCore.small+5 : ℕ)*|M8.RevMachine.LeafCore.C|+8+
+        M8.RevMachine.LeafCore.small*(16+8*|M8.RevMachine.LeafCore.C|)
+      ∀ rate : ℝ, 391*(163+core) ≤ rate →
+      let charge := if cutoff < child.width then price+4*work.length+4*w+23*child.width+16*child.width.size+39
+        else ⌊(rate*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime child⌋₊
+      let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size
+        (binSyms n.size n ++ separator :: header) SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
+      let clean := fun (D : Stacks T prime) => ∀ i, 35 ≤ i.val → D.L (ports i) = [] ∧ D.R (ports i) = []
+      ∀ x u S, stored x S → clean S → S.R spectator = [] →
+      ∃ z F t y, Exec body (twoFieldDispatch ports spectator rank (body large) (body leaf)) (mk u S) t (mk z F) ∧
+        CleanupBound S F t (charge+4*w+23*child.width+22*L+8*n.size+61) ∧ z.user = u.user ∧
+        stored y F ∧ clean F ∧ F.R spectator = [] ∧ F.L spectator = S.L spectator ∧
+        (∀ j, j ≠ spectator → (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+        ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x ∘ position) h := by
+  intro bank fields
+  obtain ⟨leafCode,dispatch⟩ := twoFieldMoveProgram (P := P) (U := U) ports spectator apart fitsLeaf capacity rank positive true (fun _ => bounded)
+  refine ⟨leafCode,?_⟩
+  intro body large leaf entry installed stop node child w W L cutoff price V n lane header position size width packed recur fits digits pos smaller core rate room
+  apply dispatch body large leaf stop node child w W L cutoff _ width fits digits position packed pos rate room smaller
+  intro active q D word ready clear count
+  have outside (i : Fin (N+35)) (hi : 35 ≤ i.val) (j : Fin 35) : ports i ≠ bank j :=
+    ports.injective.ne (fun eq => by have h := congrArg Fin.val eq; change i.val = j.val at h; omega)
+  have disjoint j (hj : j ∈ work) : j ≠ bank 1 ∧ j ≠ bank 24 ∧ j ≠ bank 34 ∧ j ≠ spectator := by
+    obtain ⟨i,hi,rfl⟩ := high j hj
+    exact And.intro (outside i hi 1) ⟨outside i hi 24,outside i hi 34,apart i⟩
+  obtain ⟨z,F,t,y,run,paid,user,out,frame,read⟩ := openedPackedMoveCaller body entry bank spectator (fun i => apart _) rank work distinct
+    disjoint child w W L cutoff price position width packed (recur active) q D word ready count
+      (fun j hj => by obtain ⟨i,hi,rfl⟩ := high j hj; exact clear i hi)
+  refine ⟨z,F,t,y,installed ▸ run,paid,user,out,?_,fun j off => frame j (off _).symm,read⟩
+  intro i hi
+  have keep := frame _ (outside i hi 24)
+  exact ⟨keep.1.trans (clear i hi).1,keep.2.trans (clear i hi).2⟩
 
 /-- Count the return tapes even when the caller observes a different set of tapes.
 Only the initial stock of the missing return tapes is added to the budget. -/

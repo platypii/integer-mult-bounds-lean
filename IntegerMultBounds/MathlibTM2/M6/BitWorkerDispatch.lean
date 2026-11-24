@@ -925,11 +925,19 @@ theorem twoFieldMoveProgram [M8.Machine.Net] {work T Q : ℕ} {P U : Type}
     let archive := binSyms n.size n ++ separator :: header
     let active := cutoff < child.width
     let price := if active then time else ⌊(rate*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime child⌋₊
-    (active → MoveOnBankExec node child w W ports header position body (body large) time charged) →
     let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank
       (prime^(w+1)).size W.size archive SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
     let clean := fun D : Stacks T prime => ∀ i : Fin (work+35), 35 ≤ i.val →
       D.L (ports i) = [] ∧ D.R (ports i) = []
+    (active → ∀ q D word,
+      RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size header
+        SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 word D →
+      clean D → D.R spectator = binSyms n.size n →
+      ∃ z F t y, Exec body (body large) (mk q D) t (mk z F) ∧ workerCost charged D F t time ∧
+        z.user = q.user ∧ RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size header
+          SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 y F ∧ clean F ∧
+        (∀ j, (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) ∧
+        ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) h) →
     ∀ word u S, stored word S → clean S → S.R spectator = [] →
     ∃ z F t y, Exec body (twoFieldDispatch ports spectator rank (body large) (body leaf)) (mk u S) t (mk z F) ∧
       workerCost charged S F t (price+4*w+23*child.width+22*L+8*n.size+61) ∧ z.user = u.user ∧
@@ -938,11 +946,11 @@ theorem twoFieldMoveProgram [M8.Machine.Net] {work T Q : ℕ} {P U : Type}
       ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) h := by
   obtain ⟨leafCode,stop⟩ := stoppedMoveWithSpectator (P := P) (U := U) ports spectator apart fitsLeaf capacity rank positive charged rankBound
   refine ⟨leafCode,?_⟩
-  intro body large leaf installed node child w W L cutoff time width fits digits position coords pos core rate room smaller bank n header archive active price recurse stored clean
+  intro body large leaf installed node child w W L cutoff time width fits digits position coords pos core rate room smaller bank n header archive active price stored clean recurse
   apply twoFieldMoveDispatch charged ports spectator apart body large leaf child rank w W L cutoff price width fits digits position
   intro q D word opened clear count
   by_cases h : active
-  · obtain ⟨z,F,t,y,run,paid,ret,out,blank,_,frame,read⟩ := recurse h smaller q D word opened clear
+  · obtain ⟨z,F,t,y,run,paid,ret,out,blank,frame,read⟩ := recurse h q D word opened clear count
     exact ⟨z,F,t,y,by simpa [show cutoff < child.width from h] using run,
       by simpa only [price,ite_eq_left h] using paid,ret,out,blank,(frame spectator apart).2.trans count,
       (frame spectator apart).1,fun j _ => frame j,read⟩
@@ -990,7 +998,9 @@ theorem scheduledTwoFieldMove [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   intro body entry large leaf installed dispatch node child w W L cutoff time width fitsCut digits position coords pos core rate room n header active price recurse smaller u S word ready free
   have high : 35 ≤ moveSpectatorPort.val := by change 35 ≤ rowSwapBlock.tapes-1+35; omega
   obtain ⟨z,F,t,y,run,paid,user,out,clean,empty,left,frame,read⟩ :=
-    mixed body large leaf installed node child w W L cutoff time width fitsCut digits position coords pos rate room smaller recurse
+    mixed body large leaf installed node child w W L cutoff time width fitsCut digits position coords pos rate room smaller (fun h q D x opened clear _ => by
+        obtain ⟨z,F,t,y,run,cost,user,out,clean,_,frame,read⟩ := recurse h smaller q D x opened clear
+        exact ⟨z,F,t,y,run,cost,user,out,clean,frame,read⟩)
       word u S ready (fun i hi => free (movePrefix i) hi) (free moveSpectatorPort high).2
   refine ⟨z,F,t,y,dispatch ▸ run,paid,user,out,?_,fun j off => frame j (off _).symm (fun i => off (movePrefix i)),read⟩
   intro i hi
