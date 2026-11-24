@@ -125,7 +125,7 @@ theorem digitSwapStage_metadata {d V : ℕ}
     | cons q qs h =>
       exact congrArg (fun n => 1+n+(stage q).tapes) h
 
-private theorem rep_append_of_restrict {n m : ℕ} (a : Tapes n prime) (b : Tapes m prime)
+theorem rep_append_of_restrict {n m : ℕ} (a : Tapes n prime) (b : Tapes m prime)
     (L R : Fin (n+m) → List (Fin (prime+4)))
     (left : RepT a (L ∘ Fin.castAdd m) (R ∘ Fin.castAdd m))
     (right : RepT b (L ∘ Fin.natAdd n) (R ∘ Fin.natAdd n)) : RepT (a.append b) L R := by
