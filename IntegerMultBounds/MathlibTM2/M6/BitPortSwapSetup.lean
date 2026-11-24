@@ -30,6 +30,28 @@ def portSwapPlacement {T : ℕ} (io : Fin T) (K : ℕ) : Fin (1+(24+K)) ↪ Fin 
       simp only [Fin.addCases_right,Fin.val_natAdd] at h
       omega
 
+/-- A flat pass of any fitting size shares the swap's owner tape. Every
+positive slot uses the scratch suffix, starting at its first tape. -/
+def portPassPlacement {T K n : ℕ} (io : Fin T) (fits : n ≤ 1+(24+K)) :
+    Fin n ↪ Fin (T+(24+K)) :=
+  (Fin.castLEEmb fits).trans (portSwapPlacement io K)
+
+theorem portPassPlacement_row {T K n : ℕ} (io : Fin T) (fits : n ≤ 1+(24+K))
+    (pos : 0 < n) : portPassPlacement io fits ⟨0,pos⟩ = io.castAdd _ := by
+  change (Fin.addCases (fun _ : Fin 1 => io.castAdd (24+K)) (Fin.natAdd T) ((0 : Fin 1).castAdd (24+K)) : Fin (T+(24+K))) = _
+  rw [Fin.addCases_left]
+
+theorem portPassPlacement_scratch {T K n : ℕ} (io : Fin T) (fits : n ≤ 1+(24+K))
+    (i : Fin n) (pos : 0 < i.val) :
+    portPassPlacement io fits i = (⟨i.val-1,by omega⟩ : Fin (24+K)).natAdd T := by
+  let j : Fin (24+K) := ⟨i.val-1,by omega⟩
+  have eq : i.castLE fits = j.natAdd 1 := by
+    apply Fin.ext
+    change i.val = 1+(i.val-1)
+    omega
+  change (Fin.addCases (fun _ : Fin 1 => io.castAdd (24+K)) (Fin.natAdd T) (i.castLE fits) : Fin (T+(24+K))) = _
+  rw [eq,Fin.addCases_right]
+
 /-- Restrict a prepared swap bank to one owner. The correction uses the same
 24 headers and trailing workspace as the row machine that prepared them. -/
 theorem portSwapBank_rep {T K : ℕ} (roles : Tapes T prime) (io : Fin T)

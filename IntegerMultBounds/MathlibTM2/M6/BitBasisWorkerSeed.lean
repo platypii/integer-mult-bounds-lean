@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitParentArchiveSeed
 public import IntegerMultBounds.MathlibTM2.M6.BitPortRun
+public import IntegerMultBounds.MathlibTM2.M6.BitPortSwapSetup
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
@@ -246,8 +247,51 @@ def RunsPortAction (ops : List (FlatCoordinateSchedule.Op 16)) (C : ℕ)
           (∀ h, readAt blank (F.L (bank row)) (F.R (bank row)) h = (portOwner y).tape 0 h) ∧
           (∀ a j, y (FlatCoordinateLayout.index (action w a) j) =
             x (FlatCoordinateLayout.index a j)) ∧
-          (∀ j, j ≠ row → F.L (bank j) = [] ∧ F.R (bank j) = []) ∧
-          ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j
+          ∀ j, j ≠ bank row → F.L j = S.L j ∧ F.R j = S.R j
+
+/-- Execute a charged pass in the swap's workspace. All caller tapes
+other than the payload are restored and the entire scratch suffix is reusable. -/
+theorem RunsPortAction.onSwapBank {ops C action} (run : RunsPortAction ops C action)
+    {P U : Type} {T K Q : ℕ} (body : P → Pr P (T+(24+K)) Q prime U)
+    (capacity : stateCount (FlatCoordinateCleanSchedule.program ops) ≤ Q)
+    (fits : FlatCoordinateCleanSchedule.tapeCount ops ≤ 1+(24+K))
+    (io tmp saved : Fin T) (source : Fin 2 → Fin T)
+    (regs : ∀ i, [source i,tmp,saved].Nodup) :
+    ∃ code, ∀ w W, 0 < W → ∀ (x : Fin ((prime^w)^16*W) → ZMod 2) u (S : Stacks (T+(24+K)) prime),
+      S.R ((source 0).castAdd _) = binSyms w.size w →
+      S.R ((source 1).castAdd _) = binSyms W.size W →
+      (∀ h, readAt blank (S.L (io.castAdd _)) (S.R (io.castAdd _)) h = (portOwner x).tape 0 h) →
+      (∀ j : Fin (24+K), S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
+      S.R (tmp.castAdd _) = [] → S.R (saved.castAdd _) = [] →
+      ∃ (y : Fin ((prime^w)^16*W) → ZMod 2), ∃ z F n, Exec body code (mk u S) n (mk z F) ∧
+        z.user = u.user ∧ CleanupBound S F n (C*((prime^w)^16*W)) ∧
+        (∀ h, readAt blank (F.L (io.castAdd _)) (F.R (io.castAdd _)) h = (portOwner y).tape 0 h) ∧
+        (∀ a j, y (FlatCoordinateLayout.index (action w a) j) = x (FlatCoordinateLayout.index a j)) ∧
+        (∀ j : Fin (24+K), F.L (j.natAdd T) = [] ∧ F.R (j.natAdd T) = []) ∧
+        ∀ j : Fin T, j ≠ io → F.L (j.castAdd _) = S.L (j.castAdd _) ∧ F.R (j.castAdd _) = S.R (j.castAdd _) := by
+  let bank := portPassPlacement io fits
+  have row : bank (segmentSource ops) = io.castAdd _ := portPassPlacement_row io fits _
+  have apart (i : Fin 2) (j : Fin T) : bank (basisSeedPorts ops i) ≠ j.castAdd _ := by
+    have pos : 0 < (basisSeedPorts ops i).val := by change 0 < 2+i.val; omega
+    rw [show bank (basisSeedPorts ops i) = _ from portPassPlacement_scratch io fits _ pos]
+    exact Fin.natAdd_ne_castAdd _ _
+  obtain ⟨code,exec⟩ := run body capacity bank (fun i => (source i).castAdd _) (tmp.castAdd _) (saved.castAdd _)
+    (fun i j => apart i (source j)) (fun i => by
+      have h := regs i
+      have ht := apart i tmp
+      have hs := apart i saved
+      simp_all [List.nodup_cons,Ne.symm (apart i (source i))])
+  refine ⟨code,?_⟩
+  intro w W pos x u S width count owner fresh ht hs
+  obtain ⟨y,z,F,n,e,user,paid,out,act,frame⟩ := exec w W pos x u S width count (row ▸ owner)
+    (fun j ne => by
+      have nz : 0 < j.val := Nat.pos_of_ne_zero (fun zero => ne (Fin.ext zero))
+      simpa only [bank,portPassPlacement_scratch io fits j nz] using fresh ⟨j.val-1,by omega⟩) ht hs
+  rw [row] at out frame
+  refine ⟨y,z,F,n,e,user,paid,out,act,?_,fun j ne => frame _ (fun eq => ne (Fin.castAdd_inj.mp eq))⟩
+  intro j
+  obtain ⟨left,right⟩ := frame _ (Fin.natAdd_ne_castAdd j io)
+  exact ⟨left.trans (fresh j).1,right.trans (fresh j).2⟩
 
 private theorem runPortAction (ops : List (FlatCoordinateSchedule.Op 16))
     (action : ∀ w : ℕ, (Fin 16 → ZMod (prime^w)) → (Fin 16 → ZMod (prime^w)))
@@ -263,7 +307,14 @@ private theorem runPortAction (ops : List (FlatCoordinateSchedule.Op 16))
   obtain ⟨perm,action,matrix⟩ := actions w
   obtain ⟨y,z,F,n,exec,user,charge,result,move,blank,frame⟩ :=
     run w W positive x u S perm action width count owner free ht hs
-  exact ⟨y,z,F,n,exec,user,(fun js nd => (charge js nd).trans (Nat.add_le_add_left (bound w W positive) _)),result,fun a j => matrix a ▸ move a j,blank,frame⟩
+  refine ⟨y,z,F,n,exec,user,(fun js nd => (charge js nd).trans
+    (Nat.add_le_add_left (bound w W positive) _)),result,fun a j => matrix a ▸ move a j,?_⟩
+  intro j off
+  by_cases inside : ∃ i, bank i = j
+  · obtain ⟨i,rfl⟩ := inside
+    have ne : i ≠ row := fun eq => off (congrArg bank eq)
+    exact ⟨(blank i ne).1.trans (free i ne).1.symm,(blank i ne).2.trans (free i ne).2.symm⟩
+  · exact frame j (fun i eq => inside ⟨i,eq⟩)
 
 open Matrix IntegerMultBounds.Swap.Modular in
 theorem runRationalPortBasis (t : Fin 111) (atExit inverse : Bool) :
@@ -360,6 +411,118 @@ theorem inversePortDigits_cancel {R : Type*} [CommRing R] (x : Fin 16 → R) :
     | left i => exact (embed_h (a ∘ hIndex,a ∘ dIndex) i).symm
     | right i => exact (embed_d (a ∘ hIndex,a ∘ dIndex) i).symm
   simpa only [entered,splitRow,shifted,packed] using inverseShift_reflect_swap s
+
+open Matrix AffineFieldCoordinates IntegerMultBounds.Swap.Modular in
+/-- The two charged passes surrounding the physical swap invert the selected
+port exchange on every row, for both the entry and exit projectors. -/
+theorem inversePortCorrection_passes (t : Fin 111) (atExit : Bool) :
+    ∃ before after C D entry exit, RunsPortAction before C entry ∧ RunsPortAction after D exit ∧
+      ∀ w (s : IntegerMultBounds.Swap.Shear.State (Fin 8) (ZMod (prime^w))),
+        let P := translatedPortProjector (ZMod (prime^w)) (4:ZMod (prime^w))⁻¹ t
+        let U := reduce (prime^w) (selectedProjector ⟨2+t.val,by omega⟩)
+        let T := reduce (prime^w) (selectedProjector ⟨525+t.val,by omega⟩)
+        let moved := if atExit then M8.Exchange.exchange T (M8.Exchange.exchange (1-P) s)
+          else M8.Exchange.exchange P (M8.Exchange.exchange U s)
+        exit w (entry w (embed moved) ∘ Equiv.swap 0 15) = embed s := by
+  obtain ⟨before,C,entry⟩ := runPortCorrectionEntry t atExit true
+  obtain ⟨after,D,exit⟩ := runInversePortCorrectionExit t atExit
+  refine ⟨before,after,C,D,_,_,entry,exit,?_⟩
+  intro w s P U T moved
+  let B := reduce (prime^w) (rationalPortBasis t atExit)
+  have red : B = _ := (rationalPortBasis_reduction w t atExit).2
+  obtain ⟨_,unit,correct⟩ := portBasis_shift w t atExit
+  rw [← red] at unit correct
+  let coords := B⁻¹ *ᵥ embed s
+  have enter : B *ᵥ coords = embed s := by
+    rw [show B *ᵥ coords = (B*B⁻¹) *ᵥ embed s from mulVec_mulVec ..,
+      mul_nonsing_inv B ((isUnit_iff_isUnit_det B).mp unit),one_mulVec]
+  let step := OrderedAffine.execute (.shift (hIndex (0 : Fin 8)) (dIndex (Fin.last 7)) 1) coords
+  have leave : B *ᵥ step = embed moved := correct coords s enter
+  have back : B⁻¹ *ᵥ embed moved = step := by
+    rw [← leave,mulVec_mulVec,nonsing_inv_mul B ((isUnit_iff_isUnit_det B).mp unit),one_mulVec]
+  let reflect := fun a => embed (AffineFieldProgram.execute (.subFromD 0 7)
+    ((Fin.appendEquiv (α := ZMod (prime^w)) 8 8).symm a))
+  change B *ᵥ OrderedAffine.execute (.scale (dIndex (Fin.last 7)) (-1))
+    (reflect (reflect (B⁻¹ *ᵥ embed moved) ∘ Equiv.swap 0 15)) = embed s
+  rw [back]
+  exact (congrArg (B *ᵥ ·) (inversePortDigits_cancel coords)).trans enter
+
+open Cover in
+/-- Run both charged coordinate passes and the physical digit swap on one
+caller row. The program is independent of the precision and spectator count. -/
+theorem runPortPasses [M8.Machine.Net] {before after C D entry exit}
+    (left : RunsPortAction before C entry) (right : RunsPortAction after D exit)
+    {P U : Type} {T K Q : ℕ} (body : P → Pr P (T+(24+K)) Q prime U)
+    (io tmp saved : Fin T) (source : Fin 2 → Fin T) (r : Fin 14 ↪ Fin (T+(24+K)))
+    (regs : ∀ i, [source i,tmp,saved,io].Nodup)
+    (apart : ∀ i, r i ≠ io.castAdd _)
+    (capL : stateCount (FlatCoordinateCleanSchedule.program before) ≤ Q)
+    (capR : stateCount (FlatCoordinateCleanSchedule.program after) ≤ Q)
+    (fitL : FlatCoordinateCleanSchedule.tapeCount before ≤ 1+(24+K))
+    (fitR : FlatCoordinateCleanSchedule.tapeCount after ≤ 1+(24+K)) :
+    let block := LabelSwap.program (0 : Fin 1)
+    ∀ (cap : block.states ≤ Q) (fit : block.tapes ≤ 1+(24+K)),
+    let hdr := swapHeaderPort (T := T) (N := T+(24+K)) (by omega)
+    let setup : Pr P (T+(24+K)) Q prime U := (swapRuntimeHeaders r 16).seq
+      ((writeSwapConstants (T := T) (by omega) 16 (0 : Fin 16) 15).seq (markSwapHeaders (T := T) (by omega)))
+    r 2 = hdr 5 → r 11 = hdr 14 → r 13 = hdr 8 →
+    ∃ code, ∀ w W H J, 0 < W → prime^(w+1) < 2^H → W < 2^J →
+      let V := (prime^(w+1))^16*W
+      let setupTime := dimensionTime H 1 16 + (4*(16*H+1)+6) + (10*J+12) + (21*(w+1)+12) + 2
+      let runTime := (3808274*V + M8.RevMachine.LeafCore.coreCost V (w+1))*(block.tapes+5)+6
+      ∀ (x : Fin V → ZMod 2) u (S : Stacks (T+(24+K)) prime),
+      S.R ((source 0).castAdd _) = binSyms (w+1).size (w+1) → S.R ((source 1).castAdd _) = binSyms W.size W →
+      S.R (tmp.castAdd _) = [] → S.R (saved.castAdd _) = [] →
+      S.R (r 0) = binSyms H (prime^(w+1)) → S.R (r 1) = binSyms 1 1 →
+      S.R (r 10) = binSyms J W → (S.R (r 12)).length = w →
+      (∀ k : Fin 14, 3 ≤ k → k < 9 → S.R (r k) = []) →
+      (∀ h, readAt blank (S.L (io.castAdd _)) (S.R (io.castAdd _)) h = (portOwner x).tape 0 h) →
+      (∀ k : Fin (24+K), S.L (k.natAdd T) = [] ∧ S.R (k.natAdd T) = []) →
+      ∃ (y : Fin V → ZMod 2), ∃ z F n, Exec body code (mk u S) n (mk z F) ∧ z.user = u.user ∧
+        CleanupBound S F n (C*V+((1+6*Fast.Main.mnProgPush setup)*setupTime+13*runTime+4*(24+K)+1)+D*V) ∧
+        (∀ h, readAt blank (F.L (io.castAdd _)) (F.R (io.castAdd _)) h = (portOwner y).tape 0 h) ∧
+        (∀ a j, y (FlatCoordinateLayout.index (exit (w+1) (entry (w+1) a ∘ Equiv.swap 0 15)) j) =
+          x (FlatCoordinateLayout.index a j)) ∧
+        (∀ k : Fin (24+K), F.L (k.natAdd T) = [] ∧ F.R (k.natAdd T) = []) ∧
+        ∀ k : Fin T, k ≠ io → F.L (k.castAdd _) = S.L (k.castAdd _) ∧ F.R (k.castAdd _) = S.R (k.castAdd _) := by
+  intro block cap fit hdr setup power spectator exponent
+  have nodup i : [source i,tmp,saved].Nodup := by have h := regs i; simp_all [List.nodup_cons]
+  obtain ⟨a,start⟩ := left.onSwapBank body capL fitL io tmp saved source nodup
+  obtain ⟨b,finish⟩ := right.onSwapBank body capR fitR io tmp saved source nodup
+  let bank := (Fin.castLEEmb fit).trans (portSwapPlacement io K)
+  let swap := (setup.seq (embProg bank Empty.elim (foreign (liftQ block.program cap)))).seq
+    (clearWorkTapes ((List.finRange (24+K)).map (Fin.natAdd T)))
+  refine ⟨(a.seq swap).seq b,?_⟩
+  intro w W H J pos baseFits widthFits V setupTime runTime x u S width count ht hs base unit spectators clock scratch owner fresh
+  obtain ⟨y,v,A,l,ea,ua,ca,ya,actA,cleanA,frameA⟩ := start (w+1) W pos x u S width count owner fresh ht hs
+  have keep (k : Fin (T+(24+K))) (ne : k ≠ io.castAdd _) : A.R k = S.R k := by
+    induction k using Fin.addCases with
+    | left k => exact (frameA k (fun eq => ne (congrArg (Fin.castAdd _) eq))).2
+    | right k => exact (cleanA k).2.trans (fresh k).2.symm
+  have cleanTail (k : Fin (T+(24+K))) (hk : T ≤ k.val) : A.L k = [] ∧ A.R k = [] := by
+    let j : Fin (24+K) := ⟨k.val-T,by omega⟩
+    have eq : k = j.natAdd T := Fin.ext (by change k.val = T+(k.val-T); omega)
+    exact eq ▸ cleanA j
+  obtain ⟨z,q,B,m,ub,eb,cb,cleanB,frameB,zb,actB⟩ :=
+    runPortSwap body io r (0 : Fin 16) 15 (by decide) w W H J pos baseFits widthFits cap fit y
+      power spectator exponent v A ((keep _ (apart 0)).trans base) ((keep _ (apart 1)).trans unit)
+      ((keep _ (apart 10)).trans spectators) ((congrArg List.length (keep _ (apart 12))).trans clock)
+      (fun k h l => (keep _ (apart k)).trans (scratch k h l)) ya
+      (fun k => cleanTail _ (by change T ≤ T+k.val; omega)) (fun k h => cleanTail k (by omega))
+  have old (k : Fin T) (ne : k ≠ io) := (frameB k ne).2.trans (frameA k ne).2
+  have off i : source i ≠ io ∧ tmp ≠ io ∧ saved ≠ io := by have h := regs i; simp_all [List.nodup_cons]
+  obtain ⟨out,f,F,n,ec,uc,cc,represented,actC,cleanC,frameC⟩ := finish (w+1) W pos z q B
+    ((old _ (off 0).1).trans width) ((old _ (off 1).1).trans count) zb cleanB
+    ((old _ (off 0).2.1).trans ht) ((old _ (off 0).2.2).trans hs)
+  refine ⟨out,f,F,l+m+n,(ea.seq eb).seq ec,uc.trans (ub.trans ua),?_,represented,?_,cleanC,?_⟩
+  · have vol : RecursiveInterchangeLayout.volume prime (payloadView prime 16 (w+1) W) = V := by
+      simp [V,payloadView,RecursiveInterchangeLayout.volume,← pow_mul,Nat.mul_comm]
+    rw [vol] at cb
+    exact (ca.seq cb).seq cc
+  · intro coords j
+    exact (actC _ j).trans ((actB _ j).trans (actA coords j))
+  · intro k ne
+    exact ⟨(frameC k ne).1.trans ((frameB k ne).1.trans (frameA k ne).1),(frameC k ne).2.trans (old k ne)⟩
 
 /-- Initialize both directions of a worker's basis change using the same
 two source words and the same copy scratch. -/
