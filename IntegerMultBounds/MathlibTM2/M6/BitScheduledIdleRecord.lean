@@ -69,7 +69,7 @@ def ScheduledIdleRecordRun [M8.Machine.Net] {A U : Type} {H Q : ℕ}
     (table : A → Pr A H Q prime U) (code : Pr A H Q prime U)
     (raw : Fin 72 ↪ Fin H) (fields : Fin 6 ↪ Fin H) (work : List (Fin H))
     (i : Fin 9) (j : Fin idleCopies.length) (D leafRate : ℝ)
-    (childBudget : {c : CutoffNodeInput // c.cutoff < c.node.width} → ℕ → ℕ)
+    (permits : {c : CutoffNodeInput // c.cutoff < c.node.width} → ℕ → ℕ → Prop)
     (fixed base swaps : ℕ) : Prop :=
     ∀ (p : CutoffNodeInput) blocks, p.root.Positive → 142080^(p.depth+1) ∣ p.root.rows →
       p.root.beforeH = blocks*prime^(64*p.root.width) →
@@ -79,7 +79,7 @@ def ScheduledIdleRecordRun [M8.Machine.Net] {A U : Type} {H Q : ℕ}
       p.cutoff < child.width →
       (∀ (x : {c : CutoffNodeInput // c.cutoff < c.node.width}), x.val.root = p.root → x.val.path = p.path++[index] → x.val.cutoff = p.cutoff →
         ∀ k : Fin nodeChildren5.length, let d := scheduledChild prime child k
-        p.cutoff < d.width → childBudget x k.val ≤ cutoffTreeBudget D leafRate p.cutoff (fuel-1) d) →
+        p.cutoff < d.width → permits x k.val (cutoffTreeBudget D leafRate p.cutoff (fuel-1) d)) →
       ∀ (word : Fin p.cells → ZMod 2) u S,
         RecordPayload (raw 24) (fun _ => blank) 0 word S →
         IdleDispatchReady raw p.w p.idleWidth p.root.width.size p.cutoff S →
@@ -95,8 +95,8 @@ def ScheduledIdleRecordRun [M8.Machine.Net] {A U : Type} {H Q : ℕ}
 word in parent order. Charge its recursive call at the next path depth. -/
 theorem scheduledIdleRecord [M8.Machine.Net] {P U : Type} {N T Q : ℕ}
     {body : P → Pr P N Q prime U} {dst : Fin (142081+2) ↪ Fin N} {leafRate : ℝ}
-    {childBudget : {c : CutoffNodeInput // c.cutoff < c.node.width} → ℕ → ℕ}
-    (family : SplitRecordTreeFamily Subtype.val body dst leafRate childBudget)
+    {permits : {c : CutoffNodeInput // c.cutoff < c.node.width} → ℕ → ℕ → Prop}
+    (family : RecordTreeFamily Subtype.val body dst leafRate permits)
     (swapCap : (@rowSwapBlock BinaryRadixEqualShared.supplierNet).states ≤ Q)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
     (i : Fin 9) (j : Fin idleCopies.length) (board : Fin 113 ↪ Fin T)
@@ -109,7 +109,7 @@ theorem scheduledIdleRecord [M8.Machine.Net] {P U : Type} {N T Q : ℕ}
     ∃ minimum : ℝ, 0 ≤ minimum ∧
       ∃ (table : Option (Empty ⊕ P) → Pr (Option (Empty ⊕ P)) (intervalHostSize T N) Q prime U)
         (code : Pr (Option (Empty ⊕ P)) (intervalHostSize T N) Q prime U) (fixed base swaps : ℕ),
-      ∀ D : ℝ, minimum ≤ D → ScheduledIdleRecordRun table code raw fields work i j D leafRate childBudget fixed base swaps := by
+      ∀ D : ℝ, minimum ≤ D → ScheduledIdleRecordRun table code raw fields work i j D leafRate permits fixed base swaps := by
   intro caller embed raw fields work
   obtain ⟨minimum,positive,build⟩ := compiledIdleRecord family swapCap capacity i j board splitter apart
   refine ⟨minimum,positive,?_⟩
@@ -145,13 +145,13 @@ theorem scheduledIdleRecord [M8.Machine.Net] {P U : Type} {N T Q : ℕ}
 /-- Installing an entry costs two control steps. The placed program preserves
 every host tape except its own payload, including tapes outside its bank. -/
 theorem ScheduledIdleRecordRun.call [M8.Machine.Net] {A B U : Type} {H T Q : ℕ}
-    {table : A → Pr A T Q prime U} {code raw fields work i j D leafRate childBudget fixed base swaps}
-    (run : ScheduledIdleRecordRun table code raw fields work i j D leafRate childBudget fixed base swaps)
+    {table : A → Pr A T Q prime U} {code raw fields work i j D leafRate permits fixed base swaps}
+    (run : ScheduledIdleRecordRun table code raw fields work i j D leafRate permits fixed base swaps)
     (place : Fin T ↪ Fin H) (label : A → B) (outer : B → Pr B H Q prime U) (entry : B)
     (installed : ∀ f, outer (label f) = embProg place label (table f))
     (dispatch : outer entry = embProg place label code) :
     ScheduledIdleRecordRun outer (.call entry) (raw.trans place) (fields.trans place)
-      (work.map place) i j D leafRate childBudget (fixed+2) base swaps := by
+      (work.map place) i j D leafRate permits (fixed+2) base swaps := by
   intro p blocks positive rows align index child fuel active children word u S payload ready fresh roles
   obtain ⟨v,E,n,y,exec,same,paid,out,read,frame⟩ := run p blocks positive rows align active children word
     (embDn place u) (embStk place S) payload ready (fun k hk => fresh _ (List.mem_map_of_mem hk)) roles
@@ -176,8 +176,8 @@ theorem ScheduledIdleRecordRun.call [M8.Machine.Net] {A B U : Type} {H T Q : ℕ
 coefficient. The three uniform rates also price every active subwindow. -/
 theorem scheduledIdleWindowRecords [M8.Machine.Net] {P U : Type} {N T Q : ℕ}
     {body : P → Pr P N Q prime U} {dst : Fin (142081+2) ↪ Fin N} {leafRate : ℝ}
-    {childBudget : {c : CutoffNodeInput // c.cutoff < c.node.width} → ℕ → ℕ}
-    (family : SplitRecordTreeFamily Subtype.val body dst leafRate childBudget)
+    {permits : {c : CutoffNodeInput // c.cutoff < c.node.width} → ℕ → ℕ → Prop}
+    (family : RecordTreeFamily Subtype.val body dst leafRate permits)
     (swapCap : (@rowSwapBlock BinaryRadixEqualShared.supplierNet).states ≤ Q)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
     (i : Fin 9) (board : Fin idleCopies.length → Fin 113 ↪ Fin T)
@@ -194,7 +194,7 @@ theorem scheduledIdleWindowRecords [M8.Machine.Net] {P U : Type} {N T Q : ℕ}
       ∀ {H : ℕ} (place : Job → Fin (intervalHostSize T N) ↪ Fin H),
       ∃ table : Label → Pr Label H Q prime U, ∀ D : ℝ, minimum ≤ D → ∀ j,
       ScheduledIdleRecordRun table (.call (.inl j)) ((raw j).trans (place j)) ((fields j).trans (place j))
-        ((work j).map (place j)) i j D leafRate childBudget fixed base swaps := by
+        ((work j).map (place j)) i j D leafRate permits fixed base swaps := by
   classical
   intro caller embed raw fields work Job Label
   choose minimum nonneg table code fixed base swaps run using fun j =>
@@ -222,8 +222,8 @@ theorem scheduledIdleWindowRecords [M8.Machine.Net] {P U : Type} {N T Q : ℕ}
 and six archived role fields are attached to the live window. -/
 theorem installedIdleWindow [M8.Machine.Net] {P U : Type} {B N Q : ℕ}
     {body : P → Pr P N Q prime U} {dst : Fin (142081+2) ↪ Fin N} {leafRate : ℝ}
-    {childBudget : {c : CutoffNodeInput // c.cutoff < c.node.width} → ℕ → ℕ}
-    (family : SplitRecordTreeFamily Subtype.val body dst leafRate childBudget)
+    {permits : {c : CutoffNodeInput // c.cutoff < c.node.width} → ℕ → ℕ → Prop}
+    (family : RecordTreeFamily Subtype.val body dst leafRate permits)
     (swapCap : (@rowSwapBlock BinaryRadixEqualShared.supplierNet).states ≤ Q)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
     (i : Fin 9) (window : Fin idleCopies.length → Fin 78 ↪ Fin B) :
@@ -236,7 +236,7 @@ theorem installedIdleWindow [M8.Machine.Net] {P U : Type} {B N Q : ℕ}
     ∃ (table : Label → Pr Label (B+H) Q prime U) (scratch : List (Fin H))
       (minimum : ℝ) (fixed base swaps : ℕ), 0 ≤ minimum ∧ ∀ D : ℝ, minimum ≤ D → ∀ j,
       ScheduledIdleRecordRun table (.call (.inl j)) (raw j) (fields j)
-        (scratch.map (Fin.natAddEmb B)) i j D leafRate childBudget fixed base swaps := by
+        (scratch.map (Fin.natAddEmb B)) i j D leafRate permits fixed base swaps := by
   classical
   intro H windowBank raw fields Job Label
   let board := Fin.castAddEmb intervalSplitTapes (n := 113)

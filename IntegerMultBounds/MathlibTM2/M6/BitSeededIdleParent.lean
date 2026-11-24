@@ -10,11 +10,11 @@ open RecursiveInterchangeLayout
 
 /-- Assemble the parent from its packed sweeps and the compiled idle windows.
 The idle branches inherit one recurrence coefficient across all nine stages. -/
-theorem assembledIdleParent [M8.Machine.Net] {P U Config : Type} {N : ℕ} :
+theorem assembledIdleParent [M8.Machine.Net] {U Config : Type} :
     ∃ states : ℕ, ∀ {Q : ℕ}, states ≤ Q →
-    ∀ {body : P → Pr P N Q prime U} {dst : Fin (142081+2) ↪ Fin N} {leafRate : ℝ}
-      {childBudget : {c : CutoffNodeInput // c.cutoff < c.node.width} → ℕ → ℕ},
-    SplitRecordTreeFamily Subtype.val body dst leafRate childBudget →
+    ∀ {P : Type} {N : ℕ} {body : P → Pr P N Q prime U} {dst : Fin (142081+2) ↪ Fin N} {leafRate : ℝ}
+      {permits : {c : CutoffNodeInput // c.cutoff < c.node.width} → ℕ → ℕ → Prop},
+    RecordTreeFamily Subtype.val body dst leafRate permits →
     ∃ (init fixed base swaps : Fin 9 → ℕ) (minimum : ℝ) (leaf : Fin 9 → ℝ) (assemble : ℕ),
     0 ≤ minimum ∧ (∀ i, 0 ≤ leaf i) ∧ ∀ D, minimum ≤ D →
     ∀ (input : Config → CutoffNodeInput) (blocks : Config → ℕ),
@@ -26,7 +26,7 @@ theorem assembledIdleParent [M8.Machine.Net] {P U Config : Type} {N : ℕ} :
       ∀ (x : {v : CutoffNodeInput // v.cutoff < v.node.width}),
         x.val.root = p.root → x.val.path = p.path++[idleDirectoryIndex (i,j)] → x.val.cutoff = p.cutoff →
         ∀ k : Fin nodeChildren5.length, let d := scheduledChild prime (child c i j) k
-        p.cutoff < d.width → childBudget x k.val ≤ cutoffTreeBudget D leafRate p.cutoff (fuel c-1) d) →
+        p.cutoff < d.width → permits x k.val (cutoffTreeBudget D leafRate p.cutoff (fuel c-1) d)) →
     let branch := fun c i j => let p := input c; if p.cutoff < (child c i j).width then
       idleRecordOverhead p (fixed i) (base i) (swaps i)+cutoffTreeBudget D leafRate p.cutoff (fuel c) (child c i j)
       else ⌊leaf i*((child c i j).width : ℝ)^M8.Machine.BudgetBound.tau*volume prime (child c i j)⌋₊
@@ -52,7 +52,7 @@ theorem assembledIdleParent [M8.Machine.Net] {P U Config : Type} {N : ℕ} :
   let header := (fun {n : ℕ} (_ : Program 38 n prime) => n) (RecursiveRowsNodeHeaders.program 142080)
   let swap := (@rowSwapBlock BinaryRadixEqualShared.supplierNet).states
   refine ⟨max q (max columnCapacity (max swap (max (merge+merge) header))),?_⟩
-  intro Q fits body dst leafRate childBudget family
+  intro Q fits P N body dst leafRate permits family
   obtain ⟨assemble,join⟩ := build ((Nat.le_max_left ..).trans fits)
   have room := (Nat.le_max_right ..).trans fits
   have workerRoom := (Nat.le_max_right ..).trans room

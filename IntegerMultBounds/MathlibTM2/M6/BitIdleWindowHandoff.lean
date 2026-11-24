@@ -79,8 +79,8 @@ theorem packedOwnerTraversal {P U : Type} {T Q : ℕ} (owners : Fin 142081 ↪ F
 volume counters. Setup and handoff execute in the same procedure table. -/
 theorem compiledIdleWindowHandoff [M8.Machine.Net] {P U : Type} {N Q : ℕ}
     {body : P → Pr P N Q prime U} {dst : Fin (142081+2) ↪ Fin N} {leafRate : ℝ}
-    {childBudget : {c : CutoffNodeInput // c.cutoff < c.node.width} → ℕ → ℕ}
-    (family : SplitRecordTreeFamily Subtype.val body dst leafRate childBudget)
+    {permits : {c : CutoffNodeInput // c.cutoff < c.node.width} → ℕ → ℕ → Prop}
+    (family : RecordTreeFamily Subtype.val body dst leafRate permits)
     (column : columnCapacity ≤ Q) (swapCap : (@rowSwapBlock BinaryRadixEqualShared.supplierNet).states ≤ Q)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
     (headerCap : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q)
@@ -97,7 +97,7 @@ theorem compiledIdleWindowHandoff [M8.Machine.Net] {P U : Type} {N Q : ℕ}
       (∀ j, p.cutoff < (child j).width → ∀ (x : {c : CutoffNodeInput // c.cutoff < c.node.width}),
         x.val.root = p.root → x.val.path = p.path++[idleDirectoryIndex (i,j)] → x.val.cutoff = p.cutoff →
         ∀ k : Fin nodeChildren5.length, let d := scheduledChild prime (child j) k
-        p.cutoff < d.width → childBudget x k.val ≤ cutoffTreeBudget D leafRate p.cutoff (fuel-1) d) →
+        p.cutoff < d.width → permits x k.val (cutoffTreeBudget D leafRate p.cutoff (fuel-1) d)) →
       let branch j := if p.cutoff < (child j).width then idleRecordOverhead p fixed base swaps+
         cutoffTreeBudget D leafRate p.cutoff fuel (child j)
         else ⌊C*((child j).width : ℝ)^M8.Machine.BudgetBound.tau*volume prime (child j)⌋₊

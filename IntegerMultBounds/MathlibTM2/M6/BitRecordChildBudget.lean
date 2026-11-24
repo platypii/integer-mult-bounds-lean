@@ -19,9 +19,9 @@ private theorem recordEntryBound (c : CutoffNodeInput) (rate : ℕ) :
 
 /-- A fixed entry program fits the tree allowance whenever the core receives
 at most the local charge and the allowances of its scheduled children. -/
-def SplitRecordTreeFamily [M8.Machine.Net] {Config P U : Type} {N Q : ℕ}
+def RecordTreeFamily [M8.Machine.Net] {Config P U : Type} {N Q : ℕ}
     (input : Config → CutoffNodeInput) (body : P → Pr P N Q prime U) (dst : Fin (142081+2) ↪ Fin N)
-    (leafRate : ℝ) (budget : Config → ℕ → ℕ) : Prop :=
+    (leafRate : ℝ) (permits : Config → ℕ → ℕ → Prop) : Prop :=
     ∃ minimum : ℝ, 0 ≤ minimum ∧ ∀ {T : ℕ}
       (live : Fin (142080+2) ↪ Fin T) (record : Fin 34 ↪ Fin T),
       (∀ i j, 8 ≤ j.val → record j ≠ live i) →
@@ -31,9 +31,15 @@ def SplitRecordTreeFamily [M8.Machine.Net] {Config P U : Type} {N Q : ℕ}
         c.cutoff < c.node.width →
         let fuel := c.depth-(c.path.length+1)
         (∀ k : Fin nodeChildren5.length, let d := scheduledChild prime c.node k
-          c.cutoff < d.width → budget x k.val ≤ cutoffTreeBudget D leafRate c.cutoff fuel d) →
+          c.cutoff < d.width → permits x k.val (cutoffTreeBudget D leafRate c.cutoff fuel d)) →
         SplitRecordChildExec c live record dst bank host program (cutoffTreeBudget D leafRate c.cutoff (c.depth-c.path.length) c.node) ∧
         InstalledRecordChildExec c live record dst bank host program (cutoffTreeBudget D leafRate c.cutoff (c.depth-c.path.length) c.node)
+
+/-- A family whose active children need the specified numerical allowances. -/
+abbrev SplitRecordTreeFamily [M8.Machine.Net] {Config P U : Type} {N Q : ℕ}
+    (input : Config → CutoffNodeInput) (body : P → Pr P N Q prime U) (dst : Fin (142081+2) ↪ Fin N)
+    (leafRate : ℝ) (budget : Config → ℕ → ℕ) : Prop :=
+  RecordTreeFamily input body dst leafRate (fun x k allowance => budget x k ≤ allowance)
 
 /-- Once the layout and its initializer are fixed, choose a single tree
 coefficient that covers initialization and all active child allowances. -/

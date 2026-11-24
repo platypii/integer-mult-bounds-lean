@@ -109,6 +109,17 @@ private theorem treeBudget_extra_fuel [M8.Machine.Net] (D rate : ℝ) (cutoff de
         stop (k :: path) (by simp [len])
     · rfl
 
+/-- A uniform stopping depth caps the budget even when the root reserves more levels. -/
+theorem cutoffTreeBudget_prune [M8.Machine.Net] (D rate : ℝ) (cutoff depth fuel : ℕ)
+    (v : Descriptor) (stop : ∀ path : List (Fin nodeChildren5.length), path.length = depth →
+      (path.foldl (scheduledChild prime) v).width ≤ cutoff) :
+    cutoffTreeBudget D rate cutoff fuel v = cutoffTreeBudget D rate cutoff (min fuel depth) v := by
+  by_cases short : fuel ≤ depth
+  · rw [Nat.min_eq_left short]
+  · rw [Nat.min_eq_right (by omega : depth ≤ fuel)]
+    simpa only [Nat.add_sub_of_le (by omega : depth ≤ fuel)] using
+      treeBudget_extra_fuel D rate cutoff depth (fuel-depth) v stop
+
 /-- A physical child call still above the cutoff is fewer than six edges
 from the parent where the seven-atom sweep stopped. -/
 theorem cutoffBandActiveDepth (p : CutoffNodeInput) (band : 7*(p.w+1) ≤ p.cutoff)
@@ -126,11 +137,7 @@ theorem cutoffTreeBudget_band [M8.Machine.Net] (D rate : ℝ) (fuel : ℕ) (p : 
       (path.foldl (scheduledChild prime) p.node).width ≤ p.cutoff := by
     exact Nat.le_of_not_gt fun active => (len ▸ cutoffBandActiveDepth p band path active).false
   rw [← cutoffBandBudget_eq D rate _ _ _ (by simpa [p.width] using band)]
-  by_cases short : fuel ≤ 6
-  · rw [Nat.min_eq_left short]
-  · rw [Nat.min_eq_right (by omega : 6 ≤ fuel)]
-    simpa only [Nat.add_sub_of_le (by omega : 6 ≤ fuel)] using
-      treeBudget_extra_fuel D rate p.cutoff 6 (fuel-6) p.node stop
+  exact cutoffTreeBudget_prune D rate _ 6 fuel p.node stop
 
 /-- Increasing the stopped-leaf allowance preserves every active subtree budget. -/
 theorem cutoffTreeBudget_leaf_mono [M8.Machine.Net] (D : ℝ) {a b : ℝ} (rates : a ≤ b)

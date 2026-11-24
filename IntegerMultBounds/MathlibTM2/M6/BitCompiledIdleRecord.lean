@@ -52,8 +52,8 @@ def IdleDispatchReady {T : ℕ} (raw : Fin 72 ↪ Fin T) (w W L cutoff : ℕ) (S
 role descriptor and the ordinary dispatch registers. -/
 theorem compiledIdleRecord [M8.Machine.Net] {P U Config : Type} {N T Q : ℕ}
     {input : Config → CutoffNodeInput} {body : P → Pr P N Q prime U}
-    {dst : Fin (142081+2) ↪ Fin N} {leafRate : ℝ} {childBudget : Config → ℕ → ℕ}
-    (family : SplitRecordTreeFamily input body dst leafRate childBudget)
+    {dst : Fin (142081+2) ↪ Fin N} {leafRate : ℝ} {permits : Config → ℕ → ℕ → Prop}
+    (family : RecordTreeFamily input body dst leafRate permits)
     (swapCap : (@rowSwapBlock BinaryRadixEqualShared.supplierNet).states ≤ Q)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
     (i : Fin 9) (j : Fin idleCopies.length) (board : Fin 113 ↪ Fin T)
@@ -70,7 +70,7 @@ theorem compiledIdleRecord [M8.Machine.Net] {P U Config : Type} {N T Q : ℕ}
       ∀ D : ℝ, minimum ≤ D → ∀ (p : CutoffNodeInput) x, let c := input x
       c.node = scheduledChild prime p.node (idleDirectoryIndex (i,j)) → c.cutoff < c.node.width →
       (∀ k : Fin nodeChildren5.length, let d := scheduledChild prime c.node k
-        c.cutoff < d.width → childBudget x k.val ≤ cutoffTreeBudget D leafRate c.cutoff (c.depth-(c.path.length+1)) d) →
+        c.cutoff < d.width → permits x k.val (cutoffTreeBudget D leafRate c.cutoff (c.depth-(c.path.length+1)) d)) →
       let budget := cutoffTreeBudget D leafRate c.cutoff (c.depth-c.path.length) c.node
       let e := idleInterval i idleCopies[j.val].2
       let lane := phaseIntervalChild (e.1+1) (e.2+1) (p.w+1) p.idleWidth 64

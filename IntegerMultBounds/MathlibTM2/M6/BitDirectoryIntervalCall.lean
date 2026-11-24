@@ -265,8 +265,8 @@ private noncomputable def intervalEntryTable {P U : Type} {T H Q : ℕ} (place :
 this idle occurrence. At runtime the child uses its remaining tree allowance. -/
 theorem compiledIdleInterval [M8.Machine.Net] {P U Config : Type} {T N Q : ℕ}
     {input : Config → CutoffNodeInput} {body : P → Pr P N Q prime U}
-    {dst : Fin (142081+2) ↪ Fin N} {leafRate : ℝ} {budget : Config → ℕ → ℕ}
-    (family : SplitRecordTreeFamily input body dst leafRate budget)
+    {dst : Fin (142081+2) ↪ Fin N} {leafRate : ℝ} {permits : Config → ℕ → ℕ → Prop}
+    (family : RecordTreeFamily input body dst leafRate permits)
     (capacity : (@rowSwapBlock BinaryRadixEqualShared.supplierNet).states ≤ Q) (i : Fin 9) (j : Fin idleCopies.length)
     (live : Fin (142080+2) ↪ Fin T) (headers : Fin 6 ↪ Fin T) (width : Fin T)
     (record : Fin 34 ↪ Fin T) (scratchOff : ∀ r k, 8 ≤ k.val → record k ≠ live r)
@@ -283,8 +283,8 @@ theorem compiledIdleInterval [M8.Machine.Net] {P U Config : Type} {T N Q : ℕ}
           c.node = scheduledChild prime parent.node (idleDirectoryIndex (i,j)) →
           c.cutoff < c.node.width →
           (∀ k : Fin nodeChildren5.length, let d := scheduledChild prime c.node k
-            c.cutoff < d.width → budget x k.val ≤ cutoffTreeBudget D leafRate c.cutoff
-              (c.depth-(c.path.length+1)) d) →
+            c.cutoff < d.width → permits x k.val (cutoffTreeBudget D leafRate c.cutoff
+              (c.depth-(c.path.length+1)) d)) →
           DirectoryIntervalRun (A := Option (Empty ⊕ P)) (U := U) (T := T) (N := N) (Q := Q) (Nat.succ_le_succ bounds.1) (Nat.succ_le_succ bounds.2)
             live headers width record dst bank table program parent.w parent.idleWidth c rate
             (cutoffTreeBudget D leafRate c.cutoff (c.depth-c.path.length) c.node) := by

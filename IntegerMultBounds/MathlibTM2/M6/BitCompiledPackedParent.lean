@@ -100,7 +100,7 @@ theorem sweepChildWidth_le (p : CutoffNodeInput) (n : Fin 9) (run : StageRun) {l
   · exact phaseChildRank_le n run (post k)
 
 /-- Execute every sweep and remainder of a parent using their scheduled child calls. -/
-theorem compiledPackedParent [M8.Machine.Net] (P U Config R : Type) {N : ℕ} :
+theorem compiledPackedParent [M8.Machine.Net] (P U Config : Type) :
     let l := (selectedPhaseSchedule false).1.length
     let r := (selectedPhaseSchedule true).1.length
     let I := Σ _ : StageRun, Σ j : Fin 3, Fin (invocationCounts l r j)
@@ -108,9 +108,9 @@ theorem compiledPackedParent [M8.Machine.Net] (P U Config R : Type) {N : ℕ} :
     let sweepChild := fun (n : Fin 9) (i : I) => invocationChildren n i.1 (pre n i.1) (post n i.1) i.2.1 i.2.2
     ∃ (ts : Fin 9 → I → ℕ) (states : ℕ) (ports : ∀ n i, Fin (rowSwapBlock.tapes+35) ↪ Fin (ts n i)),
     ∀ {Q : ℕ}, states ≤ Q →
-    ∀ {tree : R → Pr R N Q prime U} {dst : Fin (142081+2) ↪ Fin N} {leafRate : ℝ}
-      {childBudget : {c : CutoffNodeInput // c.cutoff < c.node.width} → ℕ → ℕ},
-    SplitRecordTreeFamily Subtype.val tree dst leafRate childBudget →
+    ∀ {R : Type} {N : ℕ} {tree : R → Pr R N Q prime U} {dst : Fin (142081+2) ↪ Fin N} {leafRate : ℝ}
+      {permits : {c : CutoffNodeInput // c.cutoff < c.node.width} → ℕ → ℕ → Prop},
+    RecordTreeFamily Subtype.val tree dst leafRate permits →
     ∃ sweepRate : ℝ, ∀ (large : ∀ n i, P → Pr (WorkerLabel P) (ts n i) Q prime U) (f : Fin 9 → I → P),
     ∃ body : ∀ n i, WorkerLabel P → Pr (WorkerLabel P) (ts n i) Q prime U,
     (∀ n i g, body n i (.active g) = large n i g) ∧
@@ -128,7 +128,7 @@ theorem compiledPackedParent [M8.Machine.Net] (P U Config R : Type) {N : ℕ} :
       ∀ (x : {v : CutoffNodeInput // v.cutoff < v.node.width}),
         x.val.root = p.root → x.val.path = p.path++[idleDirectoryIndex (i,j)] → x.val.cutoff = p.cutoff →
         ∀ k : Fin nodeChildren5.length, let d := scheduledChild prime (child c i j) k
-        p.cutoff < d.width → childBudget x k.val ≤ cutoffTreeBudget D leafRate p.cutoff (fuel c-1) d) →
+        p.cutoff < d.width → permits x k.val (cutoffTreeBudget D leafRate p.cutoff (fuel c-1) d)) →
     let desc := fun (c : Config) (n : Fin 9) (i : I) => scheduledChild prime (input c).node (sweepChild n i)
     ∃ position : ∀ c n i, Fin (volume prime (desc c n i)) ≃ Fin ((prime^((input c).w+1))^16*(input c).stageWidth),
     (∀ c n i, invocationCoordinates i.2.1 ((input c).w+1) (input c).stageWidth (position c n i)) ∧
@@ -156,9 +156,9 @@ theorem compiledPackedParent [M8.Machine.Net] (P U Config R : Type) {N : ℕ} :
   have stages := flatDispatchedHandoff
   dsimp only at stages
   choose pre post ts states ports rates build using stages
-  obtain ⟨q,parent⟩ := assembledIdleParent (P := R) (U := U) (Config := Config) (N := N)
+  obtain ⟨q,parent⟩ := assembledIdleParent (U := U) (Config := Config)
   refine ⟨pre,post,ts,max (Finset.univ.sup states) q,ports,?_⟩
-  intro Q capacity tree dst leafRate childBudget family
+  intro Q capacity R N tree dst leafRate permits family
   obtain ⟨init,fixed,base,swaps,minimum,leaf,assemble,nonneg,pos,join⟩ :=
     parent ((Nat.le_max_right ..).trans capacity) family
   refine ⟨max (Finset.univ.sup' Finset.univ_nonempty rates) (Finset.univ.sup' Finset.univ_nonempty leaf),?_⟩

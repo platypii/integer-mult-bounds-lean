@@ -70,8 +70,8 @@ theorem traverseIdleRecords {P U : Type} {T Q w W : ℕ} (i : Fin 9) (body : P �
 parent fan. Only the selected branch contributes to each occurrence's bill. -/
 theorem compiledIdleWindow [M8.Machine.Net] {P U : Type} {N Q : ℕ}
     {body : P → Pr P N Q prime U} {dst : Fin (142081+2) ↪ Fin N} {leafRate : ℝ}
-    {childBudget : {c : CutoffNodeInput // c.cutoff < c.node.width} → ℕ → ℕ}
-    (family : SplitRecordTreeFamily Subtype.val body dst leafRate childBudget)
+    {permits : {c : CutoffNodeInput // c.cutoff < c.node.width} → ℕ → ℕ → Prop}
+    (family : RecordTreeFamily Subtype.val body dst leafRate permits)
     (column : columnCapacity ≤ Q) (swapCap : (@rowSwapBlock BinaryRadixEqualShared.supplierNet).states ≤ Q)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
     (headerCap : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q)
@@ -88,7 +88,7 @@ theorem compiledIdleWindow [M8.Machine.Net] {P U : Type} {N Q : ℕ}
       (∀ j, p.cutoff < (child j).width → ∀ (x : {c : CutoffNodeInput // c.cutoff < c.node.width}),
         x.val.root = p.root → x.val.path = p.path++[idleDirectoryIndex (i,j)] → x.val.cutoff = p.cutoff →
         ∀ k : Fin nodeChildren5.length, let d := scheduledChild prime (child j) k
-        p.cutoff < d.width → childBudget x k.val ≤ cutoffTreeBudget D leafRate p.cutoff (fuel-1) d) →
+        p.cutoff < d.width → permits x k.val (cutoffTreeBudget D leafRate p.cutoff (fuel-1) d)) →
       let branch j := if p.cutoff < (child j).width then idleRecordOverhead p fixed base swaps+
         cutoffTreeBudget D leafRate p.cutoff fuel (child j)
         else ⌊C*((child j).width : ℝ)^M8.Machine.BudgetBound.tau*volume prime (child j)⌋₊
@@ -128,7 +128,7 @@ theorem compiledIdleWindow [M8.Machine.Net] {P U : Type} {N Q : ℕ}
     ⟨(frame t ne).1.trans (loaded t ne).1,(frame t ne).2.trans (loaded t ne).2⟩
   have slot : bank (raw j 24) = owners (idleTape i k) := congrArg bank (payload j)
   rw [← slot] at input ⊢
-  apply run D leafRate childBudget fixed base swaps (large D enough) j p blocks positive rows align (children j)
+  apply run D leafRate permits fixed base swaps (large D enough) j p blocks positive rows align (children j)
     word v R input
   · intro h ne
     have same := keep (bank (raw j h)) (fun r => bank.injective.ne (rawOff j h ne r).symm)
