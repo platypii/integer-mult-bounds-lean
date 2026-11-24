@@ -226,10 +226,11 @@ private theorem portBasisCost_linear (ops : List (FlatCoordinateSchedule.Op 16))
   change 8*(w.size+W.size)+24+13*(rate*V*(tapes+5)+6)+4*tapes+1 ≤ (13*rate*(tapes+5)+4*tapes+119)*V
   nlinarith only [fixed,(sizes w).trans small,(sizes W).trans count]
 
-open Matrix IntegerMultBounds.Swap.Modular in
-/-- Execute either direction of the rational basis change at a selected PR589 port. -/
-theorem runRationalPortBasis (t : Fin 111) (atExit inverse : Bool) :
-    ∃ (ops : List (FlatCoordinateSchedule.Op 16)) (C : ℕ), ∀ {P U : Type} {T Q : ℕ}
+/-- A coordinate action on a live binary row with a fixed linear cost and
+reusable private tapes. -/
+def RunsPortAction (ops : List (FlatCoordinateSchedule.Op 16)) (C : ℕ)
+    (action : ∀ w : ℕ, (Fin 16 → ZMod (prime^w)) → (Fin 16 → ZMod (prime^w))) : Prop :=
+    ∀ {P U : Type} {T Q : ℕ}
       (body : P → Pr P T Q prime U), stateCount (FlatCoordinateCleanSchedule.program ops) ≤ Q →
       ∀ (bank : Fin (FlatCoordinateCleanSchedule.tapeCount ops) ↪ Fin T)
         (source : Fin 2 → Fin T) (tmp saved : Fin T),
@@ -237,28 +238,128 @@ theorem runRationalPortBasis (t : Fin 111) (atExit inverse : Bool) :
       (∀ i, [source i,bank (basisSeedPorts ops i),tmp,saved].Nodup) →
       ∃ code, ∀ w W, 0 < W → ∀ (x : Fin ((prime^w)^16*W) → ZMod 2) u (S : Stacks T prime),
         let row := segmentSource ops
-        let B := reduce (prime^w) (rationalPortBasis t atExit)
         S.R (source 0) = binSyms w.size w → S.R (source 1) = binSyms W.size W →
         (∀ h, readAt blank (S.L (bank row)) (S.R (bank row)) h = (portOwner x).tape 0 h) →
         (∀ j, j ≠ row → S.L (bank j) = [] ∧ S.R (bank j) = []) → S.R tmp = [] → S.R saved = [] →
         ∃ (y : Fin ((prime^w)^16*W) → ZMod 2), ∃ z F n, Exec body code (mk u S) n (mk z F) ∧
           z.user = u.user ∧ CleanupBound S F n (C*((prime^w)^16*W)) ∧
           (∀ h, readAt blank (F.L (bank row)) (F.R (bank row)) h = (portOwner y).tape 0 h) ∧
-          (∀ a j, y (FlatCoordinateLayout.index ((if inverse then B⁻¹ else B) *ᵥ a) j) =
+          (∀ a j, y (FlatCoordinateLayout.index (action w a) j) =
             x (FlatCoordinateLayout.index a j)) ∧
           (∀ j, j ≠ row → F.L (bank j) = [] ∧ F.R (bank j) = []) ∧
-          ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  obtain ⟨ops,actions⟩ := rationalPortBasis_schedule t atExit inverse
+          ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j
+
+private theorem runPortAction (ops : List (FlatCoordinateSchedule.Op 16))
+    (action : ∀ w : ℕ, (Fin 16 → ZMod (prime^w)) → (Fin 16 → ZMod (prime^w)))
+    (actions : ∀ w, ∃ perm : (Fin 16 → ZMod (prime^w)) ≃ (Fin 16 → ZMod (prime^w)),
+      (∀ x, OrderedAffine.run (ops.map (fun op => op.action w)) x = perm x) ∧ ∀ x, perm x = action w x) :
+    ∃ C, RunsPortAction ops C action := by
   obtain ⟨C,bound⟩ := portBasisCost_linear ops
-  refine ⟨ops,C,?_⟩
+  refine ⟨C,?_⟩
   intro P U T Q body capacity bank source tmp saved apart regs
   obtain ⟨code,run⟩ := runPortBasis ops body capacity bank source tmp saved apart regs
   refine ⟨code,?_⟩
-  intro w W positive x u S row B width count owner free ht hs
+  intro w W positive x u S row width count owner free ht hs
   obtain ⟨perm,action,matrix⟩ := actions w
   obtain ⟨y,z,F,n,exec,user,charge,result,move,blank,frame⟩ :=
     run w W positive x u S perm action width count owner free ht hs
   exact ⟨y,z,F,n,exec,user,(fun js nd => (charge js nd).trans (Nat.add_le_add_left (bound w W positive) _)),result,fun a j => matrix a ▸ move a j,blank,frame⟩
+
+open Matrix IntegerMultBounds.Swap.Modular in
+theorem runRationalPortBasis (t : Fin 111) (atExit inverse : Bool) :
+    ∃ ops C, RunsPortAction ops C (fun w a => let B := reduce (prime^w) (rationalPortBasis t atExit)
+      (if inverse then B⁻¹ else B) *ᵥ a) := by
+  obtain ⟨ops,actions⟩ := rationalPortBasis_schedule t atExit inverse
+  exact ⟨ops,runPortAction ops _ actions⟩
+
+open Matrix AffineFieldCoordinates IntegerMultBounds.Swap.Modular in
+/-- The two entry transformations share a single header load and cleanup. -/
+theorem runPortCorrectionEntry (t : Fin 111) (atExit reflect : Bool) :
+    ∃ ops C, RunsPortAction ops C (fun w a =>
+      let B := reduce (prime^w) (rationalPortBasis t atExit)
+      let s := (Fin.appendEquiv (α := ZMod (prime^w)) 8 8).symm (B⁻¹ *ᵥ a)
+      embed (AffineFieldProgram.execute (if reflect then .subFromD 0 7 else .addToD 0 7) s)) := by
+  obtain ⟨ops,actions⟩ := portCorrectionEntry_schedule t atExit reflect
+  refine ⟨ops,runPortAction ops _ ?_⟩
+  intro w
+  obtain ⟨perm,run,act⟩ := actions w
+  exact ⟨perm,run,fun a => act a _ ((Fin.appendEquiv (α := ZMod (prime^w)) 8 8).apply_symm_apply _).symm⟩
+
+open Matrix AffineFieldCoordinates IntegerMultBounds.Swap.Modular in
+/-- After the swap, the inverse correction reflects the high digit, negates
+the low digit and returns to the selected basis in a single charged run. -/
+theorem runInversePortCorrectionExit (t : Fin 111) (atExit : Bool) :
+    ∃ ops C, RunsPortAction ops C (fun w x =>
+      let s := (Fin.appendEquiv (α := ZMod (prime^w)) 8 8).symm x
+      let reflected := embed (AffineFieldProgram.execute (.subFromD 0 7) s)
+      reduce (prime^w) (rationalPortBasis t atExit) *ᵥ
+        OrderedAffine.execute (.scale (dIndex (Fin.last 7)) (-1)) reflected) := by
+  obtain ⟨digit,digitAction⟩ := forwardDigit_schedule true
+  obtain ⟨basis,basisAction⟩ := rationalPortBasis_schedule t atExit false
+  let i := dIndex (Fin.last 7)
+  have one : 1 ≤ coefficientBound := Nat.one_le_two_pow
+  let neg : FlatCoordinateSchedule.Op 16 := .scale i (-1)
+    (Or.inr ⟨by decide,by simpa using one,by simpa using one⟩)
+  refine ⟨digit ++ neg :: basis,runPortAction _ _ ?_⟩
+  intro w
+  obtain ⟨p,runP,actP⟩ := digitAction w
+  obtain ⟨q,runQ,actQ⟩ := basisAction w
+  let f := OrderedAffine.execute (.scale i (-1 : ZMod (prime^w)))
+  have invol : Function.Involutive f := by
+    intro x
+    funext j
+    by_cases h : j = i <;> simp [f,OrderedAffine.execute,Function.update_apply,h]
+  let flip : (Fin 16 → ZMod (prime^w)) ≃ _ := ⟨f,f,invol,invol⟩
+  refine ⟨(p.trans flip).trans q,?_,?_⟩
+  · intro x
+    rw [List.map_append,M8.AtomSegment.run_append,runP]
+    change OrderedAffine.run _ (OrderedAffine.execute (neg.action w) (p x)) = q (f (p x))
+    have step : neg.action w = .scale i (-1) := by
+      change OrderedAffine.Op.scale i (ratMod (ActualAffineScaling.modulus w) (-1)) = _
+      rw [M8.AtomSegment.ratMod_neg_one]
+    rw [step]
+    exact runQ (f (p x))
+  · intro x
+    let halves := Fin.appendEquiv (α := ZMod (prime^w)) 8 8
+    have reflected := actP (halves.symm x)
+    change p (halves (halves.symm x)) = _ at reflected
+    rw [halves.apply_symm_apply] at reflected
+    change q (f (p x)) = _
+    rw [actQ,reflected]
+    rfl
+
+open AffineFieldCoordinates in
+/-- Swapping physical coordinates 0 and 15 between the two reflected
+passes undoes the shift in chart coordinates, for every input row. -/
+theorem inversePortDigits_cancel {R : Type*} [CommRing R] (x : Fin 16 → R) :
+    let halves := Fin.appendEquiv (α := R) 8 8
+    let shifted := OrderedAffine.execute (.shift (hIndex (0 : Fin 8)) (dIndex (Fin.last 7)) 1) x
+    let reflect := fun a => embed (AffineFieldProgram.execute (.subFromD 0 7) (halves.symm a))
+    OrderedAffine.execute (.scale (dIndex (Fin.last 7)) (-1))
+      (reflect (reflect shifted ∘ Equiv.swap 0 15)) = x := by
+  intro halves shifted reflect
+  let s := halves.symm x
+  have packed : embed s = x := halves.apply_symm_apply x
+  let entered := AffineFieldProgram.execute (.subFromD 0 7) (halves.symm shifted)
+  have swapped : embed entered ∘ Equiv.swap 0 15 =
+      embed (AffineFieldProgram.execute (.interchange 0 7) entered) := by
+    funext i
+    fin_cases i <;> rfl
+  change OrderedAffine.execute _ (embed (AffineFieldProgram.execute _
+    (halves.symm (embed entered ∘ Equiv.swap 0 15)))) = x
+  rw [swapped]
+  change OrderedAffine.execute _ (embed (AffineFieldProgram.execute _
+    (halves.symm (halves (AffineFieldProgram.execute (.interchange 0 7) entered))))) = x
+  rw [halves.symm_apply_apply]
+  refine Eq.trans ?_ packed
+  have splitRow (a : Fin 16 → R) : halves.symm a = (a ∘ hIndex,a ∘ dIndex) := by
+    apply halves.injective
+    rw [halves.apply_symm_apply]
+    funext i
+    induction i using Fin.addCases (m := 8) (n := 8) with
+    | left i => exact (embed_h (a ∘ hIndex,a ∘ dIndex) i).symm
+    | right i => exact (embed_d (a ∘ hIndex,a ∘ dIndex) i).symm
+  simpa only [entered,splitRow,shifted,packed] using inverseShift_reflect_swap s
 
 /-- Initialize both directions of a worker's basis change using the same
 two source words and the same copy scratch. -/

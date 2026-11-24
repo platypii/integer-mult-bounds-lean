@@ -184,6 +184,53 @@ theorem frameBasis_owner (l : Fin 636) (inverse : Bool) :
                                   M8.Exchange.transform M M) stages runs
 
 open M8.Machine.Segments IntegerMultBounds.Swap.Modular in
+private theorem forwardDigit_good (reflect : Bool) :
+    let op : AffineFieldProgram.Op (Fin 8) ℚ := if reflect then .subFromD 0 7 else .addToD 0 7
+    Good [op] := by
+  intro op
+  constructor <;> intro a ha <;> obtain rfl : a = op := List.mem_singleton.mp ha <;>
+    try (cases reflect <;> trivial)
+  apply M8.Machine.Coordinates.CoeffBounded.supported _ (by cases reflect <;> trivial)
+  intro r hr
+  have sign : r = 1 ∨ r = -1 := by
+    cases reflect <;> simp [op,M8.Exchange.opCoeffs] at hr <;> tauto
+  have one : 1 ≤ coefficientBound := Nat.one_le_two_pow
+  rcases sign with rfl | rfl <;> exact ⟨by simpa using one,by simpa using one⟩
+
+open M8.Machine.Segments AffineFieldCoordinates IntegerMultBounds.Swap.Modular in
+theorem forwardDigit_schedule (reflect : Bool) :
+    ∃ ops : List (FlatCoordinateSchedule.Op 16), ∀ w,
+      ∃ perm : (Fin 16 → ZMod (prime^w)) ≃ (Fin 16 → ZMod (prime^w)),
+        (∀ x, OrderedAffine.run (ops.map (fun op => op.action w)) x = perm x) ∧
+        ∀ s : IntegerMultBounds.Swap.Shear.State (Fin 8) (ZMod (prime^w)), perm (embed s) = embed (AffineFieldProgram.execute
+          (if reflect then .subFromD 0 7 else .addToD 0 7) s) := by
+  let op : AffineFieldProgram.Op (Fin 8) ℚ := if reflect then .subFromD 0 7 else .addToD 0 7
+  let good := forwardDigit_good reflect
+  refine ⟨description [op] good,?_⟩
+  intro w
+  let word := [op].map (AffineFieldProgram.mapOp (ratMod (prime^w)))
+  have legal : ∀ a ∈ word, AffineFieldProgram.Legal a := by
+    intro a ha
+    obtain rfl := List.mem_singleton.mp ha
+    cases reflect <;> trivial
+  let halves := Fin.appendEquiv (α := ZMod (prime^w)) 8 8
+  let digit := Equiv.ofBijective _ (AffineFieldBijective.run_bijective word legal)
+  let perm := (halves.symm.trans digit).trans halves
+  have mapped s : perm (halves s) = halves (AffineFieldProgram.run word s) := by
+    simp only [perm,Equiv.trans_apply,Equiv.symm_apply_apply]; rfl
+  refine ⟨perm,?_,?_⟩
+  · intro x
+    obtain ⟨s,rfl⟩ := halves.surjective x
+    rw [mapped]
+    change OrderedAffine.run _ (embed s) = embed _
+    exact (congrArg (fun l => OrderedAffine.run l (embed s)) (description_actions [op] good w)).trans
+      (segment_run _ (nonrecursive_map [op] good w) s)
+  · intro s
+    change perm (halves s) = _
+    rw [mapped]
+    cases reflect <;> rfl
+
+open M8.Machine.Segments IntegerMultBounds.Swap.Modular in
 private theorem forwardDigit_owner (reflect : Bool) :
     ∃ (c : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < W →
       let V := (prime^w)^16*W
@@ -195,15 +242,7 @@ private theorem forwardDigit_owner (reflect : Bool) :
             (AffineFieldProgram.execute op s)) j) =
             x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
   let op : AffineFieldProgram.Op (Fin 8) ℚ := if reflect then .subFromD 0 7 else .addToD 0 7
-  have good : Good [op] := by
-    constructor <;> intro a ha <;> obtain rfl : a = op := List.mem_singleton.mp ha <;>
-      try (cases reflect <;> trivial)
-    apply M8.Machine.Coordinates.CoeffBounded.supported _ (by cases reflect <;> trivial)
-    intro r hr
-    have sign : r = 1 ∨ r = -1 := by
-      cases reflect <;> simp [op,M8.Exchange.opCoeffs] at hr <;> tauto
-    have one : 1 ≤ coefficientBound := Nat.one_le_two_pow
-    rcases sign with rfl | rfl <;> exact ⟨by simpa using one,by simpa using one⟩
+  have good := forwardDigit_good reflect
   apply fieldPass_owner _ (description [op] good)
   intro w W hW x
   have legal : ∀ a ∈ [AffineFieldProgram.mapOp (ratMod (prime^w)) op], AffineFieldProgram.Legal a := by
@@ -789,6 +828,29 @@ theorem rationalPortBasis_schedule (t : Fin 111) (atExit inverse : Bool) :
   change OrderedAffine.run (ops.map ((OrderedAffine.mapOp (ratMod (prime^w))) ∘ FlatCoordinateSchedule.Op.rational)) x = _
   rw [← List.map_map,FlatCoordinateSchedule.rational_ofList _]
   exact acts w x
+
+open Matrix AffineFieldCoordinates IntegerMultBounds.Swap.Modular in
+/-- The entry basis and the first digit operation form one flat schedule before
+the physical swap. Both use the same radix and spectator headers. -/
+theorem portCorrectionEntry_schedule (t : Fin 111) (atExit reflect : Bool) :
+    ∃ ops : List (FlatCoordinateSchedule.Op 16), ∀ w, let B := reduce (prime^w) (rationalPortBasis t atExit)
+      ∃ perm : (Fin 16 → ZMod (prime^w)) ≃ (Fin 16 → ZMod (prime^w)),
+        (∀ x, OrderedAffine.run (ops.map (fun op => op.action w)) x = perm x) ∧
+        ∀ x (s : IntegerMultBounds.Swap.Shear.State (Fin 8) (ZMod (prime^w))), B⁻¹ *ᵥ x = embed s →
+          perm x = embed (AffineFieldProgram.execute (if reflect then .subFromD 0 7 else .addToD 0 7) s) := by
+  obtain ⟨basis,basisAction⟩ := rationalPortBasis_schedule t atExit true
+  obtain ⟨digit,digitAction⟩ := forwardDigit_schedule reflect
+  refine ⟨basis++digit,?_⟩
+  intro w B
+  obtain ⟨p,runP,actsP⟩ := basisAction w
+  obtain ⟨q,runQ,actsQ⟩ := digitAction w
+  refine ⟨p.trans q,?_,?_⟩
+  · intro x
+    rw [List.map_append,M8.AtomSegment.run_append,runP]
+    exact runQ (p x)
+  · intro x s input
+    change q (p x) = _
+    exact (congrArg q ((actsP x).trans input)).trans (actsQ s)
 
 open Matrix M8.Height IntegerMultBounds.Swap.Modular in
 /-- A fixed tape program executes the surrounding rational basis in time
