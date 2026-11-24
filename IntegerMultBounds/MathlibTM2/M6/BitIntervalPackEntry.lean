@@ -66,6 +66,7 @@ theorem intervalDirectorySetup_exec {T Q : ℕ} (body : P → Pr P T Q prime U) 
       (∀ i : Fin 72, 59 ≤ i.val → i.val ≤ 65 → S.R (bank i) = []) →
       ∃ u F n, Exec body program (mk v S) n (mk u F) ∧ n ≤ 21*(w+1)+13 ∧ u.user = v.user ∧
         IntervalHeaderInputs (intervalDirectoryPorts.trans bank) (bank 59) w W F ∧
+        (∀ i, F.L (hdr i) = [separator]) ∧
         (∀ j, (∀ i, hdr i ≠ j) → F.L j = S.L j) ∧ ∀ j, bank 59 ≠ j → F.R j = S.R j := by
   let hdr := (copyRecordSources.trans intervalDirectoryPorts).trans bank
   let mark : Fin 3 → Act T Q prime U := fun i => WordCmd.pushL (hdr i) [separator (a := prime)]
@@ -81,14 +82,44 @@ theorem intervalDirectorySetup_exec {T Q : ℕ} (body : P → Pr P T Q prime U) 
       (Exec.act (body := body) (mark i) (mk v D))
   let D := install 2 (install 1 (install 0 S))
   have left (i : Fin 3) : D.L (hdr i) = [separator] := by
-    fin_cases i <;> simp [D,install,Function.update_apply,hdr.injective.eq_iff,blankLeft]
+    fin_cases i <;> simp [D,install,hdr.injective.eq_iff,blankLeft]
   obtain ⟨u,n,run,paid,user,inputs⟩ := intervalDirectoryInputs_exec body bank w W v D base suffix unit left atom empty
-  refine ⟨u,_,_,(step 0 S).seq ((step 1 _).seq ((step 2 _).seq run)),by omega,user,inputs,?_,?_⟩
+  refine ⟨u,_,_,(step 0 S).seq ((step 1 _).seq ((step 2 _).seq run)),by omega,user,inputs,left,?_,?_⟩
   · intro j away
     change ∀ i, hdr i ≠ j at away
     simp [D,install,Function.update_of_ne,(away 0).symm,(away 1).symm,(away 2).symm]
   · intro j away
     exact Function.update_of_ne away.symm _ _
+
+omit [M8.Machine.Net] in
+/-- Remove the three left markers and the binary width after an interval call.
+Only the four stacks written by directory setup are cleared. -/
+theorem intervalDirectoryRelease_exec {T Q : ℕ} (body : P → Pr P T Q prime U) (bank : Fin 72 ↪ Fin T) :
+    let hdr := (copyRecordSources.trans intervalDirectoryPorts).trans bank
+    ∃ code : Pr P T Q prime U, ∀ (v : HS T Q prime U) (S : Stacks T prime),
+      (∀ i, S.L (hdr i) = [separator]) →
+      ∃ z F, Exec body code (mk v S) (2*(S.R (bank 59)).length+5) (mk z F) ∧
+        z.user = v.user ∧ (∀ i, F.L (hdr i) = []) ∧ F.R (bank 59) = [] ∧
+        (∀ j, (∀ i, hdr i ≠ j) → F.L j = S.L j) ∧ ∀ j, bank 59 ≠ j → F.R j = S.R j := by
+  intro hdr
+  let pop (i : Fin 3) : Act T Q prime U := .pop (.lt (hdr i)) (fun v _ => v) .done
+  refine ⟨(Prog.act (pop 0)).seq ((Prog.act (pop 1)).seq ((Prog.act (pop 2)).seq
+    (bclear (bank 59)))),?_⟩
+  intro v S marked
+  let drop (i : Fin 3) (D : Stacks T prime) := {D with L := Function.update D.L (hdr i) []}
+  have step (i : Fin 3) (D : Stacks T prime) (h : D.L (hdr i) = [separator]) :
+      Exec body (Prog.act (pop i)) (mk v D) 1 (mk v (drop i D)) := by
+    simpa [pop,Action.run,h,drop,update_lt] using (Exec.act (body := body) (pop i) (mk v D))
+  have first := step 0 S (marked 0)
+  have next := step 1 (drop 0 S) (by simp [drop,hdr.injective.eq_iff,marked])
+  have last := step 2 (drop 1 (drop 0 S)) (by simp [drop,hdr.injective.eq_iff,marked])
+  obtain ⟨z,user,_,clear⟩ := bclear_exec body (bank 59) v (drop 2 (drop 1 (drop 0 S)))
+  refine ⟨z,_,(first.seq (next.seq (last.seq clear))).cast (by dsimp [drop]; omega) rfl,
+    user,?_,by simp,?_,fun j h => Function.update_of_ne h.symm _ _⟩
+  · intro i
+    fin_cases i <;> simp [drop,hdr.injective.eq_iff]
+  · intro j away
+    simp [drop,Function.update_of_ne,(away 0).symm,(away 1).symm,(away 2).symm]
 
 omit [M8.Machine.Net] in
 theorem IntervalHeaderInputs.of_frame {B T w W : ℕ} {headers : Fin 6 ↪ Fin T}

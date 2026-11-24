@@ -1,5 +1,7 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitBorrowedIntervalDirectory
+
 public import IntegerMultBounds.MathlibTM2.M6.BitDirectoryIntervalSplit
 
 @[expose] public section
@@ -52,7 +54,6 @@ theorem compiledIdleRecord [M8.Machine.Net] {P U Config : Type} {N T Q : ℕ}
     (splitter : Fin intervalSplitTapes ↪ Fin T) (apart : ∀ r k, splitter r ≠ board k) :
     let raw := (Fin.castLEEmb (by decide : 72 ≤ 113)).trans board
     let headers := intervalDirectoryPorts.trans raw
-    let width := raw 59
     let record := idleCallerRecord board splitter apart
     let fields := idleRolePorts.trans board
     let h := idleHeaderArithmetic.trans board
@@ -82,7 +83,11 @@ theorem compiledIdleRecord [M8.Machine.Net] {P U Config : Type} {N T Q : ℕ}
         (S.R (embed (h 0))).length = p.w →
         S.R (embed (h 1)) = binSyms (prime^(p.w+1)).size (prime^(p.w+1)) →
         (∀ k, S.R (embed (fields k)) = (Routines.hdr (role p.node 142080) k).map bitSymbol) →
-        IntervalHeaderInputs (headers.trans embed) (embed width) p.w p.idleWidth S →
+        S.R (embed (raw 53)) = binSyms p.idleWidth.size p.idleWidth →
+        S.R (embed (raw 28)) = binSyms 1 1 →
+        (∀ k, S.L (embed (headers (copyRecordSources k))) = []) →
+        (S.R (embed (raw 71))).length = p.w+1 →
+        (∀ k : Fin 72, 59 ≤ k.val → k.val ≤ 65 → S.R (embed (raw k)) = []) →
         S.R (embed (record 6)) = binSyms c.root.width.size c.cutoff →
         ∃ z F n, Exec table code (mk u S) n (mk z F) ∧ z.user = u.user ∧
           CleanupBound S F n (fixed*p.cells+
@@ -90,7 +95,8 @@ theorem compiledIdleRecord [M8.Machine.Net] {P U Config : Type} {N T Q : ℕ}
           RecordPayload (embed src) (fun _ => blank) 0
             (Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word) F ∧
           ∀ t, t ≠ embed src → F.L t = S.L t ∧ F.R t = S.R t := by
-  intro raw headers width record fields h src tmp count saved caller embed
+  intro raw headers record fields h src tmp count saved caller embed
+  let width := raw 59
   let small := idlePackPorts
   let live := (intervalOwners 142080).trans splitter
   let ports := intervalRecordBank (live.trans caller) (small 24)
@@ -135,48 +141,86 @@ theorem compiledIdleRecord [M8.Machine.Net] {P U Config : Type} {N T Q : ℕ}
     src tmp count saved arg (fun r => ⟨apart _ _,apart _ _,apart _ _,apart _ _⟩)
     (fun r k => apart _ _) (fun r k => apart _ _) (fun r k => apart _ _) (fun r => apart _ _)
     (fun r => by rw [recOff 6 (by decide)]; apply apart) workOff work distinct (splitFree 0) outside
-  refine ⟨code,fixed+4*work.length,rate*base,rate*swaps,?_⟩
-  intro p x c scheduled active children budget e lane wide word u S payload hc hs tl tr fresh clock radix inherited dims cut
-  have middle := inherited (4 : Fin 6)
-  have child := execute p x scheduled active children
-  have privateAt k (hi : 78 ≤ k.val) : embed (board k) ∈ work := (inCallerWork shared _).2 (fun a =>
-    embed.injective.ne (board.injective.ne (fun eq => by have bad := congrArg Fin.val eq; change a.val = k.val at bad; omega)))
-  have empty k (hk : 3 ≤ k.val) := (fresh _ (privateAt (idleHeaderArithmetic k)
-    ((by decide : ∀ k : Fin 12, 3 ≤ k.val → 78 ≤ (idleHeaderArithmetic k).val) k hk))).2
-  have scratch r k (ne : k ≠ small 24) := fresh _ ((inCallerWork shared (ports r k)).2 (fun a =>
-    intervalWorkOutside _ _ r k ne (caller (board (a.castAdd 35)))))
-  have free k (hk : k ∈ idleRecordWork) : S.L (embed (record k)) = [] ∧ S.R (embed (record k)) = [] := by
-    have ne : k ≠ 7 := by rintro rfl; revert hk; decide
-    rw [recOff k ne]
-    exact fresh _ (privateAt _ ((by decide : ∀ k ∈ idleRecordWork, 78 ≤ (idleRecordSlot k).val) k hk))
-  have bridge (k : Fin 142082) := fresh _ ((inCallerWork shared (intervalExtend T N ((k.castAdd T).castAdd N))).2 (fun a =>
-    (intervalExtend T N).injective.ne ((Fin.castAddEmb N).injective.ne (suffixApart _ _))))
-  have vacant (k : Fin N) := fresh _ ((inCallerWork shared (intervalExtend T N (k.natAdd (142082+T)))).2 (fun a =>
-    (intervalExtend T N).injective.ne (suffixApart _ _).symm))
-  obtain ⟨z,F,n,exec,user,paid,output,clean,keep⟩ := run p c rate budget scheduled child word u S payload hc hs tl tr
-    (fun k => fresh _ (splitFree k)) clock radix middle empty (fun k _ _ => inherited k) dims scratch cut free bridge vacant
-  have entry : tapeCharge cleanupWeight work S = 4*work.length := by
-    unfold tapeCharge
-    rw [List.map_congr_left (g := fun _ => 4) (fun k hk => by simp [cleanupWeight,(fresh k hk).1,(fresh k hk).2])]
-    simp [List.map_const',Nat.mul_comm]
-  refine ⟨z,F,n,exec,user,?_,output,?_⟩
-  · have pos : 0 < p.cells := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)
-        (Nat.mul_pos p.idlePositive (by decide))
-    have stock := Nat.mul_le_mul_left (4*work.length) pos
-    have combine (a b c d v : ℕ) : a*((b+c*d)*v) = (a*b+(a*c)*d)*v := by ring
-    intro js nd
-    have bound := paid js nd
-    rw [entry,combine rate base swaps] at bound
-    change _ ≤ _ + ((fixed+4*work.length)*p.cells+_+budget)
-    rw [Nat.add_mul]
-    omega
-  · intro t ne
-    by_cases mem : t ∈ work
-    · exact ⟨(clean t mem).1.trans (fresh t mem).1.symm,(clean t mem).2.trans (fresh t mem).2.symm⟩
-    obtain ⟨a,eq⟩ : ∃ a, shared a = t := by
-      by_contra! h
-      exact mem ((inCallerWork shared t).2 h)
-    subst t
-    exact keep (board (a.castAdd 35)) (fun h => ne (congrArg embed h)) mem (fun k => apart _ _)
+  let regs := raw.trans embed
+  obtain ⟨wrapped,enter⟩ := withIntervalDirectory table regs code
+  refine ⟨wrapped,fixed+4*work.length+41,rate*base,rate*swaps,?_⟩
+  intro p x c scheduled active children budget e lane wide word u S payload hc hs tl tr fresh clock radix inherited suffix unit markers atom blankRegs cut
+  let post := fun (l r : List (Fin (prime+4))) => RecordPayload (embed src) (fun _ => blank) 0
+    (Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word)
+    {S with L := fun _ => l, R := fun _ => r}
+  let price := (fixed+4*work.length)*p.cells +
+    (rate*base+(rate*swaps)*(@swapVolumeRate BinaryRadixEqualShared.supplierNet p.w))*c.cells+budget
+  obtain ⟨z,F,n,exec,user,paid,result,off⟩ := enter p.w p.idleWidth u S price post radix suffix unit markers atom blankRegs (by
+    intro v A _ dims left right
+    have sameL (k : Fin 72) (ne : ∀ i, intervalDirectoryPorts (copyRecordSources i) ≠ k) :
+        A.L (regs k) = S.L (regs k) := left _ (fun i => regs.injective.ne (ne i))
+    have sameR (k : Fin 72) (ne : (59 : Fin 72) ≠ k) : A.R (regs k) = S.R (regs k) :=
+      right _ (regs.injective.ne ne)
+    have payload' : RecordPayload (embed src) (fun _ => blank) 0 word A := by
+      intro z
+      change readAt blank (A.L (regs 24)) (A.R (regs 24)) _ = _
+      rw [sameL 24 (by decide),sameR 24 (by decide)]
+      exact payload z
+    have regOff (t) (mem : t ∈ work) (k : Fin 72) : regs k ≠ t :=
+      (inCallerWork shared _).1 mem (k.castAdd 6)
+    have fresh' (t) (mem : t ∈ work) : A.L t = [] ∧ A.R t = [] :=
+      ⟨(left t (fun _ => regOff t mem _)).trans (fresh t mem).1,
+       (right t (regOff t mem 59)).trans (fresh t mem).2⟩
+    have fields' k : A.R (embed (fields k)) = _ := (right _ (embed.injective.ne (board.injective.ne
+      ((by decide : ∀ k, (59 : Fin 113) ≠ idleRolePorts k) k)))).trans (inherited k)
+    have middle := fields' (4 : Fin 6)
+    have child := execute p x scheduled active children
+    have privateAt k (hi : 78 ≤ k.val) : embed (board k) ∈ work := (inCallerWork shared _).2 (fun a =>
+      embed.injective.ne (board.injective.ne (fun eq => by have bad := congrArg Fin.val eq; change a.val = k.val at bad; omega)))
+    have empty k (hk : 3 ≤ k.val) := (fresh' _ (privateAt (idleHeaderArithmetic k)
+      ((by decide : ∀ k : Fin 12, 3 ≤ k.val → 78 ≤ (idleHeaderArithmetic k).val) k hk))).2
+    have scratch r k (ne : k ≠ small 24) := fresh' _ ((inCallerWork shared (ports r k)).2 (fun a =>
+      intervalWorkOutside _ _ r k ne (caller (board (a.castAdd 35)))))
+    have free k (hk : k ∈ idleRecordWork) : A.L (embed (record k)) = [] ∧ A.R (embed (record k)) = [] := by
+      have ne : k ≠ 7 := by rintro rfl; revert hk; decide
+      rw [recOff k ne]
+      exact fresh' _ (privateAt _ ((by decide : ∀ k ∈ idleRecordWork, 78 ≤ (idleRecordSlot k).val) k hk))
+    have bridge (k : Fin 142082) := fresh' _ ((inCallerWork shared (intervalExtend T N ((k.castAdd T).castAdd N))).2 (fun a =>
+      (intervalExtend T N).injective.ne ((Fin.castAddEmb N).injective.ne (suffixApart _ _))))
+    have vacant (k : Fin N) := fresh' _ ((inCallerWork shared (intervalExtend T N (k.natAdd (142082+T)))).2 (fun a =>
+      (intervalExtend T N).injective.ne (suffixApart _ _).symm))
+    obtain ⟨z,F,n,exec,user,paid,output,clean,keep⟩ := run p c rate budget scheduled child word v A payload'
+      ((sameR 60 (by decide)).trans hc) ((sameR 61 (by decide)).trans hs)
+      ((sameL 62 (by decide)).trans tl) ((sameR 62 (by decide)).trans tr)
+      (fun k => fresh' _ (splitFree k)) ((congrArg List.length (sameR 5 (by decide))).trans clock)
+      ((sameR 2 (by decide)).trans radix) middle empty (fun k _ _ => fields' k) dims scratch ((sameR 6 (by decide)).trans cut) free bridge vacant
+    have entry : tapeCharge cleanupWeight work A = 4*work.length := by
+      unfold tapeCharge
+      rw [List.map_congr_left (g := fun _ => 4) (fun k hk => by simp [cleanupWeight,(fresh' k hk).1,(fresh' k hk).2])]
+      simp [List.map_const',Nat.mul_comm]
+    refine ⟨z,F,n,exec,user,?_,output,?_⟩
+    · have pos : 0 < p.cells := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)
+          (Nat.mul_pos p.idlePositive (by decide))
+      have stock := Nat.mul_le_mul_left (4*work.length) pos
+      have combine (a b c d v : ℕ) : a*((b+c*d)*v) = (a*b+(a*c)*d)*v := by ring
+      intro js nd
+      have bound := paid js nd
+      rw [entry,combine rate base swaps] at bound
+      change _ ≤ _ + ((fixed+4*work.length)*p.cells+_+budget)
+      rw [Nat.add_mul]
+      omega
+    · intro t ne
+      by_cases mem : t ∈ work
+      · exact ⟨(clean t mem).1.trans (fresh' t mem).1.symm,(clean t mem).2.trans (fresh' t mem).2.symm⟩
+      obtain ⟨a,eq⟩ : ∃ a, shared a = t := by
+        by_contra! h
+        exact mem ((inCallerWork shared t).2 h)
+      subst t
+      exact keep (board (a.castAdd 35)) (fun h => ne (congrArg embed h)) mem (fun k => apart _ _))
+  refine ⟨z,F,n,exec,user,?_,result,off⟩
+  have mass : prime^(p.w+1) ≤ p.cells := (Nat.le_self_pow (by decide : 128 ≠ 0) _).trans
+    (Nat.le_mul_of_pos_right _ (Nat.mul_pos p.idlePositive (by decide)))
+  have clockBound : p.w+1 ≤ p.cells := (Nat.lt_pow_self Shared50ModularControl.prime_prime.one_lt).le.trans mass
+  have sizeBound : (p.w+1).size ≤ p.w+1 := Nat.size_le.mpr Nat.lt_two_pow_self
+  intro js distinct
+  have bill := paid js distinct
+  dsimp only [price] at bill
+  rw [Nat.add_mul (fixed+4*work.length) 41]
+  omega
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

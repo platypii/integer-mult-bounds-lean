@@ -40,7 +40,7 @@ theorem prepareWorkerIntervalDimensions {T Q : ℕ} {P U : Type} (body : P → P
     apply (off _ ?_).trans (fresh j).2
     intro i
     exact work.injective.ne ((by decide : ∀ j : Fin 72, 59 ≤ j.val → j.val ≤ 65 → ∀ i, operands i ≠ j) j lo hi i)
-  obtain ⟨z,F,n,exec,time,user,inputs,left,right⟩ := run w W a {S with R := R}
+  obtain ⟨z,F,n,exec,time,user,inputs,_,left,right⟩ := run w W a {S with R := R}
     ((loaded 0).trans base) ((loaded 1).trans suffix) ((loaded 2).trans unit)
     (fun i => (fresh _).1) ((congrArg List.length (loaded 3)).trans atom) empty
   refine ⟨z,F,_,setup.seq exec,user.trans initial,?_,inputs,?_⟩

@@ -241,7 +241,7 @@ theorem directoryIntervalMerge {P U : Type} {T B Q w W atom price lo hi axes : �
   obtain ⟨setup,prepare⟩ := intervalDirectorySetup_exec host regs
   refine ⟨host,setup.seq call,bank,targetBank,?_⟩
   intro target data u S split base suffix unit left atom blank free fresh prepared output word
-  obtain ⟨v,D,t,ran,paid,user,inputs,leftFrame,rightFrame⟩ :=
+  obtain ⟨v,D,t,ran,paid,user,inputs,_,leftFrame,rightFrame⟩ :=
     prepare w W u S base suffix unit left atom blank
   have frame (j) (off : ∀ i, regs i ≠ j) : D.L j = S.L j ∧ D.R j = S.R j :=
     ⟨leftFrame j (fun i => off _),rightFrame j (off _)⟩
