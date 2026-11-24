@@ -795,7 +795,7 @@ theorem correctedInheritedWorkerCall [M8.Machine.Net] (t : Fin 111) (atExit : Bo
       let ports := place.trans (Fin.castAddEmb (24+K))
       ∀ (node child : RecursiveInterchangeLayout.Descriptor) (L cutoff budget : ℕ)
         (position : Fin (RecursiveInterchangeLayout.volume prime child) ≃ Fin V),
-      ScheduledChildExec node child w W ports (binSyms L cutoff) position body f budget →
+      ScheduledChildExec node child w W ports (binSyms L cutoff) position body f budget true →
       child.width < node.width →
       ∀ (x : Fin V → ZMod 2) u (S : Stacks (T+(24+K)) prime),
       S.R (cut.castAdd _) = binSyms L cutoff → S.R ((src 0).castAdd _) = binSyms M.size M → S.R ((src 1).castAdd _) = binSyms W.size W →
@@ -805,7 +805,7 @@ theorem correctedInheritedWorkerCall [M8.Machine.Net] (t : Fin 111) (atExit : Bo
       (∀ h, readAt blank (S.L io) (S.R io) h = (portOwner x).tape 0 h) →
       (∀ j : Fin (24+K), S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
       ∃ (y output : Fin V → ZMod 2), ∃ z F n, Exec body code (mk u S) n (mk z F) ∧ z.user = u.user ∧
-        n ≤ rate*V+coreRate*M8.RevMachine.LeafCore.coreCost V (w+1)+(budget+8*L+10) ∧
+        CleanupBound S F n (rate*V+coreRate*M8.RevMachine.LeafCore.coreCost V (w+1)+(budget+8*L+10)) ∧
         (∀ h, output (position h) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (y ∘ position) h) ∧
         (∀ s j, let A := translatedPortProjector (ZMod M) (4:ZMod M)⁻¹ t
                 let B := reduce M (selectedProjector ⟨2+t.val,by omega⟩)
@@ -835,8 +835,7 @@ theorem correctedInheritedWorkerCall [M8.Machine.Net] (t : Fin 111) (atExit : Bo
   obtain ⟨z,F,n,out,exec,time,same,result,cleared,keep,effect⟩ :=
     inheritedWorkerCall body f ports (ext cut) (fun i => ext.injective.ne (cutOff i)) node child w W L cutoff budget
       position worker smaller v A y ((frame cut cutOff).2.trans header) ready free
-  refine ⟨y,out,z,F,l+n,start.seq exec,same.trans user,Nat.add_le_add ?_ time,effect,act,result,cleared,?_,?_⟩
-  · simpa [tapeCharge] using paid [] List.nodup_nil
+  refine ⟨y,out,z,F,l+n,start.seq exec,same.trans user,paid.seq time,effect,act,result,cleared,?_,?_⟩
   · intro j
     have h := keep (j.natAdd T) (fun i => (scratch_ne_caller j (place i)).symm)
     exact ⟨h.1.trans (clean j).1,h.2.trans (clean j).2⟩

@@ -70,15 +70,45 @@ theorem inheritWorkerCutoff {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prim
   rw [header,length_binSyms,ready.archive,List.append_nil] at copy
   exact ⟨z,copy,user,replaceArchive bank _ _ _ _ ready⟩
 
+/-- Replacing the same right stack at both endpoints leaves its contribution
+to the change in cleanup cost unchanged, even on a subset of the tapes. -/
+theorem workerCost.updateRight {T steps price : ℕ} {charged : Bool} {S F : Stacks T prime}
+    (paid : workerCost charged S F steps price) (j : Fin T) (r : List (Fin (prime+4)))
+    (same : S.R j = F.R j) :
+    workerCost charged {S with R := Function.update S.R j r}
+      {F with R := Function.update F.R j r} steps price := by
+  cases charged
+  · exact paid
+  intro js distinct
+  have balance (ls : List (Fin T)) :
+      let weight := fun (l r : List (Fin (prime+4))) => 4*l.length+2*r.length+4
+      tapeCharge weight ls {F with R := Function.update F.R j r} + tapeCharge weight ls S =
+        tapeCharge weight ls {S with R := Function.update S.R j r} + tapeCharge weight ls F := by
+    induction ls with
+    | nil => rfl
+    | cons i ls ih =>
+      dsimp only at ih ⊢
+      simp only [tapeCharge,List.map_cons,List.sum_cons] at ih ⊢
+      by_cases eq : i = j
+      · subst i
+        simp only [Function.update_self,same]
+        omega
+      · simp only [Function.update_of_ne eq]
+        omega
+  have := paid js distinct
+  have := balance js
+  dsimp only at *
+  omega
+
 /-- A call on an empty archive borrows the caller's cutoff for the
 duration of the execution. The return clears the archive and restores all
 tapes outside the worker, including the inherited header. -/
-theorem inheritedWorkerCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+theorem inheritedWorkerCall [M8.Machine.Net] {charged : Bool} {T Q : ℕ} {P U : Type}
     (body : P → Pr P T Q prime U) (f : P) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
     (cut : Fin T) (apart : ∀ i, ports i ≠ cut)
     (node child : Descriptor) (w W L cutoff budget : ℕ)
     (position : Fin (volume prime child) ≃ Fin ((prime^(w+1))^16*W))
-    (worker : ScheduledChildExec node child w W ports (binSyms L cutoff) position body f budget) :
+    (worker : ScheduledChildExec node child w W ports (binSyms L cutoff) position body f budget charged) :
     let bank := scheduledRecordPorts ports
     let code := (bcopy cut (bank 34) (bank 0) (bank 1)).seq ((Prog.call f).seq (bclear (bank 34)))
     let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size []
@@ -86,7 +116,7 @@ theorem inheritedWorkerCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     let clean := fun (S : Stacks T prime) => ∀ i : Fin (rowSwapBlock.tapes+35), 35 ≤ i.val →
       S.L (ports i) = [] ∧ S.R (ports i) = []
     child.width < node.width → ∀ u S word, S.R cut = binSyms L cutoff → stored word S → clean S →
-      ∃ z F n y, Exec body code (mk u S) n (mk z F) ∧ n ≤ budget+8*L+10 ∧ z.user = u.user ∧
+      ∃ z F n y, Exec body code (mk u S) n (mk z F) ∧ workerCost charged S F n (budget+8*L+10) ∧ z.user = u.user ∧
         stored y F ∧ clean F ∧ (∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
         ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) h := by
   intro bank code stored clean smaller u S word header ready free
@@ -99,11 +129,25 @@ theorem inheritedWorkerCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   obtain ⟨v,copy,user,loaded⟩ := inheritWorkerCutoff body bank cut (fun i => apart _) w W L cutoff word u S header ready
   obtain ⟨z,F,n,y,run,paid,same,out,blank,frame,read⟩ := worker smaller v D word loaded
     (fun i hi => ⟨(free i hi).1,(Function.update_of_ne (off i hi) ..).trans (free i hi).2⟩)
-  change n ≤ budget at paid
   obtain ⟨q,done,_,erase⟩ := bclear_exec (body := body) (bank 34) z F
   rw [out.archive,length_binSyms] at erase
-  refine ⟨q,_,_,y,Exec.seq copy (Exec.seq (Exec.call run) erase),by omega,done.trans (same.trans user),
+  refine ⟨q,_,_,y,Exec.seq copy (Exec.seq (Exec.call run) erase),?_,done.trans (same.trans user),
     replaceArchive bank _ _ _ _ out,?_,?_,read⟩
+  · have lifted := paid.updateRight (bank 34) [] (loaded.archive.trans out.archive.symm)
+    have reset : Function.update D.R (bank 34) [] = S.R := by
+      funext j
+      by_cases eq : j = bank 34
+      · subst j; simpa using ready.archive.symm
+      · simp [D,Function.update_of_ne eq]
+    change workerCost charged {S with R := Function.update D.R (bank 34) []} _ n budget at lifted
+    rw [reset] at lifted
+    cases charged with
+    | false => change n ≤ budget at lifted; change _ ≤ _; omega
+    | true =>
+      intro js distinct
+      have bill := lifted js distinct
+      change n+_ ≤ tapeCharge (fun l r => 4*l.length+2*r.length+4) js S+budget at bill
+      omega
   · exact fun i hi => ⟨(blank i hi).1,(Function.update_of_ne (off i hi) ..).trans (blank i hi).2⟩
   · intro j away
     have ne : j ≠ bank 34 := (away _).symm
@@ -155,6 +199,7 @@ theorem inheritedPackedChildCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
       smaller v D x saved stored clear
   refine ⟨z,F,_,y,Exec.seq setup exec,?_,same.trans user,done,blank,?_,action⟩
   · change m ≤ 14*M.size+6*suffix.size+6*(w+1)+11*(w+1).size+50 at cost
+    change n ≤ budget+8*L+10 at paid
     omega
   · intro j outside
     have h := frame j outside
@@ -192,7 +237,7 @@ together. Both branches return the archive empty. -/
 theorem moveCutoffCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     (body : P → Pr P T Q prime U) (large leaf : P) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
     (cut spectatorPort : Fin T) (off : ∀ i, ports i ≠ cut) (apart : ∀ i, ports i ≠ spectatorPort)
-    (rank : ℕ) :
+    (rank : ℕ) (charged : Bool := false) :
     ∃ code, ∀ (node child : Descriptor) (w W L cutoff recursiveTime leafTime : ℕ)
       (position : Fin (volume prime child) ≃ Fin ((prime^(w+1))^16*W)),
     child.width = (w+1)*rank → cutoff < 2^L → child.width.size ≤ L →
@@ -201,14 +246,14 @@ theorem moveCutoffCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     let active := cutoff < child.width
     let price := if active then recursiveTime else leafTime
     let digits := if active then L else spectators.size
-    (active → ScheduledChildExec node child w W ports (binSyms L cutoff) position body large recursiveTime) →
-    (¬active → ScheduledChildExec node child w W ports (binSyms spectators.size spectators) position body leaf leafTime) →
+    (active → ScheduledChildExec node child w W ports (binSyms L cutoff) position body large recursiveTime charged) →
+    (¬active → ScheduledChildExec node child w W ports (binSyms spectators.size spectators) position body leaf leafTime charged) →
     let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size []
       SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
     let clean := fun (S : Stacks T prime) => ∀ i : Fin (rowSwapBlock.tapes+35), 35 ≤ i.val →
       S.L (ports i) = [] ∧ S.R (ports i) = []
     child.width < node.width → ∀ u S word, S.R cut = binSyms L cutoff → S.R spectatorPort = binSyms spectators.size spectators → stored word S → clean S →
-      ∃ z F n y, Exec body code (mk u S) n (mk z F) ∧ n ≤ price+8*digits+4*w+23*child.width+22*L+61 ∧ z.user = u.user ∧
+      ∃ z F n y, Exec body code (mk u S) n (mk z F) ∧ workerCost charged S F n (price+8*digits+4*w+23*child.width+22*L+61) ∧ z.user = u.user ∧
         stored y F ∧ clean F ∧ (∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
         ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) h := by
   let bank := scheduledRecordPorts ports
@@ -223,17 +268,24 @@ theorem moveCutoffCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   obtain ⟨v,m,user,flag,paid,test⟩ := ordinaryCutoffTest_exec body cmp rank w L cutoff cutFits
     (width ▸ fits) u S ready.clock (by simpa [cmp,ordinaryCutoffPorts] using header) clear
   rw [← width] at flag paid
+  have branch {F : Stacks T prime} {n budget len : ℕ}
+      (cost : workerCost charged S F n (budget+8*len+10)) :
+      workerCost charged S F (m+(n+1)) (budget+8*len+4*w+23*child.width+22*L+61) := by
+    cases charged with
+    | false => change n ≤ _ at cost; change _ ≤ _; omega
+    | true =>
+      intro js distinct
+      have bill := cost js distinct
+      omega
   by_cases h : active
   · obtain ⟨z,F,n,y,run,cost,same,rest⟩ := inheritedWorkerCall body large ports cut off node child w W L cutoff
       recursiveTime position (recurse h) smaller v S word header ready free
     refine ⟨z,F,_,y,Exec.seq test (Exec.cond_true (by simpa [mk_var,flag,active] using h) run),?_,same.trans user,rest⟩
-    simp only [price,digits,ite_eq_left h]
-    omega
+    simpa only [price,digits,ite_eq_left h,Nat.add_comm 1 n] using branch cost
   · obtain ⟨z,F,n,y,run,cost,same,rest⟩ := inheritedWorkerCall body leaf ports spectatorPort apart node child w W spectators.size spectators
       leafTime position (stop h) smaller v S word spectator ready free
     refine ⟨z,F,_,y,Exec.seq test (Exec.cond_false (by simpa [mk_var,flag,active] using h) run),?_,same.trans user,rest⟩
-    simp only [price,digits,ite_eq_right h]
-    omega
+    simpa only [price,digits,ite_eq_right h,Nat.add_comm 1 n] using branch cost
 
 /-- At an active aligned parent the inherited precision fits the parent
 width. All MOVE dispatch and return work is then linear in child volume. -/
@@ -769,36 +821,6 @@ noncomputable def twoFieldDispatch {work T Q : ℕ} {P U : Type}
   let finish := (Prog.act (DFT.pushSep (bank 34))).seq
     ((moveR spectator (bank 0) id).seq (moveR (bank 0) (bank 34) id))
   (DFT.takeField (bank 34) spectator (bank 0)).seq ((ordinaryCutoffTest cmp rank).seq (select.seq finish))
-
-/-- Replacing the same right stack at both endpoints leaves its contribution
-to the change in cleanup cost unchanged, even on a subset of the tapes. -/
-theorem workerCost.updateRight {T steps price : ℕ} {charged : Bool} {S F : Stacks T prime}
-    (paid : workerCost charged S F steps price) (j : Fin T) (r : List (Fin (prime+4)))
-    (same : S.R j = F.R j) :
-    workerCost charged {S with R := Function.update S.R j r}
-      {F with R := Function.update F.R j r} steps price := by
-  cases charged
-  · exact paid
-  intro js distinct
-  have balance (ls : List (Fin T)) :
-      let weight := fun (l r : List (Fin (prime+4))) => 4*l.length+2*r.length+4
-      tapeCharge weight ls {F with R := Function.update F.R j r} + tapeCharge weight ls S =
-        tapeCharge weight ls {S with R := Function.update S.R j r} + tapeCharge weight ls F := by
-    induction ls with
-    | nil => rfl
-    | cons i ls ih =>
-      dsimp only at ih ⊢
-      simp only [tapeCharge,List.map_cons,List.sum_cons] at ih ⊢
-      by_cases eq : i = j
-      · subst i
-        simp only [Function.update_self,same]
-        omega
-      · simp only [Function.update_of_ne eq]
-        omega
-  have := paid js distinct
-  have := balance js
-  dsimp only at *
-  omega
 
 /-- Opening and restoring the MOVE archive preserves the child's cleanup charge
 on every subset of tapes. The wrapper pays only its own elapsed steps. -/
