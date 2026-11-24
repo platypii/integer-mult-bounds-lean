@@ -684,71 +684,189 @@ theorem placedCorrectedCompactStage [M8.Machine.Net] (n : Fin 9) :
   dsimp only [outer] at slots
   simpa only [slots,c.stageCells] using h
 
+/-- Prepare the correction dimensions from the sweep record and execute the
+corrected compact worker on the same bank. -/
+theorem recordCorrectedCompactStage [M8.Machine.Net] (n : Fin 9) :
+    ∃ (t states : ℕ) (fan : Fin (142081+2) ↪ Fin t), ∀ {U : Type} {Q : ℕ}, states ≤ Q →
+    ∃ (T : ℕ) (mid : Fin t ↪ Fin T) (source : Fin 10 ↪ Fin T) (P : Type) (host : P → Pr P T Q prime U)
+      (code : Pr P T Q prime U) (seed : CutoffNodeInput → Stacks t prime)
+      (rate coreRate : ℕ) (stageRate : ℝ),
+      LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells seed ∧
+      (∀ i j, mid i ≠ source j) ∧
+      ∀ (c : CutoffNodeInput), 7*(c.w+1) ≤ c.cutoff → ∀ σ : ℝ, 0 ≤ σ →
+      ∀ (x : Fin 142081 → Fin ((prime^(c.w+1))^16*c.stageWidth) → ZMod 2) u S, HelperFan (fan.trans mid) x S →
+      (∀ j, (∀ i, fan i ≠ j) → S.L (mid j) = (seed c).L j ∧ S.R (mid j) = (seed c).R j) →
+      (∀ i, S.R (source i) = sweepSeedWords c i) →
+      (∀ j, (∀ i, mid i ≠ j) → (∀ i, source i ≠ j) → S.L j = [] ∧ S.R j = []) →
+      ∃ z F m y, Exec host code (mk u S) m (mk z F) ∧ z.user = u.user ∧ HelperFan (fan.trans mid) y F ∧
+        (∀ j, sweepRoles n 0 j (sweepView c.sweepVolume y) = (Piece.stage n).run (sweepRoles n 0 j (sweepView c.sweepVolume x))) ∧
+        ∀ js, js.Nodup → m+tapeCharge cleanupWeight (frameSlots (fan.trans mid)) F+tapeCharge cleanupWeight js F ≤
+          tapeCharge cleanupWeight js S+(rate*c.cells+coreRate*LeafCore.coreCost c.cells (c.w+1)+
+          ⌊stageRate*((c.node.width : ℝ)^σ*(c.cutoff : ℝ)^(M8.Machine.BudgetBound.tau-σ)*c.cells)⌋₊)+
+          tapeCharge cleanupWeight (frameSlots (fan.trans mid)) S := by
+  obtain ⟨t,q,k,fan,build⟩ := placedCorrectedCompactStage n
+  refine ⟨t,max q ((fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080)),fan,?_⟩
+  intro U Q fits
+  obtain ⟨P,body,seed,loader,charts⟩ := build (U := U) ((le_max_left ..).trans fits)
+  let b := rowSwapBlock.tapes+35
+  let h := t+b+b
+  let T := h+353+6+7+9
+  let ext := Fin.castAddEmb (24+k) (n := T)
+  let mid : Fin t ↪ Fin T := chartSlice 0 (by dsimp [T,h]; omega)
+  let entry : Fin b ↪ Fin T := chartSlice t (by dsimp [T,h]; omega)
+  let ret : Fin b ↪ Fin T := chartSlice (t+b) (by dsimp [T,h]; omega)
+  let ar : Fin 353 ↪ Fin T := chartSlice h (by dsimp [T]; omega)
+  let flat : Fin 6 ↪ Fin T := chartSlice (h+353) (by dsimp [T]; omega)
+  let dims : Fin 7 ↪ Fin T := chartSlice (h+359) (by dsimp [T]; omega)
+  let src : Fin 10 ↪ Fin T := chartSlice (h+365) (by dsimp [T]; omega)
+  let caller := (Fin.castAddEmb 1 (n := 6)).trans dims
+  let host := fun f => embProg (mid.trans ext) id (body f)
+  obtain ⟨work,r,cr,C,run⟩ := charts (K := k) mid entry ret caller le_rfl
+    (by intro i j eq; have v := congrArg Fin.val eq; change t+i.val = 0+j.val at v; omega)
+    (by intro i j eq; have v := congrArg Fin.val eq; change t+b+i.val = 0+j.val at v; omega)
+    (by intro i j eq; have v := congrArg Fin.val eq; change h+359+i.val = 0+j.val at v; simp only [h] at v; omega)
+    (by intro i j eq; have v := congrArg Fin.val eq; change t+i.val = h+359+j.val at v; simp only [h] at v; omega)
+    (by intro i j eq; have v := congrArg Fin.val eq; change t+b+i.val = h+359+j.val at v; simp only [h] at v; omega)
+    (by intro i j eq; have v := congrArg Fin.val eq; change t+b+i.val = t+j.val at v; omega)
+  obtain ⟨prep,a,prepare⟩ := loadCompactDimensions host (ar.trans ext) (flat.trans ext) (dims.trans ext)
+    (fun i => ext (src i.succ)) (by intro i j eq; have v := congrArg Fin.val eq; change h+i.val = h+365+(j.val+1) at v; dsimp only [h] at v; omega)
+    ((le_max_right ..).trans fits) (by intro i j eq; have v := congrArg Fin.val eq; change h+353+i.val = h+j.val at v; dsimp only [h] at v; omega) (by intro i j eq; have v := congrArg Fin.val eq; change h+359+i.val = h+j.val at v; dsimp only [h] at v; omega) (by intro i j eq; have v := congrArg Fin.val eq; change h+353+i.val = h+359+j.val at v; dsimp only [h] at v; omega)
+  refine ⟨_,mid.trans ext,src.trans ext,P,host,prep.seq work,seed,2*a+r,cr,C,loader,
+    by intro i j eq; have v := congrArg Fin.val eq; change 0+i.val = h+365+j.val at v; dsimp only [h] at v; omega,?_⟩
+  intro c band σ nonneg x u S live stock words blank
+  have clear (j : Fin T) (lo : t ≤ j.val) (hi : j.val < h+365) := blank (ext j)
+    (fun i eq => by have v := congrArg Fin.val (ext.injective eq); change 0+i.val = j.val at v; omega)
+    (fun i eq => by have v := congrArg Fin.val (ext.injective eq); change h+365+i.val = j.val at v; omega)
+  obtain ⟨v,D,m,start,user,paid,dim,_,frame⟩ := prepare c u S (fun i => words i.succ)
+    (fun i => clear _ (by change t ≤ h+i.val; dsimp [h]; omega) (by change h+i.val < _; omega))
+    (fun i => (clear _ (by change t ≤ h+353+i.val; dsimp [h]; omega) (by change h+353+i.val < _; omega)).2)
+    (fun i => (clear _ (by change t ≤ h+359+i.val; dsimp [h]; omega) (by change h+359+i.val < _; omega)).2)
+    (by apply Eq.trans _ (words 0); apply congrArg S.R; apply congrArg ext; apply Fin.ext; change h+359+6 = h+365+0; omega)
+  have kept (j : Fin T) (before : j.val < h) := frame (ext j)
+    (fun i eq => by have v := congrArg Fin.val (ext.injective eq); change h+i.val = j.val at v; omega)
+    (fun i eq => by have v := congrArg Fin.val (ext.injective eq); change h+353+i.val = j.val at v; omega)
+    (fun i eq => by have v := congrArg Fin.val (ext.injective eq); change h+359+i.val = j.val at v; omega)
+  have core i := kept (mid i) (by change 0+i.val < h; dsimp [h,b]; omega)
+  have ready : HelperFan (fan.trans (mid.trans ext)) x D := by
+    intro i j
+    change _ = readAt _ (D.L (ext (mid (fan i)))) (D.R (ext (mid (fan i)))) _
+    rw [(core _).1,(core _).2]
+    exact live i j
+  have clean (j : Fin T) (lo : t ≤ j.val) (hi : j.val < h) :=
+    And.intro ((kept j hi).1.trans (clear j lo (by omega)).1) ((kept j hi).2.trans (clear j lo (by omega)).2)
+  have off (i : Fin (24+k)) (j : Fin T) : ext j ≠ i.natAdd T := by
+    intro eq
+    have v := congrArg Fin.val eq
+    change j.val = T+i.val at v
+    omega
+  obtain ⟨z,F,l,y,finish,last,out,act,bill⟩ := run c band σ nonneg x v D ready
+    (fun i away => ⟨(core i).1.trans (stock i away).1,(core i).2.trans (stock i away).2⟩)
+    (fun i => dim (i.castAdd 1))
+    (fun i _ => clean _ (by change t ≤ t+i.val; omega) (by change t+i.val < h; dsimp [h]; omega))
+    (fun i _ => clean _ (by change t ≤ t+b+i.val; omega) (by change t+b+i.val < h; dsimp [h]; omega))
+    (fun i => by
+      have keep := frame _ (fun _ => off i _) (fun _ => off i _) (fun _ => off i _)
+      have free := blank _ (fun _ => off i _) (fun _ => off i _)
+      exact ⟨keep.1.trans free.1,keep.2.trans free.2⟩)
+  refine ⟨z,F,m+l,y,start.seq finish,last.trans user,out,act,?_⟩
+  intro js nd
+  let slots := frameSlots (fan.trans (mid.trans ext))
+  have p := paid js nd
+  have f := paid slots (frameSlots_nodup _)
+  change m+tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+a*c.cells at p
+  change m+tapeCharge cleanupWeight slots D ≤ tapeCharge cleanupWeight slots S+a*c.cells at f
+  have total := bill js nd
+  change l+tapeCharge cleanupWeight slots F+_ ≤ _+_+tapeCharge cleanupWeight slots D at total
+  change m+l+tapeCharge cleanupWeight slots F+_ ≤ _+_+tapeCharge cleanupWeight slots S
+  rw [Nat.add_mul,Nat.mul_assoc]
+  omega
+
 /-- Correct the input and output ports of the seeded compact worker. Every
 borrowed spectator now sees the scheduled stage in its own coordinates. -/
 theorem correctedCompactBandStage [M8.Machine.Net] (n : Fin 9) :
-    ∃ base tapes states : ℕ, ∀ {U : Type} {Q : ℕ}, states ≤ Q →
+    ∃ states : ℕ, ∀ {U : Type} {Q : ℕ}, states ≤ Q →
     ∃ (T : ℕ) (fan : Fin (142081+2) ↪ Fin T) (Label : Type) (host : Label → Pr Label T Q prime U)
-      (code : Pr Label T Q prime U) (rate : ℝ), ∀ c : CutoffNodeInput, 7*(c.w+1) ≤ c.cutoff →
-      ∀ σ : ℝ, 0 ≤ σ → ∃ seed : Stacks T prime,
+      (code : Pr Label T Q prime U) (base coreRate : ℕ) (rate : ℝ) (seed : CutoffNodeInput → Stacks T prime),
+      LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells seed ∧ ∀ c : CutoffNodeInput, 7*(c.w+1) ≤ c.cutoff →
+      ∀ σ : ℝ, 0 ≤ σ →
       ∀ (x : Fin 142081 → Fin ((prime^(c.w+1))^16*c.stageWidth) → ZMod 2) u S, HelperFan fan x S →
-      (∀ j, (∀ i, fan i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
+      (∀ j, (∀ i, fan i ≠ j) → S.L j = (seed c).L j ∧ S.R j = (seed c).R j) →
       ∃ z F t y, Exec host code (mk u S) t (mk z F) ∧ z.user = u.user ∧ HelperFan fan y F ∧
         (∀ j : Fin (c.B*prime^(64*((c.w+1)*64))*c.stageFactor),
           sweepRoles n 0 j (sweepView c.sweepVolume y) =
             (Piece.stage n).run (sweepRoles n 0 j (sweepView c.sweepVolume x))) ∧
         ∀ js : List _, js.Nodup → t+tapeCharge cleanupWeight (frameSlots fan) F+tapeCharge cleanupWeight js F ≤
-          tapeCharge cleanupWeight js S+25*((base*c.cells+17760*(2*LeafCore.coreCost c.cells (c.w+1)+14))*(tapes+5)+12)+
-          ⌊rate*((c.node.width : ℝ)^σ*(c.cutoff : ℝ)^(M8.Machine.BudgetBound.tau-σ)*c.cells)⌋₊+
+          tapeCharge cleanupWeight js S+(base*c.cells+coreRate*LeafCore.coreCost c.cells (c.w+1)+
+          ⌊rate*((c.node.width : ℝ)^σ*(c.cutoff : ℝ)^(M8.Machine.BudgetBound.tau-σ)*c.cells)⌋₊)+
           tapeCharge cleanupWeight (frameSlots fan) S := by
-  obtain ⟨t,q,localFan,build⟩ := seededCompactBandStage n
-  obtain ⟨base,tapes,r,charts⟩ := borrowedCorrectionMachines
-  obtain ⟨a,b,qa,qb,stages⟩ := charts n
-  refine ⟨base,tapes,max q r,?_⟩
+  classical
+  obtain ⟨t,q,fan,build⟩ := recordCorrectedCompactStage n
+  refine ⟨q,?_⟩
   intro U Q fits
-  obtain ⟨Label,body,worker,rate,seedFor,_,run⟩ := build (U := U) ((le_max_left ..).trans fits)
-  let reserve := tapeCharge cleanupWeight (frameSlots localFan)
-  obtain ⟨T,bank,code,allocate⟩ := allocatedChartWorkerWithReserve localFan body worker a b
-    (qa.trans ((le_max_right ..).trans fits)) (qb.trans ((le_max_right ..).trans fits))
-    reserve 12 (fun bank => chartOwnerReserveGrowth localFan bank)
-  refine ⟨T,localFan.trans bank,Label,fun f => embProg bank id (body f),code,rate,?_⟩
-  intro c band σ nonneg
-  let initial := seedFor c
-  have workerRun := run c band
-  have cells : 0 < c.cells := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)
-    (Nat.mul_pos c.idlePositive (by decide))
-  rw [← c.stageCells] at cells
-  obtain ⟨enter,leave,ha,hb,sa,sb,paid,action⟩ := stages (c.w+1) c.B c.stageFactor (by omega)
-    (Nat.pos_of_mul_pos_left cells)
-  let price := ⌊rate*((c.node.width : ℝ)^σ*(c.cutoff : ℝ)^(M8.Machine.BudgetBound.tau-σ)*c.cells)⌋₊
-  obtain ⟨seed,_,execute⟩ := allocate (RestoredBorrowedStage n (c.w+1) c.B c.stageFactor)
-    price initial enter leave ha hb sa sb (by
-      intro x u S ready fresh
-      obtain ⟨z,F,k,y,exec,user,out,effect,bill⟩ := workerRun x u S ready fresh
-      exact ⟨z,F,k,y,exec,bill σ nonneg,user,out,effect⟩) ⟨[],[],fun _ => [],fun _ => []⟩
-  refine ⟨seed,?_⟩
-  intro x u S live fresh
-  obtain ⟨z,F,k,y,exec,bill,user,out,effect⟩ := execute x u S live fresh
-  refine ⟨z,F,k,leave.transform y,exec,user,out,?_,?_⟩
-  · exact correctedSweepRead n c.sweepVolume x _ (action x y effect)
-  intro js nd
-  have h := bill js nd
-  change _ ≤ (base*((prime^(c.w+1))^16*c.stageWidth)+17760*(2*LeafCore.coreCost
-    ((prime^(c.w+1))^16*c.stageWidth) (c.w+1)+14))*(tapes+5) at paid
-  rw [c.stageCells] at paid
-  have charge (A : Stacks T prime) : reserve (embStk bank A) =
-      tapeCharge cleanupWeight (frameSlots (localFan.trans bank)) A := placedFrameCharge ..
-  rw [charge,charge] at h
-  dsimp only [price] at h
-  exact h.trans (Nat.add_le_add_right (Nat.add_le_add_right (Nat.add_le_add_left
-    (Nat.mul_le_mul_left 25 (Nat.add_le_add_right paid 12)) _) _) _)
+  obtain ⟨T,mid,src,P,host,code,inner,r,k,C,install,apart,run⟩ := build (U := U) fits
+  let sweep (c : CutoffNodeInput) : Stacks T prime :=
+    ⟨[],[],fun _ => [],Function.extend src (sweepSeedWords c) (fun _ => [])⟩
+  let seed (c : CutoffNodeInput) : Stacks T prime := ⟨[],[],
+    Function.extend mid (inner c).L (sweep c).L,Function.extend mid (inner c).R (sweep c).R⟩
+  have innerRead c i : (seed c).L (mid i) = (inner c).L i ∧ (seed c).R (mid i) = (inner c).R i :=
+    ⟨mid.injective.extend_apply ..,mid.injective.extend_apply ..⟩
+  have outside c j (away : ∀ i, mid i ≠ j) :
+      (seed c).L j = (sweep c).L j ∧ (seed c).R j = (sweep c).R j := by
+    have miss : ¬∃ i, mid i = j := fun ⟨i,h⟩ => away i h
+    exact ⟨Function.extend_apply' _ _ _ miss,Function.extend_apply' _ _ _ miss⟩
+  have empty c j (away : ∀ i, src i ≠ j) : (sweep c).L j = [] ∧ (sweep c).R j = [] :=
+    ⟨rfl,Function.extend_apply' (sweepSeedWords c) (fun _ => []) j (fun ⟨i,h⟩ => away i h)⟩
+  have sweepLoad : LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells sweep :=
+    compactSweepRecordLoader src (mid (fan 0)) (mid (fan 1)) (mid.injective.ne (fan.injective.ne (by decide)))
+      (fun j => (apart _ j).symm) (fun j => (apart _ j).symm)
+  refine ⟨T,fan.trans mid,P,host,code,r,k,C,seed,?_,?_⟩
+  · obtain ⟨a,load⟩ := sweepLoad
+    obtain ⟨b,fill⟩ := install
+    refine ⟨a+b,?_⟩
+    intro A V N R body bank words disjoint
+    obtain ⟨first,start⟩ := load body bank words disjoint
+    obtain ⟨second,finish⟩ := fill body (mid.trans bank) words (fun i j => disjoint _ j)
+    refine ⟨first.seq second,?_⟩
+    intro c u S hdr vacant
+    obtain ⟨v,D,m,beginRun,user,paid,set,keep⟩ := start c u S hdr vacant
+    obtain ⟨z,F,l,endRun,last,bill,stored,frame⟩ := finish c v D
+      (fun i => (keep _ (fun j => disjoint j i)).2.trans (hdr i)) (by
+        intro i
+        have clear := empty c (mid i) (fun j => (apart i j).symm)
+        exact ⟨(set _).1.trans clear.1,(set _).2.trans clear.2⟩)
+    refine ⟨z,F,m+l,beginRun.seq endRun,last.trans user,by simpa only [Nat.add_mul] using paid.seq bill,?_,?_⟩
+    · intro j
+      by_cases h : ∃ i, mid i = j
+      · obtain ⟨i,rfl⟩ := h
+        exact ⟨(stored i).1.trans (innerRead c i).1.symm,(stored i).2.trans (innerRead c i).2.symm⟩
+      have miss i : mid i ≠ j := fun eq => h ⟨i,eq⟩
+      have kept := frame (bank j) (fun i => bank.injective.ne (miss i))
+      exact ⟨kept.1.trans ((set j).1.trans (outside c j miss).1.symm),
+        kept.2.trans ((set j).2.trans (outside c j miss).2.symm)⟩
+    · intro j away
+      have kept := frame j (fun i => away _)
+      exact ⟨kept.1.trans (keep j away).1,kept.2.trans (keep j away).2⟩
+  · intro c band σ nonneg x u S live fresh
+    apply run c band σ nonneg x u S live
+    · intro j away
+      have h := fresh (mid j) (fun i => mid.injective.ne (away i))
+      exact ⟨h.1.trans (innerRead c j).1,h.2.trans (innerRead c j).2⟩
+    · intro i
+      have h := fresh (src i) (fun j => apart _ _)
+      exact h.2.trans ((outside c _ (fun j => apart j i)).2.trans
+        (src.injective.extend_apply (sweepSeedWords c) (fun _ => []) i))
+    · intro j m d
+      have h := fresh j (fun i => m _)
+      exact ⟨h.1.trans ((outside c j m).1.trans (empty c j d).1),
+        h.2.trans ((outside c j m).2.trans (empty c j d).2)⟩
 
-private theorem compactChartCost [M8.Machine.Net] (base tapes : ℕ) (C : ℝ) :
+-- The preinitialized port-correction proof is available at ed84bd4d.
+private theorem compactChartCost [M8.Machine.Net] (base coreRate : ℕ) (C : ℝ) :
     ∃ D : ℝ, 0 ≤ D ∧ ∀ w V : ℕ, 0 < V →
-      ((25*((base*V+17760*(2*LeafCore.coreCost V (w+1)+14))*(tapes+5)+12)+
+      ((base*V+coreRate*LeafCore.coreCost V (w+1)+
         ⌈C*V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau⌉₊+(142081*(12*V+14)+1) : ℕ) : ℝ) ≤
         D*((V : ℝ)*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) := by
-  let D := 25*((base+17760*(2 * |LeafCore.C|+14))*(tapes+5 : ℕ)+12)+|C|+1+(142081*26+1)
+  let D := (base : ℝ)+coreRate*|LeafCore.C|+|C|+1+(142081*26+1)
   refine ⟨D,by dsimp [D]; positivity,?_⟩
   intro w V positive
   let scale := (V : ℝ)*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
@@ -762,26 +880,24 @@ private theorem compactChartCost [M8.Machine.Net] (base tapes : ℕ) (C : ℝ) :
     rw [mul_assoc]
     exact (Nat.cast_le.mpr (Nat.ceil_mono (mul_le_mul_of_nonneg_right (le_abs_self C) (zero_le_one.trans one)))).trans
       (Nat.ceil_lt_add_one (mul_nonneg (abs_nonneg C) (zero_le_one.trans one))).le
-  have inner : (base : ℝ)*V+17760*(2*(LeafCore.coreCost V (w+1) : ℝ)+14) ≤
-      (base+17760*(2 * |LeafCore.C|+14))*scale := by
-    linarith only [mul_le_mul_of_nonneg_left vol (Nat.cast_nonneg base : (0:ℝ) ≤ base),coreBound,one]
   change _ ≤ D*scale
   dsimp only [D]
   simp only [Nat.cast_add,Nat.cast_mul,Nat.cast_ofNat,Nat.cast_one]
   simp only [Nat.cast_add,Nat.cast_one] at rounded
-  linarith only [mul_le_mul_of_nonneg_right inner (show (0:ℝ) ≤ tapes+5 by positivity),rounded,vol,one]
+  linarith only [mul_le_mul_of_nonneg_left vol (Nat.cast_nonneg base : (0:ℝ) ≤ base),
+    mul_le_mul_of_nonneg_left coreBound (Nat.cast_nonneg coreRate : (0:ℝ) ≤ coreRate),rounded,vol,one]
 
 open SweepFile in
 /-- A complete compact stage from packed input to packed output in the stopping band. -/
 private theorem packedCompactBandExecution [M8.Machine.Net] (n : Fin 9) :
-    ∃ (C : ℝ) (base tapes states : ℕ), ∀ {U : Type} {Q : ℕ}, states ≤ Q →
+    ∃ (C : ℝ) (states : ℕ), ∀ {U : Type} {Q : ℕ}, states ≤ Q →
     ∃ (T : ℕ) (src dst : Fin (142081+2) ↪ Fin T) (Label : Type) (host : Label → Pr Label T Q prime U)
-      (code : Pr Label T Q prime U) (rate : ℝ), ∀ c : CutoffNodeInput, 7*(c.w+1) ≤ c.cutoff →
+      (code : Pr Label T Q prime U) (base coreRate : ℕ) (rate : ℝ), ∀ c : CutoffNodeInput, 7*(c.w+1) ≤ c.cutoff →
       ∀ σ : ℝ, 0 ≤ σ → ∃ seed : Stacks T prime,
       let w := c.w+1
       let V := (prime^w)^16*c.stageWidth
       let W := c.B*prime^(64*(w*64))*c.stageFactor
-      let price := 25*((base*c.cells+17760*(2*LeafCore.coreCost c.cells w+14))*(tapes+5)+12)+
+      let price := base*c.cells+coreRate*LeafCore.coreCost c.cells w+
         ⌊rate*((c.node.width : ℝ)^σ*(c.cutoff : ℝ)^(M8.Machine.BudgetBound.tau-σ)*c.cells)⌋₊
       ∀ x u S, ParentStageWords (fun i => src (i.castAdd 2)) src V x S →
         (∀ j, (∀ i, src i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
@@ -792,11 +908,11 @@ private theorem packedCompactBandExecution [M8.Machine.Net] (n : Fin 9) :
           ParentStageWords (fun i => dst (i.castAdd 2)) dst V y F ∧ ∀ j : Fin W,
             let address := fun v => (flatWindowEquiv w W (windowState w v,j)).cast c.sweepVolume
             readRoles address y = (Piece.stage n).run (readRoles address x) := by
-  obtain ⟨base,tapes,q,build⟩ := correctedCompactBandStage n
+  obtain ⟨q,build⟩ := correctedCompactBandStage n
   obtain ⟨C,r,charts⟩ := flatChartWorkerWithReserve
-  refine ⟨C,base,tapes,max q r,?_⟩
+  refine ⟨C,max q r,?_⟩
   intro U Q fits
-  obtain ⟨T,fan,Label,body,worker,rate,run⟩ := build (U := U) ((le_max_left ..).trans fits)
+  obtain ⟨T,fan,Label,body,worker,base,coreRate,rate,initialFor,_,run⟩ := build (U := U) ((le_max_left ..).trans fits)
   let reserve := tapeCharge cleanupWeight (frameSlots fan)
   obtain ⟨H,bank,code,chart⟩ := charts n fan body worker reserve
     (fun bank => chartOwnerReserveGrowth fan bank) ((le_max_right ..).trans fits)
@@ -804,10 +920,11 @@ private theorem packedCompactBandExecution [M8.Machine.Net] (n : Fin 9) :
   let table := fun f => embProg bank id (body f)
   obtain ⟨program,pack⟩ := flatWordStageWithCounterReserve live table code
   let place := Exit.chart 0 H
-  refine ⟨_,live.trans place,returnedFan live,Label,fun f => embProg place id (table f),program,rate,?_⟩
+  refine ⟨_,live.trans place,returnedFan live,Label,fun f => embProg place id (table f),program,base,coreRate,rate,?_⟩
   intro c band σ nonneg
-  obtain ⟨initial,correct⟩ := run c band σ nonneg
-  let price := 25*((base*c.cells+17760*(2*LeafCore.coreCost c.cells (c.w+1)+14))*(tapes+5)+12)+
+  let initial := initialFor c
+  have correct := run c band σ nonneg
+  let price := base*c.cells+coreRate*LeafCore.coreCost c.cells (c.w+1)+
     ⌊rate*((c.node.width : ℝ)^σ*(c.cutoff : ℝ)^(M8.Machine.BudgetBound.tau-σ)*c.cells)⌋₊
   have positive : 0 < c.B*prime^(64*((c.w+1)*64))*c.stageFactor := by
     rw [c.stageTail]
@@ -848,11 +965,11 @@ theorem packedCompactBandStage [M8.Machine.Net] (n : Fin 9) :
           let address := fun v => (flatWindowEquiv w W (windowState w v,j)).cast c.sweepVolume
           readRoles address y = (Piece.stage n).run (readRoles address x)) host code src dst seed
         ⌊rate*((c.node.width : ℝ)^σ*(c.cutoff : ℝ)^(M8.Machine.BudgetBound.tau-σ)*c.cells)⌋₊ := by
-  obtain ⟨C,base,tapes,states,build⟩ := packedCompactBandExecution n
-  obtain ⟨D,hD,charts⟩ := compactChartCost base tapes C
+  obtain ⟨C,states,build⟩ := packedCompactBandExecution n
   refine ⟨states,?_⟩
   intro U Q fits
-  obtain ⟨T,src,dst,Label,host,code,rate,run⟩ := build (U := U) fits
+  obtain ⟨T,src,dst,Label,host,code,base,coreRate,rate,run⟩ := build (U := U) fits
+  obtain ⟨D,hD,charts⟩ := compactChartCost base coreRate C
   refine ⟨T,src,dst,Label,host,code,D+max 0 rate,?_⟩
   intro c band σ nonneg
   obtain ⟨seed,execute⟩ := run c band σ nonneg
@@ -869,7 +986,7 @@ theorem packedCompactBandStage [M8.Machine.Net] (n : Fin 9) :
   have bound := mul_le_mul_of_nonneg_right (width.trans (cutoffScale_le c σ nonneg (by omega))) (Nat.cast_nonneg c.cells)
   have chart := (charts c.w c.cells hv).trans (mul_le_mul_of_nonneg_left
     ((mul_comm _ _).le.trans bound) hD)
-  let overhead := 25*((base*c.cells+17760*(2*LeafCore.coreCost c.cells w+14))*(tapes+5)+12)+
+  let overhead := base*c.cells+coreRate*LeafCore.coreCost c.cells w+
     ⌈C*c.cells*(w : ℝ)^M8.Machine.BudgetBound.tau⌉₊+(142081*(12*c.cells+14)+1)
   change (overhead : ℝ) ≤ D*scale at chart
   have cost : overhead+⌊rate*scale⌋₊ ≤ ⌊(D+max 0 rate)*scale⌋₊ := by
