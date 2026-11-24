@@ -31,7 +31,7 @@ private theorem loadArchiveFromWords {Config : Type} (node : Config → Descript
   intro js nd
   exact (paid js nd).trans (Nat.add_le_add_left (limit x) _)
 
-private theorem loadNodeArchive :
+theorem loadNodeArchive :
     LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells (fun c => parentArchiveSeed c.node c.w) :=
   loadArchiveFromWords CutoffNodeInput.node CutoffNodeInput.w CutoffNodeInput.cells nodeSeedWords
     (fun c i => by simp only [nodeSeedWords,Fin.addCases_left,sweepSeedWords,Fin.cons_succ])
