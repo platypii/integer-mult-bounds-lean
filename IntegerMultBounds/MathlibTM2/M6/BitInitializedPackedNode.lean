@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitRecordChildDirectory
+public import IntegerMultBounds.MathlibTM2.M6.BitDirectoryIntervalCall
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
