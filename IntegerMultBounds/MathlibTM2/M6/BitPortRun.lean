@@ -39,11 +39,6 @@ theorem frameBasis_runs (l : Fin 636) (inverse : Bool) :
   obtain ⟨y,exec,reads⟩ := copySegment_runs ops pass.good hW x (pass.legal w)
   exact ⟨y,exec,fun s j => (action w s) ▸ reads s j⟩
 
-/-- The payload tape shared by every factor of a port correction. -/
-noncomputable def portOwner {V : ℕ} (x : Fin V → ZMod 2) : Tapes 1 prime :=
-  ⟨fun _ => 0,fun _ => putWord (fun _ => blank) 0
-    (List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (x i))⟩
-
 /-- The tape contents at the current heads admit finite left and right stacks. -/
 def HasStackSeed {n : ℕ} (bank : Tapes n prime) : Prop :=
   ∃ S : Stacks n prime, RepT bank S.L S.R
@@ -691,18 +686,14 @@ private theorem flatMatrix_owner {d : ℕ} (word : List (PortInverse.Op d))
            strip_input := fun x => (strip x).trans (basisWorkspace_eq ops x 0) },rfl,rfl,⟨_,basisHeaderStacks_rep ops 0⟩,move⟩
 
 open Matrix IntegerMultBounds.Swap.Modular in
-theorem triangularPort_owner {d : ℕ} (E : Matrix (Fin d) (Fin d) ℚ)
+theorem triangularPortWord {d : ℕ} (E : Matrix (Fin d) (Fin d) ℚ)
     (bound : ∀ i j, M8.Height.ht (E i j) ≤ coefficientBound)
     (valid : ∀ w, let M := reduce (prime^w) E
       IntegerMultBounds.Swap.Shear.LowerTriangular M ∧ IsUnit M) (inverse : Bool) :
-    ∃ (C : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < W →
-      let V := (prime^w)^d*W
-      let M := reduce (prime^w) E
-      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
-        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = C*V ∧
-        HasStackSeed stage.metadata ∧ ∀ x a j,
-          stage.transform x (FlatCoordinateLayout.index ((if inverse then M⁻¹ else M) *ᵥ a) j) =
-            x (FlatCoordinateLayout.index a j) := by
+    ∃ word : List (PortInverse.Op d), (∀ op ∈ word, FlatCoordinateSchedule.Supported op) ∧
+      ∀ w, let M := reduce (prime^w) E
+        ∀ x, OrderedAffine.run (word.map (OrderedAffine.mapOp (ratMod (prime^w)))) x =
+          (if inverse then M⁻¹ else M) *ᵥ x := by
   have bounded (op) (hop : op ∈ OrderedAffine.program E) : PortInverse.bounded op := by
     rcases OrderedAffine.coefficient_origin E op hop with ⟨i,rfl⟩ | ⟨i,j,lt,rfl⟩
     · refine ⟨?_,bound i i⟩
@@ -721,22 +712,83 @@ theorem triangularPort_owner {d : ℕ} (E : Matrix (Fin d) (Fin d) ℚ)
     rw [show ops.map _ = OrderedAffine.program (reduce (prime^w) E) from (OrderedAffine.program_map _ E).symm]
     exact OrderedAffine.program_run (valid w).1 x
   cases inverse with
-  | false => exact flatMatrix_owner ops (fun op h => PortInverse.supported (bounded op h)) _ (fun w => (valid w).2) forward
+  | false => exact ⟨ops,(fun op h => PortInverse.supported (bounded op h)),forward⟩
   | true =>
-    refine flatMatrix_owner (ops.reverse.map PortInverse.undo) ?_ (fun w => (reduce (prime^w) E)⁻¹) ?_ ?_
+    refine ⟨ops.reverse.map PortInverse.undo,?_,?_⟩
     · intro op h
       obtain ⟨o,ho,rfl⟩ := List.mem_map.mp h
       exact PortInverse.supported (PortInverse.undo_bounded (bounded o (List.mem_reverse.mp ho)))
-    · intro w
-      exact isUnit_nonsing_inv_iff.mpr (valid w).2
-    · intro w x
-      let M := reduce (prime^w) E
+    · intro w M x
       have right : M*M⁻¹ = 1 := mul_nonsing_inv M ((isUnit_iff_isUnit_det M).mp (valid w).2)
       have cancel : M *ᵥ (M⁻¹ *ᵥ x) = x := by rw [mulVec_mulVec,right,one_mulVec]
       have back := PortInverse.run_undo w ops bounded (M⁻¹ *ᵥ x)
       dsimp only at back
       rw [forward w] at back
       exact (congrArg (OrderedAffine.run _) cancel.symm).trans back
+
+open Matrix IntegerMultBounds.Swap.Modular in
+theorem triangularPort_owner {d : ℕ} (E : Matrix (Fin d) (Fin d) ℚ)
+    (bound : ∀ i j, M8.Height.ht (E i j) ≤ coefficientBound)
+    (valid : ∀ w, let M := reduce (prime^w) E
+      IntegerMultBounds.Swap.Shear.LowerTriangular M ∧ IsUnit M) (inverse : Bool) :
+    ∃ (C : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < W →
+      let V := (prime^w)^d*W
+      let M := reduce (prime^w) E
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = C*V ∧
+        HasStackSeed stage.metadata ∧ ∀ x a j,
+          stage.transform x (FlatCoordinateLayout.index ((if inverse then M⁻¹ else M) *ᵥ a) j) =
+            x (FlatCoordinateLayout.index a j) := by
+  obtain ⟨word,support,action⟩ := triangularPortWord E bound valid inverse
+  apply flatMatrix_owner word support _ _ action
+  intro w
+  cases inverse with
+  | false => exact (valid w).2
+  | true => exact isUnit_nonsing_inv_iff.mpr (valid w).2
+
+open Matrix M8.Height IntegerMultBounds.Swap.Modular in
+private theorem rationalPortBasis_bounds (t : Fin 111) (atExit : Bool) :
+    let E := rationalPortBasis t atExit
+    (∀ i j, M8.Height.ht (E i j) ≤ coefficientBound) ∧
+    ∀ w, let M := reduce (prime^w) E
+      IntegerMultBounds.Swap.Shear.LowerTriangular M ∧ IsUnit M := by
+  intro E
+  have valid (w : ℕ) : IntegerMultBounds.Swap.Shear.LowerTriangular (reduce (prime^w) E) ∧
+      IsUnit (reduce (prime^w) E) := by
+    dsimp only [E,rationalPortBasis]
+    rw [(rationalPortBasis_reduction w t atExit).2]
+    exact ⟨(portBasis_shift w t atExit).1,(portBasis_shift w t atExit).2.1⟩
+  refine ⟨?_,valid⟩
+  intro i j
+  exact (rationalPortBasis_height t atExit i j).trans
+      (M8.Exchange.le_coefficientBound (show 512 ≤ 2^53000 from
+        (show 512 ≤ 2^9 by decide).trans (Nat.pow_le_pow_right (by decide) (by decide))))
+
+open Matrix IntegerMultBounds.Swap.Modular in
+/-- The selected correction's coordinate schedule is fixed before the radix
+precision is known. Its permutation can be used directly by the basis runner. -/
+theorem rationalPortBasis_schedule (t : Fin 111) (atExit inverse : Bool) :
+    ∃ ops : List (FlatCoordinateSchedule.Op 16), ∀ w, let B := reduce (prime^w) (rationalPortBasis t atExit)
+      ∃ perm : (Fin 16 → ZMod (prime^w)) ≃ (Fin 16 → ZMod (prime^w)),
+        (∀ x, OrderedAffine.run (ops.map (fun op => op.action w)) x = perm x) ∧
+        ∀ x, perm x = (if inverse then B⁻¹ else B) *ᵥ x := by
+  obtain ⟨bounded,valid⟩ := rationalPortBasis_bounds t atExit
+  obtain ⟨word,support,acts⟩ := triangularPortWord _ bounded valid inverse
+  let ops := FlatCoordinateSchedule.ofList word support
+  refine ⟨ops,?_⟩
+  intro w B
+  let M := if inverse then B⁻¹ else B
+  have unit : IsUnit M := by
+    cases inverse with
+    | false => exact (valid w).2
+    | true => exact isUnit_nonsing_inv_iff.mpr (valid w).2
+  have onto := mulVec_surjective_iff_isUnit.mpr unit
+  let perm := Equiv.ofBijective (M *ᵥ ·) onto.bijective_of_finite
+  refine ⟨perm,?_,fun _ => rfl⟩
+  intro x
+  change OrderedAffine.run (ops.map ((OrderedAffine.mapOp (ratMod (prime^w))) ∘ FlatCoordinateSchedule.Op.rational)) x = _
+  rw [← List.map_map,FlatCoordinateSchedule.rational_ofList _]
+  exact acts w x
 
 open Matrix M8.Height IntegerMultBounds.Swap.Modular in
 /-- A fixed tape program executes the surrounding rational basis in time
@@ -749,17 +801,8 @@ theorem rationalPortBasis_owner (t : Fin 111) (atExit inverse : Bool) :
         SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V ∧
         HasStackSeed stage.metadata ∧ ∀ x a j,
           stage.transform x (FlatCoordinateLayout.index ((if inverse then B⁻¹ else B) *ᵥ a) j) = x (FlatCoordinateLayout.index a j) := by
-  let E := rationalPortBasis t atExit
-  have valid (w : ℕ) : IntegerMultBounds.Swap.Shear.LowerTriangular (reduce (prime^w) E) ∧
-      IsUnit (reduce (prime^w) E) := by
-    dsimp only [E,rationalPortBasis]
-    rw [(rationalPortBasis_reduction w t atExit).2]
-    exact ⟨(portBasis_shift w t atExit).1,(portBasis_shift w t atExit).2.1⟩
-  apply triangularPort_owner E _ valid inverse
-  intro i j
-  exact (rationalPortBasis_height t atExit i j).trans
-      (M8.Exchange.le_coefficientBound (show 512 ≤ 2^53000 from
-        (show 512 ≤ 2^9 by decide).trans (Nat.pow_le_pow_right (by decide) (by decide))))
+  obtain ⟨bounded,valid⟩ := rationalPortBasis_bounds t atExit
+  exact triangularPort_owner _ bounded valid inverse
 
 open Cover RecursiveInterchangeLayout M8.RevMachine SharedPlacementAlphabet in
 /-- A packed digit swap on the same source tape used by the basis passes. -/

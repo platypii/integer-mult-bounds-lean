@@ -11,6 +11,11 @@ open Shared50ModularControl (prime)
 open RecursiveInterchangeLayout (Descriptor volume)
 open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord)
 
+/-- The payload tape shared by every factor of a port correction. -/
+noncomputable def portOwner {V : ℕ} (x : Fin V → ZMod 2) : Tapes 1 prime :=
+  ⟨fun _ => 0,fun _ => putWord (fun _ => blank) 0
+    (List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (x i))⟩
+
 noncomputable def copyOwners {T : ℕ} {v : Descriptor}
     (x : Fin T → Fin (volume prime v) → ZMod 2) : Tapes T prime :=
   ⟨fun _ => 0,fun k => sourceWord (x k)⟩

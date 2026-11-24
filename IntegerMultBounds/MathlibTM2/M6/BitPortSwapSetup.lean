@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitCopyOwners
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackSwapSetup
 public import IntegerMultBounds.MathlibTM2.M6.BitClearBank
 import IntegerMultBounds.MathlibTM2.Host.WordCmdStock
@@ -109,7 +110,7 @@ local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos IntegerMultBounds.Net
 
 /-- Prepare and run the digit correction on the selected owner's physical row. -/
 theorem runPortSwap [M8.Machine.Net] {T K Q : ℕ} {P U : Type}
-    (body : P → Pr P (T+(24+K)) Q prime U) (roles : Tapes T prime) (io : Fin T)
+    (body : P → Pr P (T+(24+K)) Q prime U) (io : Fin T)
     (r : Fin 14 ↪ Fin (T+(24+K))) {d : ℕ} (i j : Fin d) (lt : i < j) (w W H J : ℕ) (pos : 0 < W)
     (baseFits : prime^(w+1) < 2^H) (widthFits : W < 2^J) :
     let block := LabelSwap.program (0 : Fin 1)
@@ -124,32 +125,36 @@ theorem runPortSwap [M8.Machine.Net] {T K Q : ℕ} {P U : Type}
     let runTime := (3808274*RecursiveInterchangeLayout.volume prime view +
       M8.RevMachine.LeafCore.coreCost (RecursiveInterchangeLayout.volume prime view) (w+1))*(block.tapes+5)+6
     let work := (List.finRange (24+K)).map (Fin.natAdd T)
-    ∀ (x : Fin (RecursiveInterchangeLayout.volume prime view) → ZMod 2),
-    roles.head io = 0 → roles.tape io = M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord (v := view) x →
+    ∀ (x : Fin ((prime^(w+1))^d*W) → ZMod 2),
     r 2 = hdr 5 → r 11 = hdr 14 → r 13 = hdr 8 →
     ∀ u (S : Stacks (T+(24+K)) prime),
     S.R (r 0) = binSyms H (prime^(w+1)) → S.R (r 1) = binSyms 1 1 →
     S.R (r 10) = binSyms J W → (S.R (r 12)).length = w →
     (∀ k : Fin 14, 3 ≤ k → k < 9 → S.R (r k) = []) →
-    (∀ k pos, roles.tape k pos = readAt blank (S.L (k.castAdd _)) (S.R (k.castAdd _)) (pos-roles.head k)) →
+    (∀ h, readAt blank (S.L (io.castAdd _)) (S.R (io.castAdd _)) h = (portOwner x).tape 0 h) →
     (∀ k, S.L (hdr k) = [] ∧ S.R (hdr k) = []) →
     (∀ k, T+24 ≤ k.val → S.L k = [] ∧ S.R k = []) →
-    ∃ y z F n, z.user = u.user ∧
+    ∃ (y : Fin ((prime^(w+1))^d*W) → ZMod 2), ∃ z F n, z.user = u.user ∧
       Exec body ((setup.seq (embProg bank Empty.elim (foreign (liftQ block.program capacity)))).seq (clearWorkTapes work)) (mk u S) n (mk z F) ∧
       CleanupBound S F n ((1+6*Fast.Main.mnProgPush setup)*setupTime+13*runTime+4*(24+K)+1) ∧
       (∀ k : Fin (24+K), F.L (k.natAdd T) = [] ∧ F.R (k.natAdd T) = []) ∧
       (∀ k : Fin T, k ≠ io → F.L (k.castAdd _) = S.L (k.castAdd _) ∧ F.R (k.castAdd _) = S.R (k.castAdd _)) ∧
       (∀ h, readAt blank (F.L (io.castAdd (24+K)))
         (F.R (io.castAdd (24+K))) h =
-          M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord (v := view) y h) ∧
-      ∀ (coords : Fin d → ZMod (prime^(w+1))) (k : Fin W), M8.RevMachine.ext y (FlatCoordinateLayout.index (coords ∘ Equiv.swap i j) k).val =
-        M8.RevMachine.ext x (FlatCoordinateLayout.index coords k).val := by
-  intro block capacity fitsBlock fits hdr port bank view setup setupTime runTime work x head word power spectator exponent
-    u S base unit width clock scratch represented fresh tail
+          (portOwner y).tape 0 h) ∧
+      ∀ (coords : Fin d → ZMod (prime^(w+1))) (k : Fin W), y (FlatCoordinateLayout.index (coords ∘ Equiv.swap i j) k) =
+        x (FlatCoordinateLayout.index coords k) := by
+  intro block capacity fitsBlock fits hdr port bank view setup setupTime runTime work x power spectator exponent
+    u S base unit width clock scratch owner fresh tail
+  let roles : Tapes T prime := ⟨fun _ => 0,fun k => readAt blank (S.L (k.castAdd _)) (S.R (k.castAdd _))⟩
+  have represented k h : roles.tape k h = readAt blank (S.L (k.castAdd _)) (S.R (k.castAdd _)) (h-roles.head k) := by simp [roles]
+  have size : RecursiveInterchangeLayout.volume prime view = (prime^(w+1))^d*W := by
+    simp [view,payloadView,RecursiveInterchangeLayout.volume,← pow_mul,Nat.mul_comm]
+  have word := (funext owner).trans (sourceWord_cast size x).symm
   obtain ⟨v,D,l,same,_,start,charge,kept,ready⟩ := preparePortSwap body roles io r d i j w W H J baseFits widthFits
     power spectator exponent u S base unit width clock scratch represented fresh tail
   let one : Tapes 1 prime := ⟨fun _ => roles.head io,fun _ => roles.tape io⟩
-  obtain ⟨y,swap,effect⟩ := swapPayload_runs i j lt (Nat.succ_pos w) pos one 0 x head word
+  obtain ⟨y,swap,effect⟩ := swapPayload_runs i j lt (Nat.succ_pos w) pos one 0 (fun k => x (k.cast size)) rfl word
   obtain ⟨z,G,_,rfl,rep,user,_,_,_,n,time,run⟩ := foreign_exec (P := Empty) Empty.elim
     (liftQ block.program capacity) (HoareTime.liftQ capacity swap) (embDn bank v) (embStk bank D) _ rfl
     (fun k h => ready (k.castLE fitsBlock) h)
@@ -179,8 +184,9 @@ theorem runPortSwap [M8.Machine.Net] {T K Q : ℕ} {P U : Type}
     rw [List.map_congr_left (g := fun _ => 4) (fun j hj => by simp [cleanupWeight,(initial j hj).1,(initial j hj).2])]
     rw [List.map_const',List.sum_replicate_nat]
     simp [work,Nat.mul_comm]
-  refine ⟨y,v',B,_,zu.trans (last.trans (user.trans same)),(start.seq placed).seq clear,?_,
-    fun k => clean _ (List.mem_map_of_mem (List.mem_finRange k)),?_,?_,effect⟩
+  let result := fun k => y (Fin.cast size.symm k)
+  refine ⟨result,v',B,_,zu.trans (last.trans (user.trans same)),(start.seq placed).seq clear,?_,
+    fun k => clean _ (List.mem_map_of_mem (List.mem_finRange k)),?_,?_,?_⟩
   · have paid := cleanupBound_clearBank work unique (charge.seq (foreignCleanupBound placed))
       (le_refl (tapeCharge cleanupWeight work F+1)) clean
       (fun j => by by_cases h : j ∈ work <;> simp [B,h])
@@ -205,6 +211,14 @@ theorem runPortSwap [M8.Machine.Net] {T K Q : ℕ} {P U : Type}
   · intro h
     rw [← projection] at out
     simp only [B,ite_eq_right (outside io)]
-    exact out h
+    have output := sourceWord_cast size result
+    simp only [result,Fin.cast_cast,Fin.cast_refl] at output
+    exact (out h).trans (congrFun output h)
+  · intro coords k
+    have action := effect coords k
+    have atIndex (f : Fin (RecursiveInterchangeLayout.volume prime view) → ZMod 2)
+        (k : Fin ((prime^(w+1))^d*W)) : M8.RevMachine.ext f k.val = f (k.cast size.symm) := by
+      exact dite_eq_left (size.symm ▸ k.isLt)
+    exact (atIndex y _).symm.trans (action.trans (atIndex (fun k => x (k.cast size)) _))
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

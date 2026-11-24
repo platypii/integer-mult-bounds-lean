@@ -98,6 +98,10 @@ theorem loadPortBasisMetadata {P U : Type} {T Q d : ℕ} (body : P → Pr P T Q 
 
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos w).ne'⟩
 
+noncomputable def portBasisCost {d : ℕ} (ops : List (FlatCoordinateSchedule.Op d)) (w W : ℕ) :=
+  let tapes := FlatCoordinateCleanSchedule.tapeCount ops
+  8*(w.size+W.size)+24+13*(FlatCoordinateCleanSchedule.constant ops*((prime^w)^d*W)*(tapes+5)+6)+4*tapes+1
+
 /-- Load the basis headers and run the scheduled coordinate operations on
 the caller's live owner row. -/
 theorem runPortBasis {P U : Type} {T Q d : ℕ} (ops : List (FlatCoordinateSchedule.Op d))
@@ -110,17 +114,12 @@ theorem runPortBasis {P U : Type} {T Q d : ℕ} (ops : List (FlatCoordinateSched
       ∀ perm : (Fin d → ZMod (prime^w)) ≃ (Fin d → ZMod (prime^w)),
       (∀ a, OrderedAffine.run (ops.map (fun op => op.action w)) a = perm a) →
       let row := segmentSource ops
-      let bits : FlatCoordinateStages.Array d w W := fun i => SparseRoleCircuit.encode (a := 0) (x i)
-      let layout := fun a : FlatCoordinateStages.Array d w W => SharedBankStageInput.raw
-        (FlatCoordinateShiftSharedBank.common (d := d) (b := w) (W := W) a) (FlatCoordinateCleanSchedule.tapeCount ops)
       S.R (source 0) = binSyms w.size w → S.R (source 1) = binSyms W.size W →
-      (∀ h, (layout bits).tape row h = readAt blank (S.L (bank row)) (S.R (bank row)) (h-(layout bits).head row)) →
+      (∀ h, readAt blank (S.L (bank row)) (S.R (bank row)) h = (portOwner x).tape 0 h) →
       (∀ j, j ≠ row → S.L (bank j) = [] ∧ S.R (bank j) = []) → S.R tmp = [] → S.R saved = [] →
       ∃ (y : Fin ((prime^w)^d*W) → ZMod 2), ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
-        CleanupBound S F t (8*(w.size+W.size)+24+13*(FlatCoordinateCleanSchedule.constant ops*
-          ((prime^w)^d*W)*(FlatCoordinateCleanSchedule.tapeCount ops+5)+6)+4*FlatCoordinateCleanSchedule.tapeCount ops+1) ∧
-        (∀ h, let out := layout (fun i => SparseRoleCircuit.encode (y i))
-          out.tape row h = readAt blank (F.L (bank row)) (F.R (bank row)) (h-out.head row)) ∧
+        CleanupBound S F t (portBasisCost ops w W) ∧
+        (∀ h, readAt blank (F.L (bank row)) (F.R (bank row)) h = (portOwner y).tape 0 h) ∧
         (∀ a j, y (FlatCoordinateLayout.index (Q := prime^w) (perm a) j) = x (FlatCoordinateLayout.index (Q := prime^w) a j)) ∧
         (∀ j, j ≠ row → F.L (bank j) = [] ∧ F.R (bank j) = []) ∧
         ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
@@ -131,7 +130,16 @@ theorem runPortBasis {P U : Type} {T Q d : ℕ} (ops : List (FlatCoordinateSched
   have distinct : work.Nodup := ((List.nodup_finRange _).filter _).map bank.injective
   refine ⟨(load.seq (embProg bank Empty.elim (foreign (liftQ (FlatCoordinateCleanSchedule.program ops) capacity)))).seq
     (clearWorkTapes work),?_⟩
-  intro w W positive x u S perm action row bits layout width count owner free ht hs
+  intro w W positive x u S perm action row width count owner free ht hs
+  let bits : FlatCoordinateStages.Array d w W := fun i => SparseRoleCircuit.encode (a := 0) (x i)
+  let layout := fun a : FlatCoordinateStages.Array d w W => SharedBankStageInput.raw
+        (FlatCoordinateShiftSharedBank.common (d := d) (b := w) (W := W) a) (FlatCoordinateCleanSchedule.tapeCount ops)
+  have tape (word : Fin ((prime^w)^d*W) → ZMod 2) :
+      (layout (fun i => SparseRoleCircuit.encode (word i))).tape row = (portOwner word).tape 0 := by
+    change FlatRepeatedControlNormalize.encoded (putWord (fun _ => blank) 0
+      (List.ofFn fun i => SparseRoleCircuit.encode (a := 0) (word i))) = _
+    rw [RecursiveRoleSerialization.encoded_word,List.map_ofFn]
+    congr 2
   obtain ⟨v,D,l,start,user,charge,privateReady,frame⟩ := prepare w W u S width count free ht hs
   have ready : RepT (layout bits) (D.L ∘ bank) (D.R ∘ bank) := by
     intro j h
@@ -141,7 +149,9 @@ theorem runPortBasis {P U : Type} {T Q d : ℕ} (ops : List (FlatCoordinateSched
         have h := congrArg Fin.val (bank.injective eq)
         change 2+i.val = 0 at h
         omega)
-      simpa only [Function.comp_apply,kept.1,kept.2] using owner h
+      change (layout bits).tape row h = readAt blank (D.L (bank row)) (D.R (bank row)) (h-0)
+      rw [kept.1,kept.2,sub_zero,tape x]
+      exact (owner h).symm
     · change j ≠ segmentSource ops at eq
       have cell := privateReady j eq h
       rw [basisWorkspace_eq ops 0 x] at cell
@@ -184,17 +194,71 @@ theorem runPortBasis {P U : Type} {T Q d : ℕ} (ops : List (FlatCoordinateSched
       simpa only [work,slots,List.length_map,List.length_finRange] using
         (List.length_filter_le (l := List.finRange (FlatCoordinateCleanSchedule.tapeCount ops)) (p := fun j => decide (j ≠ segmentSource ops)))
     intro js nd
-    exact (paid js nd).trans (by gcongr; exact time)
+    exact (paid js nd).trans (by unfold portBasisCost; dsimp only; gcongr; exact time)
   · intro h
     rw [post.1,encoded,← projection] at rep
     have keep : bank row ∉ work := fun hj => (mem row).mp hj rfl
     simp only [B,ite_eq_right keep]
-    exact rep row h
+    rw [← tape y]
+    have cell := (rep row h).symm
+    change readAt blank (F.L (bank row)) (F.R (bank row)) (h-0) = _ at cell
+    rwa [sub_zero] at cell
   · intro j hj
     have away : j ∉ work := fun h => by obtain ⟨i,_,eq⟩ := List.mem_map.mp h; exact hj i eq
     have a := off j hj
     have b := frame j (fun i => hj _)
     simpa only [B,ite_eq_right away] using And.intro (a.1.trans b.1) (a.2.trans b.2)
+
+private theorem portBasisCost_linear (ops : List (FlatCoordinateSchedule.Op 16)) :
+    ∃ C : ℕ, ∀ w W, 0 < W → portBasisCost ops w W ≤ C*((prime^w)^16*W) := by
+  let tapes := FlatCoordinateCleanSchedule.tapeCount ops
+  let rate := FlatCoordinateCleanSchedule.constant ops
+  refine ⟨13*rate*(tapes+5)+4*tapes+119,?_⟩
+  intro w W positive
+  let V := (prime^w)^16*W
+  have hp := Shared50ModularControl.prime_prime
+  have radix : 0 < prime^w := pow_pos hp.pos _
+  have width : w ≤ prime^w := (Nat.lt_two_pow_self.le).trans (Nat.pow_le_pow_left hp.two_le _)
+  have small : w ≤ V := width.trans ((Nat.le_self_pow (by decide : 16 ≠ 0) _).trans (Nat.le_mul_of_pos_right _ positive))
+  have count : W ≤ V := Nat.le_mul_of_pos_left _ (pow_pos radix _)
+  have sizes (k : ℕ) : k.size ≤ k := Nat.size_le.mpr Nat.lt_two_pow_self
+  have fixed := Nat.le_mul_of_pos_right (4*tapes+103) (positive.trans_le count)
+  change 8*(w.size+W.size)+24+13*(rate*V*(tapes+5)+6)+4*tapes+1 ≤ (13*rate*(tapes+5)+4*tapes+119)*V
+  nlinarith only [fixed,(sizes w).trans small,(sizes W).trans count]
+
+open Matrix IntegerMultBounds.Swap.Modular in
+/-- Execute either direction of the rational basis change at a selected PR589 port. -/
+theorem runRationalPortBasis (t : Fin 111) (atExit inverse : Bool) :
+    ∃ (ops : List (FlatCoordinateSchedule.Op 16)) (C : ℕ), ∀ {P U : Type} {T Q : ℕ}
+      (body : P → Pr P T Q prime U), stateCount (FlatCoordinateCleanSchedule.program ops) ≤ Q →
+      ∀ (bank : Fin (FlatCoordinateCleanSchedule.tapeCount ops) ↪ Fin T)
+        (source : Fin 2 → Fin T) (tmp saved : Fin T),
+      (∀ i j, bank (basisSeedPorts ops i) ≠ source j) →
+      (∀ i, [source i,bank (basisSeedPorts ops i),tmp,saved].Nodup) →
+      ∃ code, ∀ w W, 0 < W → ∀ (x : Fin ((prime^w)^16*W) → ZMod 2) u (S : Stacks T prime),
+        let row := segmentSource ops
+        let B := reduce (prime^w) (rationalPortBasis t atExit)
+        S.R (source 0) = binSyms w.size w → S.R (source 1) = binSyms W.size W →
+        (∀ h, readAt blank (S.L (bank row)) (S.R (bank row)) h = (portOwner x).tape 0 h) →
+        (∀ j, j ≠ row → S.L (bank j) = [] ∧ S.R (bank j) = []) → S.R tmp = [] → S.R saved = [] →
+        ∃ (y : Fin ((prime^w)^16*W) → ZMod 2), ∃ z F n, Exec body code (mk u S) n (mk z F) ∧
+          z.user = u.user ∧ CleanupBound S F n (C*((prime^w)^16*W)) ∧
+          (∀ h, readAt blank (F.L (bank row)) (F.R (bank row)) h = (portOwner y).tape 0 h) ∧
+          (∀ a j, y (FlatCoordinateLayout.index ((if inverse then B⁻¹ else B) *ᵥ a) j) =
+            x (FlatCoordinateLayout.index a j)) ∧
+          (∀ j, j ≠ row → F.L (bank j) = [] ∧ F.R (bank j) = []) ∧
+          ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  obtain ⟨ops,actions⟩ := rationalPortBasis_schedule t atExit inverse
+  obtain ⟨C,bound⟩ := portBasisCost_linear ops
+  refine ⟨ops,C,?_⟩
+  intro P U T Q body capacity bank source tmp saved apart regs
+  obtain ⟨code,run⟩ := runPortBasis ops body capacity bank source tmp saved apart regs
+  refine ⟨code,?_⟩
+  intro w W positive x u S row B width count owner free ht hs
+  obtain ⟨perm,action,matrix⟩ := actions w
+  obtain ⟨y,z,F,n,exec,user,charge,result,move,blank,frame⟩ :=
+    run w W positive x u S perm action width count owner free ht hs
+  exact ⟨y,z,F,n,exec,user,(fun js nd => (charge js nd).trans (Nat.add_le_add_left (bound w W positive) _)),result,fun a j => matrix a ▸ move a j,blank,frame⟩
 
 /-- Initialize both directions of a worker's basis change using the same
 two source words and the same copy scratch. -/
