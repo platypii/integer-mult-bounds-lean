@@ -40,6 +40,22 @@ private theorem runRight {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
   obtain ⟨z,n,user,paid,exec⟩ := run u {S with L := fun _ => []} (fun _ => rfl) words
   exact ⟨z,n,user,paid,exec_withLeft exec right S.L⟩
 
+theorem stashRight_exec {P U : Type} {T Q A : ℕ} (body : P → Pr P T Q A U)
+    (archive : Fin T) (marker : Fin (A+4)) (xs : List (Fin T)) (nd : xs.Nodup)
+    (off : archive ∉ xs) (u : HS T Q A U) (S : Stacks T A) :
+    ∃ z n, z.user = u.user ∧ n ≤ synStashCost S.R xs+1 ∧ Exec body (synStash archive marker xs) (mk u S) n
+      (mk z {S with R := Function.update (synClr S.R xs) archive (synStk S.R marker xs ++ marker :: S.R archive)}) :=
+  runRight (lr_synStash body marker xs nd off) (stashUsesRight archive marker xs).1 u S rfl
+
+theorem unstashRight_exec {P U : Type} {T Q A : ℕ} (body : P → Pr P T Q A U)
+    (archive : Fin T) (marker : Fin (A+4)) (xs : List (Fin T)) (nd : xs.Nodup)
+    (off : archive ∉ xs) (R : Fin T → List (Fin (A+4))) (tail : List (Fin (A+4)))
+    (safe : ∀ j ∈ xs, marker ∉ R j) (u : HS T Q A U) (S : Stacks T A)
+    (start : S.R = Function.update (synClr R xs) archive (synStk R marker xs ++ marker :: tail)) :
+    ∃ z n, z.user = u.user ∧ n ≤ synStashCost R xs+1 ∧ Exec body (synUnstash archive marker xs) (mk u S) n
+      (mk z {S with R := Function.update R archive tail}) :=
+  runRight (lr_synUnstash body marker xs tail nd off safe) (stashUsesRight archive marker xs).2 u S start
+
 /-- A child can use every parked owner tape provided it returns them empty.
 Other registers may change, and an older archive frame survives the call. -/
 theorem runWithParkedOwners {T Q A V : ℕ} {P U : Type} (body : P → Pr P T Q A U)
@@ -124,8 +140,7 @@ theorem ParentStageWords.park_exec {T Q V : ℕ} {P U : Type} (body : P → Pr P
   have width (j) (hj : j ∈ xs) : (S.R j).length = V := by
     obtain ⟨i,_,rfl⟩ := List.mem_map.mp hj
     rw [encoded i,List.length_ofFn]
-  obtain ⟨saveRight,returnRight⟩ := stashUsesRight (P := P) (U := U) (Q := Q) archive (separator (a := prime)) xs
-  obtain ⟨v,k,user,saveCost,save⟩ := runRight (lr_synStash body separator xs nd off) saveRight u S rfl
+  obtain ⟨v,k,user,saveCost,save⟩ := stashRight_exec body archive separator xs nd off u S
   have empty (j) (hj : j ∈ xs) : S.L j = [] ∧ park S.R j = [] := by
     have ne : j ≠ archive := fun eq => off (eq ▸ hj)
     obtain ⟨i,_,rfl⟩ := List.mem_map.mp hj
@@ -158,9 +173,12 @@ theorem ParentStageWords.park_exec {T Q V : ℕ} {P U : Type} (body : P → Pr P
       · subst j
         simpa [synClr,hj,park] using regs
       · simp [synClr,park,F,hj,h]
-  have back := lr_synUnstash body (R := F) separator xs (S.R archive) nd off safe
-  rw [synStk_congr separator xs keep,← tail,Function.update_eq_self] at back
-  obtain ⟨v',l,user',returnCost,reload⟩ := runRight back returnRight q {G with L := synClr G.L xs, R := synClr G.R xs} (by simpa only [tail] using cleared)
+  have ready : synClr G.R xs = Function.update (synClr F xs) archive
+      (synStk F separator xs ++ separator :: S.R archive) := by
+    simpa only [synStk_congr separator xs keep] using cleared
+  obtain ⟨v',l,user',returnCost,reload⟩ := unstashRight_exec body archive separator xs nd off F
+    (S.R archive) safe q {G with L := synClr G.L xs, R := synClr G.R xs} ready
+  rw [← tail,Function.update_eq_self] at reload
   refine ⟨v',_,_,G,save.seq (run.seq (clear.seq reload)),?_,user'.trans (qu.trans (same.trans user)),out,?_,?_,tail⟩
   · rw [ownerStashCost S.R xs V width] at saveCost
     rw [ownerStashCost F xs V (fun j hj => keep j hj ▸ width j hj)] at returnCost
