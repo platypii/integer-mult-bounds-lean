@@ -1,6 +1,7 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitParentArchiveSeed
+public import IntegerMultBounds.MathlibTM2.M6.BitWorkerRecordSeed
+public import IntegerMultBounds.MathlibTM2.M6.BitWorkerDispatch
 public import IntegerMultBounds.MathlibTM2.M6.BitPortRun
 public import IntegerMultBounds.MathlibTM2.M6.BitPortSwapSetup
 
@@ -249,6 +250,12 @@ def RunsPortAction (ops : List (FlatCoordinateSchedule.Op 16)) (C : ℕ)
             x (FlatCoordinateLayout.index a j)) ∧
           ∀ j, j ≠ bank row → F.L j = S.L j ∧ F.R j = S.R j
 
+private theorem scratch_ne_caller {T K : ℕ} (i : Fin K) (j : Fin T) : i.natAdd T ≠ j.castAdd K := by
+  intro eq
+  have h := congrArg Fin.val eq
+  change T+i.val = j.val at h
+  omega
+
 /-- Execute a charged pass in the swap's workspace. All caller tapes
 other than the payload are restored and the entire scratch suffix is reusable. -/
 theorem RunsPortAction.onSwapBank {ops C action} (run : RunsPortAction ops C action)
@@ -274,7 +281,7 @@ theorem RunsPortAction.onSwapBank {ops C action} (run : RunsPortAction ops C act
   have apart (i : Fin 2) (j : Fin T) : bank (basisSeedPorts ops i) ≠ j.castAdd _ := by
     have pos : 0 < (basisSeedPorts ops i).val := by change 0 < 2+i.val; omega
     rw [show bank (basisSeedPorts ops i) = _ from portPassPlacement_scratch io fits _ pos]
-    exact Fin.natAdd_ne_castAdd _ _
+    exact scratch_ne_caller _ _
   obtain ⟨code,exec⟩ := run body capacity bank (fun i => (source i).castAdd _) (tmp.castAdd _) (saved.castAdd _)
     (fun i j => apart i (source j)) (fun i => by
       have h := regs i
@@ -290,7 +297,7 @@ theorem RunsPortAction.onSwapBank {ops C action} (run : RunsPortAction ops C act
   rw [row] at out frame
   refine ⟨y,z,F,n,e,user,paid,out,act,?_,fun j ne => frame _ (fun eq => ne (Fin.castAdd_inj.mp eq))⟩
   intro j
-  obtain ⟨left,right⟩ := frame _ (Fin.natAdd_ne_castAdd j io)
+  obtain ⟨left,right⟩ := frame _ (scratch_ne_caller j io)
   exact ⟨left.trans (fresh j).1,right.trans (fresh j).2⟩
 
 private theorem runPortAction (ops : List (FlatCoordinateSchedule.Op 16))
@@ -664,6 +671,178 @@ theorem runWorkerPortCorrection [M8.Machine.Net] (t : Fin 111) (atExit : Bool) :
   intro s j A B E moved
   have h := act (embed moved) j
   rwa [correct (w+1) s] at h
+
+private theorem correctedRecordReady [M8.Machine.Net] {T w W : ℕ}
+    (bank : Fin 35 ↪ Fin T) (S : Stacks T prime) (x : Fin ((prime^(w+1))^16*W) → ZMod 2) :
+    let small := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+    let seed := moveRecordSeed w W [] [] []
+    (∀ i : Fin 35, i ≠ 24 → S.L (bank i) = seed.L (small i) ∧ S.R (bank i) = seed.R (small i)) →
+    (∀ h, readAt blank (S.L (bank 24)) (S.R (bank 24)) h = (portOwner x).tape 0 h) →
+    RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size []
+      SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 x S := by
+  intro small seed stored owner
+  refine ⟨(stored 2 (by decide)).2,(stored 27 (by decide)).2,(stored 28 (by decide)).2,
+    (stored 32 (by decide)).2,?_,(stored 34 (by decide)).2,?_,?_,?_⟩
+  · rw [(stored 33 (by decide)).2]
+    exact List.length_replicate ..
+  · intro i hi
+    have free := (by decide : ∀ j ∈ shearWork, j.val ≠ 2 ∧ j.val ≠ 24 ∧ j.val ≠ 25 ∧ j.val ≠ 27 ∧
+      j.val ≠ 28 ∧ j.val ≠ 32 ∧ j.val ≠ 33 ∧ j.val ≠ 34) i hi
+    obtain ⟨a,b,c,d,e,f,g,h⟩ := free
+    simpa [seed,moveRecordSeed,small,a,b,c,d,e,f,g,h] using stored i (fun eq => b (congrArg Fin.val eq))
+  · intro z
+    rw [sub_zero,owner]
+    let view := phaseIntervalChild 0 7 (w+1) W
+    have size := phaseIntervalChild_volume (by decide : 0 ≤ 7) (by decide : 7 ≤ 8) (w+1) W
+    change putWord _ 0 _ z = _
+    rw [← sourceWord_cast (v := view) size x,swap_source_word]
+    congr 2
+    exact List.ofFn_congr size _
+  · intro z
+    rw [(stored 25 (by decide)).1,(stored 25 (by decide)).2]
+    change readAt blank [] [] _ = _
+    simp [readAt]
+    rfl
+
+open Matrix AffineFieldCoordinates IntegerMultBounds.Swap.Modular in
+/-- Initialize an empty worker record around a live payload and apply the
+selected correction. The loaded record remains available to the child. -/
+theorem loadAndRunWorkerPort [M8.Machine.Net] (t : Fin 111) (atExit : Bool) :
+    ∃ q k : ℕ, ∀ {P U : Type} {T K Q : ℕ}, q ≤ Q → k ≤ K →
+      ∀ (body : P → Pr P (T+(24+K)) Q prime U)
+        (place : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (src : Fin 3 → Fin T) (width tmp saved : Fin T),
+      let record := scheduledRecordPorts place
+      (∀ i, width ≠ place i) → (∀ i j, record (copyRecordTargets i) ≠ src j) →
+      (∀ i, [src i,record (copyRecordTargets i),tmp,saved].Nodup) →
+      ∃ code rate coreRate, ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      let V := M^16*W
+      let io := (record 24).castAdd (24+K)
+      let seed := moveRecordSeed w W [] [] []
+      ∀ (x : Fin V → ZMod 2) u (S : Stacks (T+(24+K)) prime),
+      S.R ((src 0).castAdd _) = binSyms M.size M → S.R ((src 1).castAdd _) = binSyms W.size W →
+      S.R ((src 2).castAdd _) = binSyms 1 1 → S.R (width.castAdd _) = binSyms (w+1).size (w+1) →
+      (∀ i, i.val ≠ 24 → S.L ((place i).castAdd _) = [] ∧ S.R ((place i).castAdd _) = []) →
+      S.R (tmp.castAdd _) = [] → S.R (saved.castAdd _) = [] →
+      (∀ h, readAt blank (S.L io) (S.R io) h = (portOwner x).tape 0 h) →
+      (∀ j : Fin (24+K), S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
+      ∃ (y : Fin V → ZMod 2), ∃ z F n, Exec body code (mk u S) n (mk z F) ∧ z.user = u.user ∧
+        CleanupBound S F n (rate*V+coreRate*M8.RevMachine.LeafCore.coreCost V (w+1)) ∧
+        (∀ h, readAt blank (F.L io) (F.R io) h = (portOwner y).tape 0 h) ∧
+        (∀ s j, let A := translatedPortProjector (ZMod M) (4:ZMod M)⁻¹ t
+                let B := reduce M (selectedProjector ⟨2+t.val,by omega⟩)
+                let E := reduce M (selectedProjector ⟨525+t.val,by omega⟩)
+                let moved := if atExit then M8.Exchange.exchange E (M8.Exchange.exchange (1-A) s)
+                  else M8.Exchange.exchange A (M8.Exchange.exchange B s)
+                y (FlatCoordinateLayout.index (embed s) j) = x (FlatCoordinateLayout.index (embed moved) j)) ∧
+        RecordReady (b := prime) (w := w) (d := 16) (W := W) (record.trans (Fin.castAddEmb (24+K)))
+          M.size W.size [] SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 y F ∧
+        (∀ i, i.val ≠ 24 → F.L ((place i).castAdd _) = seed.L i ∧ F.R ((place i).castAdd _) = seed.R i) ∧
+        (∀ j : Fin (24+K), F.L (j.natAdd T) = [] ∧ F.R (j.natAdd T) = []) ∧
+        ∀ j : Fin T, (∀ i, place i ≠ j) → F.L (j.castAdd _) = S.L (j.castAdd _) ∧ F.R (j.castAdd _) = S.R (j.castAdd _) := by
+  obtain ⟨q,k,worker⟩ := runWorkerPortCorrection t atExit
+  refine ⟨q,k,?_⟩
+  intro P U T K Q states space body place src width tmp saved record outside apart regs
+  let ext := Fin.castAddEmb (n := T) (24+K)
+  obtain ⟨a,load⟩ := loadWorkerRecordSeed body (place.trans ext) (ext ∘ src) (ext width) (ext tmp) (ext saved)
+    (fun i => ext.injective.ne (outside _)) (fun i j => ext.injective.ne (apart i j))
+    (fun i => (regs i).map ext.injective)
+  obtain ⟨b,rate,coreRate,run⟩ := worker states space body record width (fun i => outside _)
+  refine ⟨a.seq b,rate+98,coreRate,?_⟩
+  intro w W pos M V io seed x u S base count unit atom blank ht hs owner fresh
+  obtain ⟨v,A,l,start,user,paid,stored,frame⟩ := load w W u S base count unit atom blank ht hs
+  have ioFree := frame io (fun i ne => ext.injective.ne (place.injective.ne (fun eq => ne (congrArg Fin.val eq))))
+  have clean (j : Fin (24+K)) := frame (j.natAdd T) (fun i _ => (scratch_ne_caller j (place i)).symm)
+  obtain ⟨y,z,F,n,done,same,charge,out,act,reuse,keep⟩ := run w W pos [] [] [] x v A
+    (fun i ne => (stored _ (fun eq => ne (Fin.ext eq))).2)
+    ((frame _ (fun i _ => ext.injective.ne (outside i).symm)).2.trans atom)
+    (fun h => by rw [ioFree.1,ioFree.2]; exact owner h)
+    (fun j => ⟨(clean j).1.trans (fresh j).1,(clean j).2.trans (fresh j).2⟩)
+  have prepared (i) (ne : i.val ≠ 24) := And.intro
+    ((keep (place i) (place.injective.ne (fun eq => ne (congrArg Fin.val eq)))).1.trans (stored i ne).1)
+    ((keep (place i) (place.injective.ne (fun eq => ne (congrArg Fin.val eq)))).2.trans (stored i ne).2)
+  have ready := correctedRecordReady (record.trans ext) F y (fun i ne => prepared _ (fun eq => ne (Fin.ext eq))) out
+  refine ⟨y,z,F,l+n,start.seq done,same.trans user,?_,out,act,ready,prepared,reuse,?_⟩
+  · have hm : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
+    have radix : M ≤ V := (Nat.le_self_pow (by decide : 16 ≠ 0) _).trans (Nat.le_mul_of_pos_right _ pos)
+    have clock : w+1 ≤ M := Nat.lt_two_pow_self.le.trans (Nat.pow_le_pow_left Shared50ModularControl.prime_prime.two_le _)
+    have size (n : ℕ) : n.size ≤ n := Nat.size_le.mpr Nat.lt_two_pow_self
+    have spectators : W ≤ V := Nat.le_mul_of_pos_left _ (pow_pos hm _)
+    intro js nd
+    apply ((paid.seq charge) js nd).trans
+    apply Nat.add_le_add_left
+    change 18*M.size+8*W.size+8*(w+1)+11*(w+1).size+53+(rate*V+_) ≤ (rate+98)*V+_
+    nlinarith only [(size M).trans radix,(size W).trans spectators,clock.trans radix,(size _).trans (clock.trans radix),pos.trans_le spectators]
+  · intro j off
+    have first := frame (ext j) (fun i _ => ext.injective.ne (off i))
+    have last := keep j (off _).symm
+    exact ⟨last.1.trans first.1,last.2.trans first.2⟩
+
+open Matrix AffineFieldCoordinates IntegerMultBounds.Swap.Modular in
+/-- Correct the live row and call the smaller scheduled child with its inherited cutoff. -/
+theorem correctedInheritedWorkerCall [M8.Machine.Net] (t : Fin 111) (atExit : Bool) :
+    ∃ q k : ℕ, ∀ {P U : Type} {T K Q : ℕ}, q ≤ Q → k ≤ K →
+      ∀ (body : P → Pr P (T+(24+K)) Q prime U)
+        (place : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (src : Fin 3 → Fin T) (width tmp saved cut : Fin T) (f : P),
+      let record := scheduledRecordPorts place
+      (∀ i, width ≠ place i) → (∀ i j, record (copyRecordTargets i) ≠ src j) →
+      (∀ i, [src i,record (copyRecordTargets i),tmp,saved].Nodup) →
+      (∀ i, place i ≠ cut) →
+      ∃ code rate coreRate, ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      let V := M^16*W
+      let io := (record 24).castAdd (24+K)
+      let ports := place.trans (Fin.castAddEmb (24+K))
+      ∀ (node child : RecursiveInterchangeLayout.Descriptor) (L cutoff budget : ℕ)
+        (position : Fin (RecursiveInterchangeLayout.volume prime child) ≃ Fin V),
+      ScheduledChildExec node child w W ports (binSyms L cutoff) position body f budget →
+      child.width < node.width →
+      ∀ (x : Fin V → ZMod 2) u (S : Stacks (T+(24+K)) prime),
+      S.R (cut.castAdd _) = binSyms L cutoff → S.R ((src 0).castAdd _) = binSyms M.size M → S.R ((src 1).castAdd _) = binSyms W.size W →
+      S.R ((src 2).castAdd _) = binSyms 1 1 → S.R (width.castAdd _) = binSyms (w+1).size (w+1) →
+      (∀ i, i.val ≠ 24 → S.L ((place i).castAdd _) = [] ∧ S.R ((place i).castAdd _) = []) →
+      S.R (tmp.castAdd _) = [] → S.R (saved.castAdd _) = [] →
+      (∀ h, readAt blank (S.L io) (S.R io) h = (portOwner x).tape 0 h) →
+      (∀ j : Fin (24+K), S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
+      ∃ (y output : Fin V → ZMod 2), ∃ z F n, Exec body code (mk u S) n (mk z F) ∧ z.user = u.user ∧
+        n ≤ rate*V+coreRate*M8.RevMachine.LeafCore.coreCost V (w+1)+(budget+8*L+10) ∧
+        (∀ h, output (position h) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (y ∘ position) h) ∧
+        (∀ s j, let A := translatedPortProjector (ZMod M) (4:ZMod M)⁻¹ t
+                let B := reduce M (selectedProjector ⟨2+t.val,by omega⟩)
+                let E := reduce M (selectedProjector ⟨525+t.val,by omega⟩)
+                let moved := if atExit then M8.Exchange.exchange E (M8.Exchange.exchange (1-A) s)
+                  else M8.Exchange.exchange A (M8.Exchange.exchange B s)
+                y (FlatCoordinateLayout.index (embed s) j) = x (FlatCoordinateLayout.index (embed moved) j)) ∧
+        RecordReady (b := prime) (w := w) (d := 16) (W := W) (record.trans (Fin.castAddEmb (24+K)))
+          M.size W.size [] SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 output F ∧
+        (∀ i, 35 ≤ i.val → F.L (ports i) = [] ∧ F.R (ports i) = []) ∧
+        (∀ j : Fin (24+K), F.L (j.natAdd T) = [] ∧ F.R (j.natAdd T) = []) ∧
+        ∀ j : Fin T, (∀ i, place i ≠ j) → F.L (j.castAdd _) = S.L (j.castAdd _) ∧ F.R (j.castAdd _) = S.R (j.castAdd _) := by
+  obtain ⟨q,k,prepare⟩ := loadAndRunWorkerPort t atExit
+  refine ⟨q,k,?_⟩
+  intro P U T K Q states space body place src width tmp saved cut f record outside apart regs cutOff
+  obtain ⟨a,rate,coreRate,run⟩ := prepare states space body place src width tmp saved outside apart regs
+  let ext := Fin.castAddEmb (n := T) (24+K)
+  let bank := record.trans ext
+  let call : Pr P (T+(24+K)) Q prime U := (bcopy (ext cut) (bank 34) (bank 0) (bank 1)).seq
+    ((Prog.call f).seq (bclear (bank 34)))
+  refine ⟨a.seq call,rate,coreRate,?_⟩
+  intro w W pos M V io ports node child L cutoff budget position worker smaller x u S header base count unit atom blank ht hs owner fresh
+  obtain ⟨y,v,A,l,start,user,paid,_,act,ready,stored,clean,frame⟩ := run w W pos x u S base count unit atom blank ht hs owner fresh
+  have free (i : Fin (rowSwapBlock.tapes+35)) (hi : 35 ≤ i.val) : A.L (ports i) = [] ∧ A.R (ports i) = [] := by
+    have h := stored i (by omega)
+    simpa [ports,moveRecordSeed,show ∀ n < 35, i.val ≠ n by omega] using h
+  obtain ⟨z,F,n,out,exec,time,same,result,cleared,keep,effect⟩ :=
+    inheritedWorkerCall body f ports (ext cut) (fun i => ext.injective.ne (cutOff i)) node child w W L cutoff budget
+      position worker smaller v A y ((frame cut cutOff).2.trans header) ready free
+  refine ⟨y,out,z,F,l+n,start.seq exec,same.trans user,Nat.add_le_add ?_ time,effect,act,result,cleared,?_,?_⟩
+  · simpa [tapeCharge] using paid [] List.nodup_nil
+  · intro j
+    have h := keep (j.natAdd T) (fun i => (scratch_ne_caller j (place i)).symm)
+    exact ⟨h.1.trans (clean j).1,h.2.trans (clean j).2⟩
+  · intro j off
+    have h := keep (ext j) (fun i => ext.injective.ne (off i))
+    exact ⟨h.1.trans (frame j off).1,h.2.trans (frame j off).2⟩
 
 /-- Initialize both directions of a worker's basis change using the same
 two source words and the same copy scratch. -/
