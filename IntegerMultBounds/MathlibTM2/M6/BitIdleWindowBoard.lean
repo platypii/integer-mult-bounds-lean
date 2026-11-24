@@ -92,4 +92,66 @@ theorem prepareIdleCallerBoards {Job P U : Type} [Fintype Job] {B N Q : ℕ}
   rw [rawAt]
   exact ⟨(live _).1.trans (seedAt c j k ne).1,(live _).2.trans (seedAt c j k ne).2⟩
 
+/-- A parent can preload the dispatch words and archive in its ordinary
+packed seed. Once owner words are present, only the archive needs processing. -/
+theorem seededIdleCallerBoards {Job P U : Type} [Fintype Job] {B Q : ℕ}
+    (owner : Job ↪ Fin B)
+    (capacity : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q) :
+    ∃ (H : ℕ) (fan : Fin B ↪ Fin H) (board : Job → Fin 78 ↪ Fin H) (seed : CutoffNodeInput → Stacks H prime),
+      LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells seed ∧
+      (∀ j, board j ((24 : Fin 72).castAdd 6) = fan (owner j)) ∧
+      (∀ j k, k ≠ (24 : Fin 72) → ∀ r, board j (k.castAdd 6) ≠ fan r) ∧
+      (∀ j (k : Fin 6) r, board j (k.natAdd 72) ≠ fan r) ∧
+      ∀ body : P → Pr P H Q prime U, ∃ (code : Pr P H Q prime U) (rate : ℕ),
+      ∀ (p : CutoffNodeInput) u S,
+        (∀ t, (∀ r, fan r ≠ t) → S.L t = (seed p).L t ∧ S.R t = (seed p).R t) →
+        ∃ z F n, Exec body code (mk u S) n (mk z F) ∧ z.user = u.user ∧ CleanupBound S F n (rate*p.cells) ∧
+          (∀ j, IdleDispatchReady ((Fin.castAddEmb 6).trans (board j)) p.w p.idleWidth p.root.width.size p.cutoff F) ∧
+          (∀ j k, F.R (board j ((k : Fin 6).natAdd 72)) = (Routines.hdr (role p.node 142080) k).map bitSymbol) ∧
+          ∀ r, F.L (fan r) = S.L (fan r) ∧ F.R (fan r) = S.R (fan r) := by
+  obtain ⟨H,fan,raw,origin,shared,_,off,free,entry⟩ := allocateIdleCallerWindow owner 0
+  let window := Fin.castAddEmb (80+273) (n := H)
+  let archive := Fin.natAddEmb H (m := 80+273)
+  let dst := ((Fin.natAddEmb 38 (m := 6)).trans (Fin.castAddEmb 36)).trans (Fin.castAddEmb 273)
+  let fields := dst.trans archive
+  let board (j : Job) := appendPorts ((raw j).trans window) fields (fun k a => (suffixApart (dst a) (raw j k)).symm)
+  have data j (k : Fin 72) : board j (k.castAdd 6) = window (raw j k) := by simp [board,appendPorts]
+  have field j (k : Fin 6) : board j (k.natAdd 72) = fields k := by simp [board,appendPorts]
+  refine ⟨_,fan.trans window,board,_,idleWindowArchiveLoader origin free,
+    fun j => (data j 24).trans (congrArg window (shared j)),?_,?_,?_⟩
+  · intro j k ne r
+    rw [data]
+    exact window.injective.ne (off j k ne r)
+  · intro j k r
+    rw [field]
+    exact suffixApart (dst k) (fan r)
+  intro body
+  obtain ⟨code,rate,run⟩ := idleParentRoleHeaders body archive capacity
+  refine ⟨code,rate,?_⟩
+  intro p u S stock
+  have archived (k) := stock (archive k) (fun r => (suffixApart k (fan r)).symm)
+  have left : (embStk archive S).L = (parentArchiveSeed p.node p.w).L := by
+    funext k
+    simpa [embStk,archive,adjacentStageStacks] using (archived k).1
+  have right : (embStk archive S).R = (parentArchiveSeed p.node p.w).R := by
+    funext k
+    simpa [embStk,archive,adjacentStageStacks] using (archived k).2
+  have ready : ParentArchiveInput p.node p.w (embStk archive S) := by
+    have transfer {A B : Stacks (80+273) prime} (l : A.L = B.L) (r : A.R = B.R)
+        (ready : ParentArchiveInput p.node p.w B) : ParentArchiveInput p.node p.w A := by
+      simpa only [ParentArchiveInput,embStk,l,r] using ready
+    exact transfer left right (parentArchiveSeed_ready p.node p.w)
+  obtain ⟨z,F,n,exec,user,paid,roles,keep⟩ := run p u S ready
+  have frame k := keep (window k) (fun a => suffixApart a k)
+  refine ⟨z,F,n,exec,user,paid,?_,fun j k => field j k ▸ roles k,fun r => frame (fan r)⟩
+  intro j k ne
+  change F.L (board j (k.castAdd 6)) = _ ∧ F.R (board j (k.castAdd 6)) = _
+  rw [data]
+  have old := stock (window (raw j k)) (fun r => window.injective.ne (off j k ne r).symm)
+  have init := entry p j k ne
+  have l := (frame (raw j k)).1.trans old.1
+  have r := (frame (raw j k)).2.trans old.2
+  simp only [window,Fin.castAddEmb_apply,adjacentStageStacks,Fin.addCases_left,id_eq] at l r
+  exact ⟨l.trans init.1,r.trans init.2⟩
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

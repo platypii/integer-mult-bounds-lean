@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitIdleWindowHandoff
+public import IntegerMultBounds.MathlibTM2.M6.BitCompiledPackedParent
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
