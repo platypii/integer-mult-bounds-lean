@@ -255,4 +255,20 @@ theorem compactCopyWindow [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (j 
   simp only [Nat.zero_mul,Nat.add_zero,clock]
   exact le_of_eq (by ring)
 
+/-- The caller tests the cutoff, executes the selected branch, and compacts the payload. -/
+noncomputable def compactIntervalTable [M8.Machine.Net] {P U : Type} {T Q : ℕ}
+    (lo hi : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fits : (stoppedIntervalMachine lo hi).1 ≤ Q)
+    (large : P → Pr (Option (WorkerLabel P)) T Q prime U) (f : P) :
+    Option (WorkerLabel P) → Pr (Option (WorkerLabel P)) T Q prime U :=
+  let bank := scheduledRecordPorts ports
+  let cmp := cutoffColumnSlots.trans bank
+  let leaf := stoppedIntervalProgram lo hi ports fits (P := Option (WorkerLabel P)) (U := U)
+  let entry := (ordinaryCutoffTest cmp (hi-lo)).seq
+    (.cond (fun z => symBit (z.scan (cmp 7))) (large f) leaf)
+  fun
+    | none => entry.seq (compactOwner (bank 24) (bank 0) (bank 1))
+    | some .entry => entry
+    | some .leaf => leaf
+    | some (.active g) => large g
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

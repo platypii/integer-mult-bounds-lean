@@ -23,16 +23,12 @@ theorem compactCopySweep [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
     let J := Fin Copy.lifecycles.length
     ∃ (C : ℝ) (tapes : J → ℕ) (regs : ∀ j, Fin (rowSwapBlock.tapes+35) ↪ Fin (tapes j))
       (T states : ℕ) (fan : Fin (142081+2) ↪ Fin T) (bank : ∀ j, Fin (tapes j) ↪ Fin T),
-    ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : ∀ j, P → Pr P (tapes j) Q prime U)
-      (call entry large leaf : J → P) (fits : stoppedCopyMachine.1 ≤ Q),
-    let recordBank : ∀ j : J, Fin 35 ↪ Fin (tapes j) := fun j => scheduledRecordPorts (regs j)
-    let cmp : ∀ j : J, Fin 10 ↪ Fin (tapes j) := fun j => cutoffColumnSlots.trans (recordBank j)
-    (∀ j, body j (call j) = (body j (entry j)).seq (compactOwner (recordBank j 24) (recordBank j 0) (recordBank j 1))) →
-    (∀ j, body j (leaf j) = stoppedCopyProgram (regs j) fits) →
-    (∀ j, body j (entry j) = (ordinaryCutoffTest (cmp j) 7).seq
-      (.cond (fun z => symBit (z.scan (cmp j 7))) (body j (large j)) (body j (leaf j)))) →
-    let host := fun f : J × P => embProg (bank f.1) (Prod.mk f.1) (body f.1 f.2)
-    ∃ (code : Pr (J × P) T Q prime U) (localRate : ℕ), ∀ c : CutoffNodeInput,
+    ∀ {P U : Type} {Q : ℕ}, states ≤ Q →
+    ∀ (large : ∀ j, P → Pr (Option (WorkerLabel P)) (tapes j) Q prime U) (f : J → P),
+    ∃ body : ∀ j, Option (WorkerLabel P) → Pr (Option (WorkerLabel P)) (tapes j) Q prime U,
+    (∀ j g, body j (some (.active g)) = large j g) ∧
+    let host := fun g : J × Option (WorkerLabel P) => embProg (bank g.1) (Prod.mk g.1) (body g.1 g.2)
+    ∃ (code : Pr (J × Option (WorkerLabel P)) T Q prime U) (localRate : ℕ), ∀ c : CutoffNodeInput,
       let w := c.w
       let K := c.stageFactor
       let blocks := (prime^(w+1))^112*c.B
@@ -46,7 +42,7 @@ theorem compactCopySweep [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
       let price := fun j => if c.cutoff < (child j).width then recursiveTime j else
         ⌊(rate*((child j).width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime (child j)⌋₊
       (∀ j, c.cutoff < (child j).width → ScheduledChildExec c.node (child j) w W (regs j)
-        (binSyms c.root.width.size c.cutoff) (position j) (body j) (large j) (recursiveTime j) true) →
+        (binSyms c.root.width.size c.cutoff) (position j) (body j) (some (.active (f j))) (recursiveTime j) true) →
       ∀ (data : Fin 142081 → Fin V → ZMod 2) u (S : Stacks T prime), HelperFan fan data S →
       (∀ k, (∀ h, fan h ≠ k) → S.L k = prepared.L k ∧ S.R k = prepared.R k) →
       ∃ z F t out, Exec host code (mk u S) t (mk z F) ∧ z.user = u.user ∧
@@ -60,11 +56,15 @@ theorem compactCopySweep [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
   let threshold := ∑ j, |C j|
   have leafRate (j : J) : C j ≤ threshold :=
     (le_abs_self _).trans (Finset.single_le_sum (fun i _ => abs_nonneg (C i)) (Finset.mem_univ j))
-  refine ⟨threshold,tapes,regs,T,Finset.univ.sup qs,fan,bank,?_⟩
-  intro P U Q capacity body call entry large leaf fits recordBank cmp installed stopped branch host
+  refine ⟨threshold,tapes,regs,T,max (Finset.univ.sup qs) stoppedCopyMachine.1,fan,bank,?_⟩
+  intro P U Q capacity large f
+  have fits := (le_max_right _ _).trans capacity
+  let body := fun j : J => compactIntervalTable 0 7 (regs j) fits (large j) (f j)
+  refine ⟨body,fun _ _ => rfl,?_⟩
+  intro host
   choose code localRate run using fun j : J =>
-    window j ((Finset.le_sup (Finset.mem_univ j)).trans capacity) (body j) (call j) (entry j) (large j)
-      (leaf j) fits (installed j) (stopped j) (branch j)
+    window j ((Finset.le_sup (Finset.mem_univ j)).trans ((le_max_left ..).trans capacity))
+      (body j) none (some .entry) (some (.active (f j))) (some .leaf) fits rfl rfl rfl
   let placed := fun j => embProg (bank j) (Prod.mk j) (code j)
   refine ⟨(List.finRange _).foldr (fun j tail => (placed j).seq tail) (.act .done),(List.ofFn localRate).sum+10000,?_⟩
   intro c w K blocks W V child

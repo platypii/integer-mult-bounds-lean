@@ -180,16 +180,7 @@ theorem cutoffScalarMove [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (aft
   obtain ⟨T,states,ports,fan,basis,owners,make⟩ := compactScalarMove n p afterCopy j
   refine ⟨C,T,states,ports,fan,basis,owners,?_⟩
   intro P U Q capacity fits large f
-  let bank := scheduledRecordPorts ports
-  let cmp := cutoffColumnSlots.trans bank
-  let leaf := stoppedIntervalProgram lo hi ports fits (P := Option (WorkerLabel P)) (U := U)
-  let entry := (ordinaryCutoffTest cmp (hi-lo)).seq
-    (.cond (fun z => symBit (z.scan (cmp 7))) (large f) leaf)
-  let body : Option (WorkerLabel P) → Pr (Option (WorkerLabel P)) T Q prime U
-    | none => entry.seq (compactOwner (bank 24) (bank 0) (bank 1))
-    | some .entry => entry
-    | some .leaf => leaf
-    | some (.active g) => large g
+  let body := compactIntervalTable lo hi ports fits large f
   refine ⟨body,fun _ => rfl,?_⟩
   obtain ⟨code,rate,run⟩ := make capacity body none (some .entry) rfl
   refine ⟨code,rate+10000,?_⟩
