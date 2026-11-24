@@ -67,7 +67,7 @@ private theorem compactRestoredStage [M8.Machine.Net] (n : Fin 9) (count : Fin 3
   obtain ⟨T,fan,banks,assemble⟩ := allocatedArchiveSweepWithCharge n ts owners ⟨observed,unique⟩
   refine ⟨∑ p, |C p|,tapes,regs,T,max (Finset.univ.sup qs) columnCapacity,fan,?_⟩
   intro P U Q cap large f
-  choose body active worker call localRate run using fun p => build p
+  choose body active worker call localRate _ run using fun p => build p
     ((Finset.le_sup (Finset.mem_univ p)).trans ((le_max_left ..).trans cap)) (large p) (f p)
   refine ⟨body,active,?_⟩
   intro Label scratch owner H
@@ -87,7 +87,7 @@ private theorem compactRestoredStage [M8.Machine.Net] (n : Fin 9) (count : Fin 3
     simp only [observed,List.map_reverse,frameSlots]
   obtain ⟨initial,view,stage⟩ := execute (w+1) c.B c.stageFactor positive (fun p => localRate p*c.cells) price
     (fun p shared => by
-      obtain ⟨seed,view,step⟩ := prepare p shared
+      obtain ⟨seed,view,_,step⟩ := prepare p shared
       refine ⟨seed,view,?_⟩
       intro a v D ready fresh
       have threshold : C p ≤ rate := ((le_abs_self _).trans

@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitCompactInvocation
+public import IntegerMultBounds.MathlibTM2.M6.BitCompactInvocationSeed
 public import IntegerMultBounds.MathlibTM2.M6.BitCompactComponents
 
 /-! The compiled PR589 invocation with cutoff-dispatched children in inherited order. -/
@@ -21,7 +22,7 @@ def CompactRun [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (count : Fin 3
     ∃ (body : ∀ j i, Option (WorkerLabel P) → Pr (Option (WorkerLabel P)) (tapes j i) Q prime U),
     (∀ j i g, body j i (some (.active g)) = large j i g) ∧
     let Label := Σ j, Fin (count j) × Option (WorkerLabel P)
-    ∃ (host : Label → Pr Label T Q prime U) (code : Pr Label T Q prime U) (localRate : ℕ),
+    ∃ (host : Label → Pr Label T Q prime U) (code : Pr Label T Q prime U) (localRate : ℕ) (setup : Pr Empty (T+7) Q prime U),
     ∀ c : CutoffNodeInput,
       let w := c.w
       let W := c.stageWidth
@@ -30,6 +31,7 @@ def CompactRun [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (count : Fin 3
       ∃ pos : ∀ j i, Fin (volume prime (child j i)) ≃ Fin V,
       (∀ j i, coords j i (child j i) (w+1) W (pos j i)) ∧
       ∀ shared : Stacks (142081+2) prime, ∃ prepared : Stacks T prime, embStk fan prepared = shared ∧
+      PhaseSeedExec setup fan (count 0+count 1+count 2) c prepared 6 ∧
       ∀ (rate : ℝ) (time : ℕ → ℕ), C ≤ rate →
       let price := stageBranchTime c.node c.cutoff rate time
       (∀ j i, c.cutoff < (child j i).width → ScheduledChildExec c.node (child j i) w W (regs j i)
@@ -50,10 +52,10 @@ private theorem compileRun [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5)
     CompactRun n p count slot coords := by
   classical
   choose C tapes regs ts qs owners place build using parts
-  obtain ⟨T,fan,bank,_,assemble⟩ := compactInvocation_host n p ts owners
+  obtain ⟨T,fan,bank,_,cover,apart,assemble⟩ := compactInvocation_host n p ts owners
   refine ⟨∑ j, |C j|,tapes,regs,T,Finset.univ.sup qs,fan,?_⟩
   intro P U Q cap large f
-  choose body active code localRate run using fun j =>
+  choose body active code localRate loaders run using fun j =>
     build j ((Finset.le_sup (Finset.mem_univ j)).trans cap) (large j) (f j)
   refine ⟨body,active,?_⟩
   intro Label
@@ -61,14 +63,15 @@ private theorem compileRun [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5)
     embProg (place j g.1) (Prod.mk g.1) (body j g.1 g.2)
   let host : Label → Pr Label T Q prime U := fun g => embProg (bank g.1) (fun h => (⟨g.1,h⟩ : Label)) (worker g.1 g.2)
   obtain ⟨program,execute⟩ := assemble worker code
-  refine ⟨host,program,localRate 0+(localRate 1+localRate 2),?_⟩
+  obtain ⟨setup,load⟩ := invocationSeed ts count fan owners bank cover apart loaders
+  refine ⟨host,program,localRate 0+(localRate 1+localRate 2),setup,?_⟩
   intro c w W V child
   choose pos geom prepare using fun j => run j c
   refine ⟨pos,geom,?_⟩
   intro shared
-  choose seed views steps using fun j => prepare j shared
-  obtain ⟨prepared,view,go⟩ := execute (w+1) ((prime^(w+1))^112*c.B) c.stageFactor shared seed
-  refine ⟨prepared,view,?_⟩
+  choose seed views init steps using fun j => prepare j shared
+  obtain ⟨prepared,view,stock,go⟩ := execute (w+1) ((prime^(w+1))^112*c.B) c.stageFactor shared seed
+  refine ⟨prepared,view,load c seed prepared stock init,?_⟩
   intro rate time enough price recurse x u S ready fresh
   let fee := fun j => (List.ofFn fun i => price (slot j i).val).sum
   obtain ⟨z,F,t,y,exec,user,paid,out,effect⟩ := go (fun j => fee j+localRate j*c.cells) (fun j => by

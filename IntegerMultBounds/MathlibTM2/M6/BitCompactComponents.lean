@@ -22,7 +22,7 @@ def CompactComponent [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (part : 
     ∃ body : ∀ j, Option (WorkerLabel P) → Pr (Option (WorkerLabel P)) (tapes j) Q prime U,
     (∀ j g, body j (some (.active g)) = large j g) ∧
     let host := fun g : J × Option (WorkerLabel P) => embProg (bank g.1) (Prod.mk g.1) (body g.1 g.2)
-    ∃ (code : Pr (J × Option (WorkerLabel P)) T Q prime U) (localRate : ℕ), ∀ c : CutoffNodeInput,
+    ∃ (code : Pr (J × Option (WorkerLabel P)) T Q prime U) (localRate : ℕ) (setup : Pr Empty (T+7) Q prime U), ∀ c : CutoffNodeInput,
       let w := c.w
       let K := c.stageFactor
       let blocks := (prime^(w+1))^112*c.B
@@ -32,6 +32,7 @@ def CompactComponent [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (part : 
       ∃ position : ∀ j, Fin (volume prime (child j)) ≃ Fin V,
       (∀ j, coords j (child j) (w+1) W (position j)) ∧
       ∀ shared : Stacks (142081+2) prime, ∃ prepared : Stacks T prime, embStk fan prepared = shared ∧
+      PhaseSeedExec setup fan count c prepared ∧
       ∀ (rate : ℝ) (recursiveTime : J → ℕ), C ≤ rate →
       let price := fun j => if c.cutoff < (child j).width then recursiveTime j else
         ⌊(rate*((child j).width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime (child j)⌋₊
@@ -64,14 +65,14 @@ theorem compactPhaseComponent [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5)
   obtain ⟨C,tapes,regs,T,states,fan,bank,build⟩ := compactPhase n p b
   refine ⟨C,tapes,regs,T,states,fan,bank,?_⟩
   intro P U Q cap large f
-  obtain ⟨body,active,code,rate,_,run⟩ := build cap large f
-  refine ⟨body,active,code,rate,?_⟩
+  obtain ⟨body,active,code,rate,setup,run⟩ := build cap large f
+  refine ⟨body,active,code,rate,setup,?_⟩
   intro c w K blocks W V child
   obtain ⟨pos,size,coords,prepare⟩ := run c
   refine ⟨pos,fun j => ⟨size j,coords j⟩,?_⟩
   intro shared
-  obtain ⟨seed,view,_,execute⟩ := prepare shared
-  refine ⟨seed,view,?_⟩
+  obtain ⟨seed,view,load,execute⟩ := prepare shared
+  refine ⟨seed,view,load,?_⟩
   intro leafRate time enough price recurse x u S ready fresh
   obtain ⟨z,F,t,exec,user,paid,out⟩ := execute leafRate time enough recurse x u S ready fresh
   refine ⟨z,F,t,_,exec,user,paid,out,?_⟩

@@ -38,13 +38,17 @@ theorem compactInvocation_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5
     (tapes : Fin 3 → ℕ) (owners : ∀ j, Fin (142081+2) ↪ Fin (tapes j)) :
     ∃ (T : ℕ) (fan : Fin (142081+2) ↪ Fin T) (bank : ∀ j, Fin (tapes j) ↪ Fin T),
     (∀ j i, bank j (owners j i) = fan i) ∧
+    (∀ z, (∀ h, fan h ≠ z) → ∃ i l, (∀ h, owners i h ≠ l) ∧ bank i l = z) ∧
+    (∀ i l, (∀ h, owners i h ≠ l) → (∀ h, fan h ≠ bank i l) ∧ ∀ j, j ≠ i → ∀ m, bank j m ≠ bank i l) ∧
     ∀ {P : Fin 3 → Type} {U : Type} {Q : ℕ} (body : ∀ j, P j → Pr (P j) (tapes j) Q prime U)
       (program : ∀ j, Pr (P j) (tapes j) Q prime U),
       let host := fun f : Σ j, P j => embProg (bank f.1) (Sigma.mk f.1) (body f.1 f.2)
       ∃ code : Pr (Σ j, P j) T Q prime U, ∀ (w B K : ℕ),
       let V := (prime^w)^16*(B*prime^(64*(w*64))*K)
       ∀ (shared : Stacks (142081+2) prime) (seed : ∀ j, Stacks (tapes j) prime),
-      ∃ prepared : Stacks T prime, embStk fan prepared = shared ∧ ∀ price : Fin 3 → ℕ,
+      ∃ prepared : Stacks T prime, embStk fan prepared = shared ∧
+      (∀ i l, (∀ h, owners i h ≠ l) → prepared.L (bank i l) = (seed i).L l ∧ prepared.R (bank i l) = (seed i).R l) ∧
+      ∀ price : Fin 3 → ℕ,
       (∀ j (x : Fin 142081 → Fin V → ZMod 2) u S, HelperFan (owners j) x S →
         (∀ k, (∀ h, owners j h ≠ k) → S.L k = (seed j).L k ∧ S.R k = (seed j).R k) →
         ∃ z F t y, Exec (body j) (program j) (mk u S) t (mk z F) ∧ z.user = u.user ∧
@@ -57,14 +61,14 @@ theorem compactInvocation_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5
           CleanupBound S F (t+tapeCharge cleanupWeight (frameSlots fan) F)
             (price 0+(price 1+price 2)+tapeCharge cleanupWeight (frameSlots fan) S) ∧
           HelperFan fan y F ∧ BorrowedStep n w B K p x y := by
-  obtain ⟨T,fan,bank,atOwner,_,prepare,apart⟩ := copyWindowBanks tapes owners
-  refine ⟨T,fan,bank,atOwner,?_⟩
+  obtain ⟨T,fan,bank,atOwner,cover,prepare,apart⟩ := copyWindowBanks tapes owners
+  refine ⟨T,fan,bank,atOwner,cover,apart,?_⟩
   intro P U Q body program host
   let placed := fun j => embProg (bank j) (Sigma.mk j) (program j)
   refine ⟨(placed 0).seq ((placed 1).seq (placed 2)),?_⟩
   intro w B K V shared seed
   obtain ⟨prepared,view,initial⟩ := prepare shared seed
-  refine ⟨prepared,view,?_⟩
+  refine ⟨prepared,view,initial,?_⟩
   intro price component x u S ready fresh
   let stock := fun D : Stacks T prime => tapeCharge cleanupWeight (frameSlots fan) D
   let saved := fun j (D : Stacks T prime) => ∀ k, (∀ h, owners j h ≠ k) →

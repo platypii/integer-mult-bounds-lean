@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyOwnerFrame
-public import IntegerMultBounds.MathlibTM2.M6.BitCutoffNode
+public import IntegerMultBounds.MathlibTM2.M6.BitAllocatedPhaseSeed
 
 /-! Execute the nine cutoff-dispatched COPY windows on shared owner tapes. -/
 @[expose] public section
@@ -28,7 +28,7 @@ theorem compactCopySweep [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
     ∃ body : ∀ j, Option (WorkerLabel P) → Pr (Option (WorkerLabel P)) (tapes j) Q prime U,
     (∀ j g, body j (some (.active g)) = large j g) ∧
     let host := fun g : J × Option (WorkerLabel P) => embProg (bank g.1) (Prod.mk g.1) (body g.1 g.2)
-    ∃ (code : Pr (J × Option (WorkerLabel P)) T Q prime U) (localRate : ℕ), ∀ c : CutoffNodeInput,
+    ∃ (code : Pr (J × Option (WorkerLabel P)) T Q prime U) (localRate : ℕ) (setup : Pr Empty (T+7) Q prime U), ∀ c : CutoffNodeInput,
       let w := c.w
       let K := c.stageFactor
       let blocks := (prime^(w+1))^112*c.B
@@ -38,6 +38,7 @@ theorem compactCopySweep [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
       ∃ position : ∀ j, Fin (volume prime (child j)) ≃ Fin V,
       (∀ j, CopyIntervalPositions (child j) (w+1) W (position j)) ∧
       ∀ shared : Stacks (142081+2) prime, ∃ prepared : Stacks T prime, embStk fan prepared = shared ∧
+      PhaseSeedExec setup fan Copy.lifecycles.length c prepared ∧
       ∀ (rate : ℝ) (recursiveTime : J → ℕ), C ≤ rate →
       let price := fun j => if c.cutoff < (child j).width then recursiveTime j else
         ⌊(rate*((child j).width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime (child j)⌋₊
@@ -51,8 +52,8 @@ theorem compactCopySweep [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
         InvocationComponentEffect n p (w+1) blocks K 1 data out := by
   classical
   intro J
-  choose C tapes qs regs owners layout _ window using compactCopyWindow n p
-  obtain ⟨T,fan,bank,atOwner,_,prepare,apart⟩ := copyWindowBanks tapes owners
+  choose C tapes qs regs owners layout owned window using compactCopyWindow n p
+  obtain ⟨T,fan,bank,atOwner,cover,prepare,apart⟩ := copyWindowBanks tapes owners
   let threshold := ∑ j, |C j|
   have leafRate (j : J) : C j ≤ threshold :=
     (le_abs_self _).trans (Finset.single_le_sum (fun i _ => abs_nonneg (C i)) (Finset.mem_univ j))
@@ -66,7 +67,8 @@ theorem compactCopySweep [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
     window j ((Finset.le_sup (Finset.mem_univ j)).trans ((le_max_left ..).trans capacity))
       (body j) none (some .entry) (some (.active (f j))) (some .leaf) fits rfl rfl rfl
   let placed := fun j => embProg (bank j) (Prod.mk j) (code j)
-  refine ⟨(List.finRange _).foldr (fun j tail => (placed j).seq tail) (.act .done),(List.ofFn localRate).sum+10000,?_⟩
+  obtain ⟨setup,load⟩ := allocatedPhaseSeed (Q := Q) (U := U) tapes regs layout owners owned fan bank cover apart
+  refine ⟨(List.finRange _).foldr (fun j tail => (placed j).seq tail) (.act .done),(List.ofFn localRate).sum+10000,setup,?_⟩
   intro c w K blocks W V child
   let node := c.node
   let L := c.root.width.size
@@ -94,7 +96,7 @@ theorem compactCopySweep [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
   intro shared
   let seed := fun j => (layout j).seed w W (binSyms L cutoff)
   obtain ⟨prepared,view,initial⟩ := prepare shared seed
-  refine ⟨prepared,view,?_⟩
+  refine ⟨prepared,view,load c prepared initial,?_⟩
   intro rate recursiveTime enough price active
   let bill := fun j => price j+localRate j*V+4*w+23*(child j).width+22*L+386
   let saved := fun j (S : Stacks T prime) => ∀ k, (∀ h, owners j h ≠ k) →
