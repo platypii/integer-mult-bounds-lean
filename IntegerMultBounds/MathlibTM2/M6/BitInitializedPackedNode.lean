@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitRecordChildBudget
+public import IntegerMultBounds.MathlibTM2.M6.BitRecordChildDirectory
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
@@ -46,9 +46,9 @@ theorem initializedPackedNode [M8.Machine.Net] (P U Config : Type) :
         (v.w+1) v.idleWidth (budget c i.val) (binSyms v.root.width.size v.cutoff)) →
     ∃ (R : Type) (T : ℕ) (table : R → Pr R T Q prime U), ∃ code src dst, ∃ seed : Config → Stacks T prime,
       LoadsPackedSeed (nodeSeedWords ∘ input) (CutoffNodeInput.cells ∘ input) seed ∧ LoadsNodeSeedFromRecord input seed ∧
-      SplitRecordChildFamily (P := R) (U := U) (Q := Q) input dst (fun c =>
+      SplitRecordChildFamily (P := R) (U := U) (Q := Q) input table dst (fun c =>
         (input c).localCharge localWork assemblyRate+∑ i : Fin nodeChildren5.length, time c i.val) ∧
-      SplitRecordTreeFamily (P := R) (U := U) (Q := Q) input dst rate budget ∧
+      SplitRecordTreeFamily (P := R) (U := U) (Q := Q) input table dst rate budget ∧
       ∀ c, let v := input c
         PackedPieceHandoffWithCharge cleanupWeight v.cells (packedChildOutput (v.w+1) v.cells) table code src dst (seed c)
           (v.localCharge localWork assemblyRate+∑ i : Fin nodeChildren5.length, time c i.val) := by
