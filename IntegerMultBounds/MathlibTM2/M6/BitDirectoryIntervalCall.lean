@@ -48,13 +48,13 @@ theorem RecordChildCall.onLane {A U : Type} {N T Q H : ℕ} {c : CutoffNodeInput
     simpa [position,Function.comp_def] using h
   exact ⟨z,F,t,exec,user,paid,rows ▸ returned,frame,off⟩
 
-private theorem suffixApart {n m : ℕ} (i : Fin m) (j : Fin n) : i.natAdd n ≠ j.castAdd m := by
+theorem suffixApart {n m : ℕ} (i : Fin m) (j : Fin n) : i.natAdd n ≠ j.castAdd m := by
   intro eq
   have h := congrArg Fin.val eq
   change n+i.val = j.val at h
   omega
 
-private theorem intervalWorkOutside {T B : ℕ} (fan : Fin (142080+2) ↪ Fin T) (payload : Fin B)
+theorem intervalWorkOutside {T B : ℕ} (fan : Fin (142080+2) ↪ Fin T) (payload : Fin B)
     (r : Fin 142080) (k : Fin B) (privateSlot : k ≠ payload) (j : Fin T) :
     j.castAdd (142080*B) ≠ intervalRecordBank fan payload r k := by
   intro eq
