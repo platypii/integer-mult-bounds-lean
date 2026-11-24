@@ -197,6 +197,52 @@ noncomputable def borrowedStageRead {w B K : ℕ} (n : Fin 9) (b : Fin B) (t : F
   if r.bank.val / 2 = BitHosting.activePair n.val then activeRoleRead n (fun i => borrowedActiveWindow b t g (x i)) r
   else borrowedRoleRead b t g x r
 
+/-- Lift the active port equations and the restored inactive rows to the
+logical stage on every block, label and trailing position. -/
+theorem borrowedStageRead_of_ports (n : Fin 9) (w B K : ℕ)
+    (x entry y out : Fin 142081 → Fin ((prime^w)^16*((prime^w)^112*B*prime^(64*(w*64))*K)) → ZMod 2)
+    (action : RestoredBorrowedStage n w B K entry y)
+    (entryOff : ∀ i, (∀ p, sourceOwner n p ≠ i) → entry i = x i)
+    (exitOff : ∀ i, (∀ p, targetOwner n p ≠ i) → out i = y i)
+    (correct : ∀ (p : (Fin 32 × Fin 5) × Fin 111) (g : LabelPadding.Label 64 w)
+      (z : LabelEntry.Cell (copyLabelLayout w ((prime^w)^112*B) K) ((prime^w)^112*B)) s,
+      let cell := fun v => index (embed v) (labelSpectator g z)
+      let P := translatedPortProjector (ZMod (prime^w)) (4 : ZMod (prime^w))⁻¹ p.2
+      out (sourceOwner n p) (cell s) = x (sourceOwner n p) (cell (M8.Exchange.exchange P s.swap)) ∧
+      out (targetOwner n p) (cell s) = x (targetOwner n p) (cell (M8.Exchange.exchange (1-P) s)) +
+        x (sourceOwner n p) (cell s.swap)) :
+    ∀ b t g, borrowedStageRead n b t g out = (Piece.stage n).run (borrowedStageRead n b t g x) := by
+  intro b t g
+  let V := (prime^w)^16*((prime^w)^112*B*prime^(64*(w*64))*K)
+  let active := fun (bank : Fin 142081 → Fin V → ZMod 2) => activeRoleRead n (fun i => borrowedActiveWindow b t g (bank i))
+  funext r
+  by_cases hr : r.bank.val / 2 = BitHosting.activePair n.val
+  · let p := ((r.replica,r.cls),r.port)
+    let raw := fun (bank : Fin 142081 → Fin V → ZMod 2) i => borrowedActiveWindow b t g (bank i)
+    obtain ⟨src,dst⟩ := activeRoleRead_stage n p (raw x) (raw out) (by
+      intro s
+      apply activePort_window n p.2 (borrowedWindowRow t g (x (sourceOwner n p)))
+        (borrowedWindowRow t g (x (targetOwner n p))) (borrowedWindowRow t g (out (sourceOwner n p)))
+        (borrowedWindowRow t g (out (targetOwner n p))) _ s b
+      intro row v
+      exact correct p g (borrowedWindowCell row t) v)
+    rw [show borrowedStageRead n b t g out r = active out r from ite_eq_left hr]
+    exact stage_at_active_port n r hr (active x) (active out) (borrowedStageRead n b t g x)
+      ⟨src,dst⟩ (fun side h => ite_eq_left (side_pair _ _ _ _ h _))
+  · rw [show borrowedStageRead n b t g out r = borrowedRoleRead b t g out r from ite_eq_right hr]
+    change _ = stagePiece n (borrowedStageRead n b t g x) r
+    rw [stagePiece_inactive _ _ _ hr,show borrowedStageRead n b t g x r = borrowedRoleRead b t g x r from ite_eq_right hr]
+    rw [← stagePiece_inactive n (borrowedRoleRead b t g x) r hr]
+    let tape := bankTape r.bank (r.replica,r.port,r.cls)
+    have pre : entry tape = x tape := entryOff tape (fun p =>
+      port_misses_inactive n p.1 (p.2.castLE (by decide)) (by change p.2.val < 222; omega) r hr)
+    have post : out tape = y tape := exitOff tape (fun p =>
+      port_misses_inactive n p.1 ⟨111+p.2.val,by omega⟩ (by dsimp; omega) r hr)
+    apply borrowedRoleRead_inactive_of_exchange r hr b t g
+    intro v
+    rw [show out (bankTape r.bank (r.replica,r.port,r.cls)) = _ from post, ← pre]
+    exact action.2 r hr b t g (v ∘ Sum.inl,v ∘ Sum.inr)
+
 open AffineFieldCoordinates FlatCoordinateLayout Cover in
 theorem borrowedCorrectionMachines [M8.Machine.Net] :
     ∃ base tapes states : ℕ, ∀ n : Fin 9, ∃ A B₀ : SharedBankSkeleton.Skeleton 142081 prime,
@@ -225,37 +271,9 @@ theorem borrowedCorrectionMachines [M8.Machine.Net] :
   · rw [← exactCost,Nat.add_mul]
     exact Nat.add_le_add (Nat.mul_le_mul_left _ (Nat.add_le_add_right et 5))
       (Nat.mul_le_mul_left _ (Nat.add_le_add_right lt 5))
-  intro x y action b t g
-  let out := leave.transform y
-  let active := fun (bank : Fin 142081 → Fin V → ZMod 2) => activeRoleRead n (fun i => borrowedActiveWindow b t g (bank i))
-  funext r
-  by_cases hr : r.bank.val / 2 = BitHosting.activePair n.val
-  · let p := ((r.replica,r.cls),r.port)
-    let raw := fun (bank : Fin 142081 → Fin V → ZMod 2) i => borrowedActiveWindow b t g (bank i)
-    obtain ⟨src,dst⟩ := activeRoleRead_stage n p (raw x) (raw out) (by
-      intro s
-      apply activePort_window n p.2 (borrowedWindowRow t g (x (sourceOwner n p)))
-        (borrowedWindowRow t g (x (targetOwner n p))) (borrowedWindowRow t g (out (sourceOwner n p)))
-        (borrowedWindowRow t g (out (targetOwner n p))) _ s b
-      intro row v
-      exact correct x y action.1 p g (borrowedWindowCell row t) v)
-    rw [show borrowedStageRead n b t g out r = active out r from ite_eq_left hr]
-    exact stage_at_active_port n r hr (active x) (active out) (borrowedStageRead n b t g x)
-      ⟨src,dst⟩ (fun side h => ite_eq_left (side_pair _ _ _ _ h _))
-  · rw [show borrowedStageRead n b t g out r = borrowedRoleRead b t g out r from ite_eq_right hr]
-    change _ = stagePiece n (borrowedStageRead n b t g x) r
-    rw [stagePiece_inactive _ _ _ hr,show borrowedStageRead n b t g x r = borrowedRoleRead b t g x r from ite_eq_right hr]
-    rw [← stagePiece_inactive n (borrowedRoleRead b t g x) r hr]
-    let tape := bankTape r.bank (r.replica,r.port,r.cls)
-    have pre : enter.transform x tape = x tape := entryOff x tape (fun p =>
-      port_misses_inactive n p.1 (p.2.castLE (by decide)) (by change p.2.val < 222; omega) r hr)
-    have post : leave.transform y tape = y tape := exitOff y tape (fun p =>
-      port_misses_inactive n p.1 ⟨111+p.2.val,by omega⟩ (by dsimp; omega) r hr)
-    apply borrowedRoleRead_inactive_of_exchange r hr b t g
-    intro v
-    dsimp only [out]
-    rw [show leave.transform y (bankTape r.bank (r.replica,r.port,r.cls)) = _ from post, ← pre]
-    exact action.2 r hr b t g (v ∘ Sum.inl,v ∘ Sum.inr)
+  intro x y action
+  exact borrowedStageRead_of_ports n w B K x (enter.transform x) y (leave.transform y) action
+    (entryOff x) (exitOff y) (correct x y action.1)
 
 open AffineFieldCoordinates FlatCoordinateLayout Cover in
 /-- The corrected worker realizes one logical stage on every inherited block,

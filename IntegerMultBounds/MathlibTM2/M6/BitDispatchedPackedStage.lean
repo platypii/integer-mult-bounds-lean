@@ -253,9 +253,95 @@ theorem stageCallerLoader {k H : ℕ} (fan : Fin (k+1) ↪ Fin H) :
   change LoadsPackedSeed words _ (fun c => ⟨[],[],fun _ => [],(callerSeed fan (words c 0) _).R⟩)
   simpa only [contents,id_eq] using load
 
-private theorem helperFan_trans {k V H M : ℕ} (fan : Fin (k+2) ↪ Fin H) (place : Fin H ↪ Fin M)
-    (x : Fin k → Fin V → ZMod 2) (S : Stacks M prime) :
-    HelperFan (fan.trans place) x S ↔ HelperFan fan x (embStk place S) := Iff.rfl
+/-- Install the stopped leaves and construct the restored sweep from the
+cutoff word and the six parent descriptor headers. -/
+theorem dispatchedRestoredWorker [M8.Machine.Net] (n : Fin 9) :
+    let l := (selectedPhaseSchedule false).1.length
+    let r := (selectedPhaseSchedule true).1.length
+    let I := Σ _ : StageRun, Σ j : Fin 3, Fin (invocationCounts l r j)
+    let k := 142081+2
+    ∃ (pre : StageRun → Fin l → MoveIndex) (post : StageRun → Fin r → MoveIndex),
+    let child := fun i : I => invocationChildren n i.1 (pre i.1) (post i.1) i.2.1 i.2.2
+    ∃ (ts : I → ℕ) (states : ℕ) (ports : ∀ i, Fin (rowSwapBlock.tapes+35) ↪ Fin (ts i)),
+    ∃ leafRate : ℝ, ∀ {P U : Type} {Q : ℕ}, states ≤ Q →
+    ∀ (large : ∀ i, P → Pr (WorkerLabel P) (ts i) Q prime U) (f : I → P),
+    ∃ body : ∀ i, WorkerLabel P → Pr (WorkerLabel P) (ts i) Q prime U, (∀ i g, body i (.active g) = large i g) ∧
+    ∃ (H : ℕ) (fan : Fin (k+1) ↪ Fin H)
+      (table : I × WorkerLabel P → Pr (I × WorkerLabel P) (H+37) Q prime U)
+      (worker : Pr (I × WorkerLabel P) (H+37) Q prime U) (rate : ℝ),
+    let data := (Fin.castAddEmb 1).trans (fan.trans (Fin.castAddEmb 37))
+    ∀ c : CutoffNodeInput,
+    let w := c.w+1
+    let V := (prime^w)^16*c.stageWidth
+    let desc := fun i => scheduledChild prime c.node (child i)
+    ∃ position : ∀ i, Fin (volume prime (desc i)) ≃ Fin V,
+    (∀ i, invocationCoordinates i.2.1 w c.stageWidth (position i)) ∧
+    ∀ (budget : ℕ → ℕ) (childRate : ℝ), leafRate ≤ childRate →
+    let time := stageBranchTime c.node c.cutoff childRate budget
+    (∀ i, c.cutoff < (desc i).width →
+      if i.2.1 = 1 then ScheduledChildExec c.node (desc i) c.w c.stageWidth (ports i) (binSyms c.root.width.size c.cutoff)
+        (position i) (body i) (.active (f i)) (budget (child i).val) true
+      else MoveOnBankExec c.node (desc i) c.w c.stageWidth (movePrefix.trans (ports i)) (binSyms c.root.width.size c.cutoff)
+        (position i) (body i) (large i (f i)) (budget (child i).val) true) →
+    let seed := callerSeed fan (binSyms c.root.width.size c.cutoff)
+      (callerHeaderBank (fun i => (Routines.hdr c.node i).map (bitSymbol (a := prime))))
+    ∀ x u S, HelperFan data x S → PrivateTapes data seed S →
+      ∃ z F t y, Exec table worker (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        CleanupBound S F t (⌈rate*((V : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau)⌉₊+
+          ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map time).sum) ∧
+        HelperFan data y F ∧ RestoredBorrowedStage n w c.B c.stageFactor x y := by
+  classical
+  intro l r I k
+  obtain ⟨pre,post,ts,states,ports,leafRate,build⟩ := callerRestoredStage n
+  refine ⟨pre,post,ts,states,ports,leafRate,?_⟩
+  intro P U Q cap large f
+  obtain ⟨body,active,T,shared,owners,banks,align,inner,rate,compile⟩ :=
+    build cap large f
+  generalize hR : LeafCore.small = R at inner compile
+  let H := 80+((T+273)+R)
+  let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb R)).trans (Fin.natAddEmb 80)
+  let archive := archiveSetupPlacement 80 T R
+  let place := Fin.castAddEmb 37 (n := H)
+  let fan := shared.trans owner
+  let data := (Fin.castAddEmb 1 (n := k)).trans fan
+  obtain ⟨source,r,power,tmp,saved,dimensions,division,input,quotientPort,divisionOff,divisionSafe,radixPort,unitPort,dimensionFrame,
+    atomOff,atomPorts,privateDimensions,clockWidth,powerClock,clockOff,sourceSafe,placeSafe,tmpSafe,savedSafe,apart,regs⟩ :=
+    stageCallerLayout owner archive (fun i => (archiveSetupPlacement_frame (R := 80) (T := T) (L := R) i).1)
+  obtain ⟨worker,stage⟩ := compile place source r power tmp saved dimensions division
+    quotientPort divisionOff divisionSafe radixPort unitPort dimensionFrame atomOff atomPorts privateDimensions
+    clockWidth powerClock clockOff sourceSafe placeSafe tmpSafe savedSafe apart regs
+  let table := fun f => embProg place id (inner f)
+  refine ⟨body,active,H,fan,table,worker,rate,?_⟩
+  intro innerFan c w V desc
+  obtain ⟨position,_,_,coords,run⟩ := stage c
+  refine ⟨position,coords,?_⟩
+  intro budget childRate enough time recurse
+  let word := binSyms (A := prime) c.root.width.size c.cutoff
+  let words := fun i => (Routines.hdr c.node i).map (bitSymbol (a := prime))
+  let external := callerHeaderBank words
+  have externalReady := input words
+  let kids := ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map time).sum
+  let fee := rate*((V : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau)
+  intro seed x u S live fresh
+  obtain ⟨readExt,empty,cutoff⟩ := callerSeed_ready fan word external S fresh
+  obtain ⟨headers,clocks,temps,ht,hs,divide,atom,t₄,t₅⟩ := externalReady S.R readExt
+  have invoke := run budget childRate enough recurse
+  have fanView (a : Fin 142081 → Fin V → ZMod 2) (G : Stacks (H+37) prime) :
+      HelperFan innerFan a G ↔ HelperFan data a (embStk place G) := Iff.rfl
+  have start := invoke x u S ((fanView x S).mp live) cutoff headers clocks temps
+  have prepared := start (fun j => empty (archive j) (fun i => ((archiveSetupPlacement_frame (R := 80) (T := T) (L := R) j).1 (shared i)).symm))
+    ht hs divide atom t₄ t₅
+  obtain ⟨z,F,t,y,exec,bill,user,out,done⟩ := prepared
+    (fun i l priv => empty (owner (banks i l)) (fun h eq => priv h ((banks i).injective
+      ((align i h).trans (owner.injective eq)))))
+    (fun j off _ => empty j (fun i => off (shared i)))
+  refine ⟨z,F,t,y,exec,user,?_,(fanView y F).mpr out,done⟩
+  intro js nd
+  have paid := bill js nd
+  rw [← c.stageCells] at paid
+  change (t : ℝ)+_ ≤ _+fee+(kids : ℝ) at paid
+  exact_mod_cast (show (t : ℝ)+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+    (((⌈fee⌉₊+kids : ℕ) : ℝ)) by push_cast; linarith only [paid,Nat.le_ceil fee])
 
 /-- Install stopped-leaf dispatch in each selected occurrence. Only the active
 children require recursive execution contracts. -/
@@ -295,38 +381,24 @@ theorem dispatchedPackedStage [M8.Machine.Net] (n : Fin 9) :
       (localCost w V+((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map time).sum) := by
   classical
   intro l r I k
-  obtain ⟨pre,post,ts,states,ports,leafRate,build⟩ := callerRestoredStage n
+  obtain ⟨pre,post,ts,states,ports,leafRate,build⟩ := dispatchedRestoredWorker n
   obtain ⟨C,base,tapes,chartStates,chart⟩ := borrowedFlatHandoffWithCharge
   refine ⟨pre,post,ts,max states chartStates,ports,leafRate,?_⟩
   intro P U Q cap large f
-  obtain ⟨body,active,T,shared,owners,banks,align,inner,rate,compile⟩ :=
-    build ((Nat.le_max_left ..).trans cap) large f
-  let H := 80+((T+273)+LeafCore.small)
-  let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb LeafCore.small)).trans (Fin.natAddEmb 80)
-  let archive := archiveSetupPlacement 80 T LeafCore.small
-  let place := Fin.castAddEmb 37 (n := H)
-  let fan := shared.trans owner
-  let data := (Fin.castAddEmb 1 (n := k)).trans fan
-  obtain ⟨source,r,power,tmp,saved,dimensions,division,input,quotientPort,divisionOff,divisionSafe,radixPort,unitPort,dimensionFrame,
-    atomOff,atomPorts,privateDimensions,clockWidth,powerClock,clockOff,sourceSafe,placeSafe,tmpSafe,savedSafe,apart,regs⟩ :=
-    stageCallerLayout owner archive (fun i => (archiveSetupPlacement_frame (R := 80) (T := T) (L := LeafCore.small) i).1)
-  obtain ⟨worker,stage⟩ := compile place source r power tmp saved dimensions division
-    quotientPort divisionOff divisionSafe radixPort unitPort dimensionFrame atomOff atomPorts privateDimensions
-    clockWidth powerClock clockOff sourceSafe placeSafe tmpSafe savedSafe apart regs
-  let table := fun f => embProg place id (inner f)
-  obtain ⟨N,host,code,src,dst,pack⟩ := chart n (data.trans place) table worker ((Nat.le_max_right ..).trans cap)
+  obtain ⟨body,active,H,fan,table,worker,rate,stage⟩ := build ((Nat.le_max_left ..).trans cap) large f
+  let data := (Fin.castAddEmb 1 (n := k)).trans (fan.trans (Fin.castAddEmb 37))
+  obtain ⟨N,host,code,src,dst,pack⟩ := chart n data table worker ((Nat.le_max_right ..).trans cap)
   let overhead := fun w V => 13*((base*V+17760*(2*LeafCore.coreCost V w+14))*(tapes+5)+12)
   let localCost := fun (w V : ℕ) => overhead w V+⌈rate*((V : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau)⌉₊+
     ⌈C*V*(w : ℝ)^M8.Machine.BudgetBound.tau⌉₊+(142081*(10*V+10)+1)
   refine ⟨body,active,N,src,dst,host,code,localCost,packedStageCost_bound base tapes rate C,?_⟩
   intro c w V desc
-  obtain ⟨position,_,_,coords,run⟩ := stage c
+  obtain ⟨position,coords,run⟩ := stage c
   refine ⟨position,coords,?_⟩
   intro budget childRate enough time recurse W size
   let word := binSyms (A := prime) c.root.width.size c.cutoff
   let words := fun i => (Routines.hdr c.node i).map (bitSymbol (a := prime))
   let external := callerHeaderBank words
-  have externalReady := input words
   let initial := callerSeed fan word external
   let kids := ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map time).sum
   let fee := rate*((V : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau)
@@ -336,23 +408,8 @@ theorem dispatchedPackedStage [M8.Machine.Net] (n : Fin 9) :
   obtain ⟨seed,handoff⟩ := pack (w := w) (B := c.B) (K := c.stageFactor) (⌈fee⌉₊+kids) initial
     (Nat.succ_pos _) hb hk (by
       intro x u S live fresh
-      obtain ⟨readExt,empty,cutoff⟩ := callerSeed_ready fan word external S fresh
-      obtain ⟨headers,clocks,temps,ht,hs,divide,atom,t₄,t₅⟩ := externalReady S.R readExt
-      have invoke := run budget childRate enough recurse
-      have start := invoke x u S ((helperFan_trans data place x S).mp live) cutoff headers clocks temps
-      have prepared := start (fun j => empty (archive j) (fun i => ((archiveSetupPlacement_frame (R := 80) (T := T) (L := LeafCore.small) j).1 (shared i)).symm))
-        ht hs divide atom t₄ t₅
-      obtain ⟨z,F,t,y,exec,bill,user,out,done⟩ := prepared
-        (fun i l priv => empty (owner (banks i l)) (fun h eq => priv h ((banks i).injective
-          ((align i h).trans (owner.injective eq)))))
-        (fun j off _ => empty j (fun i => off (shared i)))
-      refine ⟨z,F,t,y,exec,?_,user,(helperFan_trans data place y F).mpr out,done⟩
-      intro js nd
-      have paid := bill js nd
-      rw [← c.stageCells] at paid
-      change (t : ℝ)+_ ≤ _+fee+(kids : ℝ) at paid
-      exact_mod_cast (show (t : ℝ)+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
-        (((⌈fee⌉₊+kids : ℕ) : ℝ)) by push_cast; linarith only [paid,Nat.le_ceil fee]))
+      obtain ⟨z,F,t,y,exec,user,bill,out,done⟩ := run budget childRate enough recurse x u S live fresh
+      exact ⟨z,F,t,y,exec,bill,user,out,done⟩)
   refine ⟨seed,?_⟩
   have price : localCost w V+kids = overhead w V+(⌈fee⌉₊+kids)+
       ⌈C*V*(w : ℝ)^M8.Machine.BudgetBound.tau⌉₊+(142081*(10*V+10)+1) := by

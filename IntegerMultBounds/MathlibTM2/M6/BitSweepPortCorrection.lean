@@ -22,7 +22,7 @@ theorem source_injective (n : Fin 9) : Function.Injective (sourceOwner n) := by
   subst q
   exact Prod.ext rfl (Fin.ext (congrArg (Fin.val : Fin 661 → ℕ) (ownerTape_injective n p.1 p.2 eqn)))
 
-private theorem source_ne_target (n : Fin 9) (k l : (Fin 32 × Fin 5) × Fin 111) :
+theorem source_ne_target (n : Fin 9) (k l : (Fin 32 × Fin 5) × Fin 111) :
     sourceOwner n k ≠ targetOwner n l := by
   obtain ⟨p,t⟩ := k
   obtain ⟨q,u⟩ := l
