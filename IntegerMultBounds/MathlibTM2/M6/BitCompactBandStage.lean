@@ -201,13 +201,13 @@ noncomputable def compactHeaderSeed (c : CutoffNodeInput) : Stacks 37 prime :=
 
 /-- Populate the compact descriptor bank directly from the caller's node
 words. The remaining thirty-one tapes, including both copy registers, end blank. -/
-theorem compactHeaderSeed_load :
-    LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells compactHeaderSeed := by
+theorem compactSweepHeaderLoader :
+    LoadsPackedSeed sweepSeedWords CutoffNodeInput.cells compactHeaderSeed := by
   classical
-  let field (j : Fin 6) : Fin 12 := ((j.castAdd 3).succ).castAdd 2
+  let field (j : Fin 6) : Fin 10 := (j.castAdd 3).succ
   have read (c : CutoffNodeInput) (j : Fin 6) :
-      nodeSeedWords c (field j) = (Routines.hdr c.node j).map bitSymbol := by
-    simp only [field,nodeSeedWords,Fin.addCases_left,sweepSeedWords,Fin.cons_succ]
+      sweepSeedWords c (field j) = (Routines.hdr c.node j).map bitSymbol := by
+    simp only [field,sweepSeedWords,Fin.cons_succ]
     exact congrFun (parentArchiveSeed_words c.node c.w) (j.castAdd 3) |>.trans (Fin.addCases_left ..)
   let tmp : Fin 37 := 6
   let saved : Fin 37 := 7
@@ -217,7 +217,7 @@ theorem compactHeaderSeed_load :
       omega
     · change j.val = 7 at v
       omega
-  have load := LoadsPackedSeed.headers nodeSeedWords CutoffNodeInput.cells callerHeaderPorts field tmp saved
+  have load := LoadsPackedSeed.headers sweepSeedWords CutoffNodeInput.cells callerHeaderPorts field tmp saved
     (by decide) (fun j => (away j).1) (fun j => (away j).2) (133*142080) (by
       intro c
       simp only [read]
@@ -233,7 +233,7 @@ theorem compactHeaderSeed_load :
   funext j
   by_cases h : j.val < 6
   · let i : Fin 6 := ⟨j.val,h⟩
-    have atPort := callerHeaderPorts.injective.extend_apply (fun i => nodeSeedWords c (field i))
+    have atPort := callerHeaderPorts.injective.extend_apply (fun i => sweepSeedWords c (field i))
       (fun _ => []) i
     change Function.extend _ _ _ j = _ at atPort
     rw [atPort,read]
@@ -243,6 +243,30 @@ theorem compactHeaderSeed_load :
       exact h i.isLt
     rw [Function.extend_apply' _ _ _ off]
     exact dite_eq_right h
+
+theorem compactHeaderSeed_load :
+    LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells compactHeaderSeed :=
+  nodeSweepLoader id compactSweepHeaderLoader
+
+/-- The common sweep record can be installed on any ten private ports.
+Two other tapes in the bank serve as the copy registers. -/
+theorem compactSweepRecordLoader {T : ℕ} (ports : Fin 10 ↪ Fin T) (tmp saved : Fin T)
+    (distinct : tmp ≠ saved) (ht : ∀ i, ports i ≠ tmp) (hs : ∀ i, ports i ≠ saved) :
+    LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells (fun c => ⟨[],[],fun _ => [],
+      Function.extend ports (sweepSeedWords c) (fun _ => [])⟩) := by
+  apply nodeSweepLoader id (seed := fun c => ⟨[],[],fun _ => [],Function.extend ports (sweepSeedWords c) (fun _ => [])⟩)
+  apply LoadsPackedSeed.headers sweepSeedWords CutoffNodeInput.cells ports id tmp saved distinct ht hs
+    (133*142080+65+142)
+  intro c
+  have archive := archiveSeedLoadCost c
+  have cutoff := c.remainderSetup_le 1
+  have bill : seedLoadBill (fun i => sweepSeedWords c (id i)) =
+      8*c.root.width.size+6+seedLoadBill (fun i => (parentArchiveSeed c.node c.w).R (parentArchivePorts i)) := by
+    unfold seedLoadBill
+    rw [Fin.sum_univ_succ]
+    simp only [id_eq,sweepSeedWords,Fin.cons_zero,Fin.cons_succ,length_binSyms,Nat.add_assoc]
+  rw [bill,Nat.add_mul]
+  omega
 
 noncomputable def compactDimensionSeed (c : CutoffNodeInput) : Stacks 7 prime :=
   let M := prime^(c.w+1)
@@ -335,13 +359,13 @@ theorem loadCompactDimensions {P U : Type} {H Q : ℕ} (body : P → Pr P H Q pr
 The caller places its cutoff on the last dimension tape. -/
 theorem loadCompactStageInputs {P U : Type} {H Q : ℕ} (body : P → Pr P H Q prime U)
     (archive : Fin (80+273) ↪ Fin H) (outer : Fin 6 ↪ Fin H) (dims : Fin 7 ↪ Fin H)
-    (header : Fin 37 ↪ Fin H) (source : Fin 12 → Fin H) (cut : source 0 = dims 6)
+    (header : Fin 37 ↪ Fin H) (source : Fin 10 → Fin H) (cut : source 0 = dims 6)
     (capacity : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q)
     (outerOff : ∀ i j, outer i ≠ archive j) (dimsOff : ∀ i j, dims i ≠ archive j)
     (apart : ∀ i j, outer i ≠ dims j) (away : ∀ i j, archive i ≠ source j)
     (ha : ∀ i j, header i ≠ archive j) (ho : ∀ i j, header i ≠ outer j)
     (hd : ∀ i j, header i ≠ dims j) (hs : ∀ i j, header i ≠ source j) :
-    ∃ code rate, ∀ (c : CutoffNodeInput) u S, (∀ i, S.R (source i) = nodeSeedWords c i) →
+    ∃ code rate, ∀ (c : CutoffNodeInput) u S, (∀ i, S.R (source i) = sweepSeedWords c i) →
       (∀ i, S.L (header i) = [] ∧ S.R (header i) = []) →
       (∀ i, S.L (archive i) = [] ∧ S.R (archive i) = []) →
       (∀ i, S.R (outer i) = []) → (∀ i : Fin 6, S.R (dims (i.castAdd 1)) = []) →
@@ -351,17 +375,16 @@ theorem loadCompactStageInputs {P U : Type} {H Q : ℕ} (body : P → Pr P H Q p
         (∀ i : Fin 4, F.R (outer (i.castAdd 2)) = stageChartWords (c.w+1) (c.idleWidth*142080) false i) ∧
         ∀ j, (∀ i, header i ≠ j) → (∀ i, archive i ≠ j) → (∀ i, outer i ≠ j) → (∀ i, dims i ≠ j) →
           F.L j = S.L j ∧ F.R j = S.R j := by
-  obtain ⟨r,compile⟩ := compactHeaderSeed_load
+  obtain ⟨r,compile⟩ := compactSweepHeaderLoader
   obtain ⟨a,load⟩ := compile body header source hs
-  let field (i : Fin 9) := i.succ.castAdd 2
-  obtain ⟨b,v,prepare⟩ := loadCompactDimensions body archive outer dims (source ∘ field)
+  obtain ⟨b,v,prepare⟩ := loadCompactDimensions body archive outer dims (source ∘ Fin.succ)
     (fun i j => away i _) capacity outerOff dimsOff apart
   refine ⟨a.seq b,r+v,?_⟩
   intro c u S words free vacant clear blank
   obtain ⟨p,D,n,start,user,paid,set,keep⟩ := load c u S words free
   have read i := (keep (source i) (fun j => hs j i)).2.trans (words i)
   obtain ⟨z,F,m,finish,last,bill,dim,flat,frame⟩ := prepare c p D
-    (fun i => by simpa only [Function.comp_apply,field,nodeSeedWords,Fin.addCases_left] using read (field i))
+    (fun i => read i.succ)
     (fun i => ⟨(keep _ (fun j => ha j i)).1.trans (vacant i).1,(keep _ (fun j => ha j i)).2.trans (vacant i).2⟩)
     (fun i => (keep _ (fun j => ho j i)).2.trans (clear i))
     (fun i => (keep _ (fun j => hd j _)).2.trans (blank i))
@@ -376,18 +399,18 @@ theorem loadCompactStageInputs {P U : Type} {H Q : ℕ} (body : P → Pr P H Q p
 /-- Place the preparation workspace beyond the worker's tapes. All tapes of
 the stage core, including its live data and its scratch, survive preparation. -/
 theorem prepareCompactWorker (H : ℕ) {P U : Type} {Q : ℕ}
-    (body : P → Pr P (((H+37)+7)+(353+6+11)) Q prime U)
+    (body : P → Pr P (((H+37)+7)+(353+6+9)) Q prime U)
     (capacity : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q) :
-    let bank := Fin.castAddEmb (353+6+11) (n := (H+37)+7)
+    let bank := Fin.castAddEmb (353+6+9) (n := (H+37)+7)
     let core := ((Fin.castAddEmb 37 (n := H)).trans (Fin.castAddEmb 7)).trans bank
     let header := ((Fin.natAddEmb H (m := 37)).trans (Fin.castAddEmb 7)).trans bank
     let dims := (Fin.natAddEmb (H+37) (m := 7)).trans bank
-    let extra := Fin.natAddEmb ((H+37)+7) (m := 353+6+11)
-    let archive := ((Fin.castAddEmb 6 (n := 353)).trans (Fin.castAddEmb 11)).trans extra
-    let outer := ((Fin.natAddEmb 353 (m := 6)).trans (Fin.castAddEmb 11)).trans extra
-    let source := Fin.cons (α := fun _ : Fin 12 => Fin (((H+37)+7)+(353+6+11))) (dims 6)
-      ((Fin.natAddEmb (353+6) (m := 11)).trans extra)
-    ∃ code rate, ∀ (c : CutoffNodeInput) u S, (∀ i, S.R (source i) = nodeSeedWords c i) →
+    let extra := Fin.natAddEmb ((H+37)+7) (m := 353+6+9)
+    let archive := ((Fin.castAddEmb 6 (n := 353)).trans (Fin.castAddEmb 9)).trans extra
+    let outer := ((Fin.natAddEmb 353 (m := 6)).trans (Fin.castAddEmb 9)).trans extra
+    let source := Fin.cons (α := fun _ : Fin 10 => Fin (((H+37)+7)+(353+6+9))) (dims 6)
+      ((Fin.natAddEmb (353+6) (m := 9)).trans extra)
+    ∃ code rate, ∀ (c : CutoffNodeInput) u S, (∀ i, S.R (source i) = sweepSeedWords c i) →
       (∀ i, S.L (header i) = [] ∧ S.R (header i) = []) →
       (∀ i, S.L (archive i) = [] ∧ S.R (archive i) = []) →
       (∀ i, S.R (outer i) = []) → (∀ i : Fin 6, S.R (dims (i.castAdd 1)) = []) →
@@ -397,7 +420,7 @@ theorem prepareCompactWorker (H : ℕ) {P U : Type} {Q : ℕ}
         (∀ i : Fin 4, F.R (outer (i.castAdd 2)) = stageChartWords (c.w+1) (c.idleWidth*142080) false i) ∧
         ∀ i, F.L (core i) = S.L (core i) ∧ F.R (core i) = S.R (core i) := by
   intro bank core header dims extra archive outer source
-  have separate {a b : ℕ} {f : Fin a ↪ Fin (((H+37)+7)+(353+6+11))} {g : Fin b ↪ Fin (((H+37)+7)+(353+6+11))}
+  have separate {a b : ℕ} {f : Fin a ↪ Fin (((H+37)+7)+(353+6+9))} {g : Fin b ↪ Fin (((H+37)+7)+(353+6+9))}
       (h : ∀ i j, (f i).val ≠ (g j).val) (i) (j) : f i ≠ g j := fun eq => h i j (congrArg Fin.val eq)
   obtain ⟨code,rate,run⟩ := loadCompactStageInputs body archive outer dims header source rfl capacity
     (by apply separate; intro i j; change ((H+37)+7)+(353+i.val) ≠ ((H+37)+7)+j.val; omega)
@@ -422,53 +445,6 @@ theorem prepareCompactWorker (H : ℕ) {P U : Type} {Q : ℕ}
   · change ((H+37)+7)+(353+j.val) = i.val at h; omega
   · change H+37+j.val = i.val at h; omega
 
-private noncomputable def compactWorkerSeed (H : ℕ) (c : CutoffNodeInput) : Stacks ((H+37)+7) prime :=
-  ⟨[],[],fun _ => [],Fin.addCases (Fin.addCases (fun _ => []) (compactHeaderSeed c).R) (compactDimensionSeed c).R⟩
-
-private theorem compactWorkerSeed_load (H : ℕ)
-    (dims : LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells compactDimensionSeed) :
-    LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells (compactWorkerSeed H) := by
-  let blank : Stacks H prime := ⟨[],[],fun _ => [],fun _ => []⟩
-  have empty := LoadsPackedSeed.fixed nodeSeedWords CutoffNodeInput.cells (fun c =>
-    Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) (Nat.mul_pos c.idlePositive (by decide))) blank
-  convert (empty.join compactHeaderSeed_load).join dims using 1
-  funext c
-  unfold compactWorkerSeed adjacentStageStacks
-  congr 1
-  funext j
-  induction j using Fin.addCases with
-  | right j => rw [Fin.addCases_right]; rfl
-  | left j =>
-    simp only [Fin.addCases_left]
-    induction j using Fin.addCases <;> simp [blank,compactHeaderSeed]
-
-private theorem headerSeedReady {k H a b : ℕ} (fan : Fin k ↪ Fin H)
-    (header : Fin a → List (Fin (prime+4))) (dims : Fin b → List (Fin (prime+4))) :
-    let place := Fin.castAddEmb a (n := H)
-    let outer := Fin.castAddEmb b (n := H+a)
-    let seed : Stacks ((H+a)+b) prime := ⟨[],[],fun _ => [],Fin.addCases (Fin.addCases (fun _ => []) header) dims⟩
-    ∀ S : Stacks ((H+a)+b) prime, (∀ j, (∀ i, outer (place (fan i)) ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
-    (∀ j, S.R (j.natAdd (H+a)) = dims j) ∧ (∀ j, S.R (outer (j.natAdd H)) = header j) ∧
-      ∀ j, (∀ i, fan i ≠ j) → S.L (outer (place j)) = [] ∧ S.R (outer (place j)) = [] := by
-  intro place outer seed S fresh
-  constructor
-  · intro j
-    have h := fresh (j.natAdd (H+a)) (fun i eq => by
-      have v := congrArg Fin.val eq
-      change (place (fan i)).val = (H+a)+j.val at v
-      omega)
-    simpa only [seed,Fin.addCases_right] using h.2
-  constructor
-  · intro j
-    have h := fresh (outer (j.natAdd H)) (fun i eq => by
-      have v := congrArg Fin.val (outer.injective eq)
-      change (fan i).val = H+j.val at v
-      omega)
-    simpa only [seed,outer,Fin.castAddEmb_apply,Fin.addCases_left,Fin.addCases_right] using h.2
-  · intro j away
-    have h := fresh (outer (place j)) (fun i eq => away i (place.injective (outer.injective eq)))
-    simpa only [seed,place,outer,Fin.castAddEmb_apply,Fin.addCases_left] using h
-
 private theorem owner_ne_scratch {T L : ℕ} (i : Fin T) (j : Fin L) :
     ((i.castAdd 273).castAdd L).natAdd 80 ≠ (j.natAdd (T+273)).natAdd 80 := by
   intro h
@@ -479,21 +455,21 @@ private theorem owner_ne_scratch {T L : ℕ} (i : Fin T) (j : Fin L) :
 /-- Execute a stopping-band stage directly from the node record and live data. -/
 theorem preparedCompactBandStage [M8.Machine.Net] (n : Fin 9) :
     ∃ (H states : ℕ) (fan : Fin (142081+2) ↪ Fin H),
-    let bank := Fin.castAddEmb (353+6+11) (n := (H+37)+7)
+    let bank := Fin.castAddEmb (353+6+9) (n := (H+37)+7)
     let core := ((Fin.castAddEmb 37 (n := H)).trans (Fin.castAddEmb 7)).trans bank
     let header := ((Fin.natAddEmb H (m := 37)).trans (Fin.castAddEmb 7)).trans bank
     let dims := (Fin.natAddEmb (H+37) (m := 7)).trans bank
-    let extra := Fin.natAddEmb ((H+37)+7) (m := 353+6+11)
-    let archive := ((Fin.castAddEmb 6 (n := 353)).trans (Fin.castAddEmb 11)).trans extra
-    let outer := ((Fin.natAddEmb 353 (m := 6)).trans (Fin.castAddEmb 11)).trans extra
-    let source := Fin.cons (α := fun _ : Fin 12 => Fin (((H+37)+7)+(353+6+11))) (dims 6)
-      ((Fin.natAddEmb (353+6) (m := 11)).trans extra)
+    let extra := Fin.natAddEmb ((H+37)+7) (m := 353+6+9)
+    let archive := ((Fin.castAddEmb 6 (n := 353)).trans (Fin.castAddEmb 9)).trans extra
+    let outer := ((Fin.natAddEmb 353 (m := 6)).trans (Fin.castAddEmb 9)).trans extra
+    let source := Fin.cons (α := fun _ : Fin 10 => Fin (((H+37)+7)+(353+6+9))) (dims 6)
+      ((Fin.natAddEmb (353+6) (m := 9)).trans extra)
     ∀ {U : Type} {Q : ℕ}, states ≤ Q →
-    ∃ (P : Type) (host : P → Pr P (((H+37)+7)+(353+6+11)) Q prime U) (code : Pr P (((H+37)+7)+(353+6+11)) Q prime U) (rate : ℕ) (stageRate : ℝ),
+    ∃ (P : Type) (host : P → Pr P (((H+37)+7)+(353+6+9)) Q prime U) (code : Pr P (((H+37)+7)+(353+6+9)) Q prime U) (rate : ℕ) (stageRate : ℝ),
       ∀ (c : CutoffNodeInput), 7*(c.w+1) ≤ c.cutoff →
       ∀ (x : Fin 142081 → Fin ((prime^(c.w+1))^16*c.stageWidth) → ZMod 2) u S,
       HelperFan (fan.trans core) x S → (∀ i, (∀ j, fan j ≠ i) → S.L (core i) = [] ∧ S.R (core i) = []) →
-      (∀ i, S.R (source i) = nodeSeedWords c i) →
+      (∀ i, S.R (source i) = sweepSeedWords c i) →
       (∀ i, S.L (header i) = [] ∧ S.R (header i) = []) →
       (∀ i, S.L (archive i) = [] ∧ S.R (archive i) = []) →
       (∀ i, S.R (outer i) = []) → (∀ i : Fin 6, S.R (dims (i.castAdd 1)) = []) →
@@ -543,8 +519,7 @@ theorem seededCompactBandStage [M8.Machine.Net] (n : Fin 9) :
     ∃ (T states : ℕ) (fan : Fin (142081+2) ↪ Fin T), ∀ {U : Type} {Q : ℕ}, states ≤ Q →
       ∃ (Label : Type) (host : Label → Pr Label T Q prime U) (code : Pr Label T Q prime U) (rate : ℝ),
       ∃ seed : CutoffNodeInput → Stacks T prime,
-      (LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells compactDimensionSeed →
-        LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells seed) ∧
+      LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells seed ∧
       ∀ c : CutoffNodeInput, 7*(c.w+1) ≤ c.cutoff →
       ∀ (x : Fin 142081 → Fin ((prime^(c.w+1))^16*c.stageWidth) → ZMod 2) u S, HelperFan fan x S →
       (∀ j, (∀ i, fan i ≠ j) → S.L j = (seed c).L j ∧ S.R j = (seed c).R j) →
@@ -554,27 +529,84 @@ theorem seededCompactBandStage [M8.Machine.Net] (n : Fin 9) :
           t+tapeCharge cleanupWeight (frameSlots fan) F+tapeCharge cleanupWeight js F ≤
           tapeCharge cleanupWeight js S+⌊rate*((c.node.width : ℝ)^σ*(c.cutoff : ℝ)^(M8.Machine.BudgetBound.tau-σ)*c.cells)⌋₊+
             tapeCharge cleanupWeight (frameSlots fan) S := by
-  obtain ⟨T,states,fan,build⟩ := compactBandStage n
-  generalize _h : LeafCore.small = L at build
-  let H := 80+((T+273)+L)
-  let inner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb L)).trans (Fin.natAddEmb 80)
-  let place := Fin.castAddEmb 37 (n := H)
-  let outer := Fin.castAddEmb 7 (n := H+37)
-  let live := ((fan.trans inner).trans place).trans outer
-  refine ⟨_,states,live,?_⟩
+  classical
+  obtain ⟨H,q,fan,build⟩ := preparedCompactBandStage n
+  let T := ((H+37)+7)+(353+6+9)
+  let core := ((Fin.castAddEmb 37 (n := H)).trans (Fin.castAddEmb 7)).trans (Fin.castAddEmb (353+6+9))
+  let ports : Fin 10 ↪ Fin T := ⟨Fin.cons (α := fun _ : Fin 10 => Fin T)
+    ⟨H+43,by dsimp [T]; omega⟩ (fun i : Fin 9 => ⟨H+403+i.val,by dsimp [T]; omega⟩),by
+      intro i j eq
+      induction i using Fin.cases <;> induction j using Fin.cases
+      · rfl
+      · rename_i j; have h := congrArg Fin.val eq; change H+43 = H+403+j.val at h; omega
+      · rename_i i; have h := congrArg Fin.val eq; change H+403+i.val = H+43 at h; omega
+      · rename_i i j; have h := congrArg Fin.val eq; change H+403+i.val = H+403+j.val at h
+        exact congrArg Fin.succ (Fin.ext (by omega))⟩
+  have off (j : Fin T) (lo : j.val < H+403) (cut : j.val ≠ H+43) : ∀ i, ports i ≠ j := by
+    intro i eq
+    have h := congrArg Fin.val eq
+    induction i using Fin.cases with
+    | zero => exact cut h.symm
+    | succ i => change H+403+i.val = j.val at h; omega
+  let seed (c : CutoffNodeInput) : Stacks T prime := ⟨[],[],fun _ => [],
+    Function.extend ports (sweepSeedWords c) (fun _ => [])⟩
+  have loader : LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells seed :=
+    compactSweepRecordLoader ports ⟨H,by dsimp [T]; omega⟩ ⟨H+1,by dsimp [T]; omega⟩
+      (fun eq => by have h := congrArg Fin.val eq; dsimp at h; omega)
+      (off _ (by dsimp; omega) (by dsimp; omega)) (off _ (by dsimp; omega) (by dsimp; omega))
+  refine ⟨T,q,fan.trans core,?_⟩
   intro U Q fits
-  obtain ⟨Label,host,code,rate,run⟩ := build (U := U) fits
-  refine ⟨Label,host,code,rate,compactWorkerSeed H,compactWorkerSeed_load H,?_⟩
-  intro c band
-  let dims := (compactDimensionSeed c).R
-  let header := (compactHeaderSeed c).R
-  intro x u S ready fresh
-  obtain ⟨external,words,blank⟩ := headerSeedReady (fan.trans inner) header dims S fresh
-  exact run c band x u S ready words
-    (fun j => blank _ (fun i => ((archiveSetupPlacement_frame j).1 (fan i)).symm))
-    (fun j => blank _ (fun i => owner_ne_scratch (fan i) j))
-    (fun j away => blank _ (fun i h => away i (inner.injective h)))
-    (external 0) (external 1) (external 2) (external 3) (external 4) (external 5) (external 6)
+  obtain ⟨Label,host,code,r,rate,run⟩ := build (U := U) fits
+  refine ⟨Label,host,code,r+max 0 rate,seed,loader,?_⟩
+  intro c band x u S live fresh
+  have clear (j : Fin T) (away : ∀ i, core (fan i) ≠ j) (lo : j.val < H+403) (cut : j.val ≠ H+43) :
+      S.L j = [] ∧ S.R j = [] := by
+    obtain ⟨l,right⟩ := fresh j away
+    exact ⟨l,right.trans (Function.extend_apply' (sweepSeedWords c) (fun _ => []) j (fun ⟨i,h⟩ => off j lo cut i h))⟩
+  have above (j : Fin T) (h : H ≤ j.val) : ∀ i, core (fan i) ≠ j := by
+    intro i eq
+    have v := congrArg Fin.val eq
+    change (fan i).val = j.val at v
+    omega
+  have words i : S.R (ports i) = sweepSeedWords c i := by
+    have high : H ≤ (ports i).val := by
+      induction i using Fin.cases with
+      | zero => change H ≤ H+43; omega
+      | succ i => change H ≤ H+403+i.val; omega
+    exact (fresh _ (above _ high)).2.trans (ports.injective.extend_apply (sweepSeedWords c) (fun _ => []) i)
+  obtain ⟨z,F,t,y,exec,user,out,act,bill⟩ := run c band x u S live
+    (fun i away => clear _ (fun j h => away j (core.injective h)) (by change i.val < _; omega)
+      (by change i.val ≠ _; omega))
+    (fun i => by
+      apply Eq.trans _ (words i)
+      apply congrArg S.R
+      apply Fin.ext
+      induction i using Fin.cases with
+      | zero => change H+37+6 = H+43; omega
+      | succ j => change H+37+7+(359+j.val) = H+403+j.val; omega)
+    (fun i => clear _ (above _ (by change H ≤ H+i.val; omega)) (by change H+i.val < _; omega) (by change H+i.val ≠ _; omega))
+    (fun i => clear _ (above _ (by change H ≤ H+37+7+i.val; omega)) (by change H+37+7+i.val < _; omega)
+      (by change H+37+7+i.val ≠ _; omega))
+    (fun i => (clear _ (above _ (by change H ≤ H+37+7+(353+i.val); omega)) (by change H+37+7+(353+i.val) < _; omega)
+      (by change H+37+7+(353+i.val) ≠ _; omega)).2)
+    (fun i => (clear _ (above _ (by change H ≤ H+37+i.val; omega)) (by change H+37+i.val < _; omega)
+      (by change H+37+i.val ≠ _; omega)).2)
+  refine ⟨z,F,t,y,exec,user,out,act,?_⟩
+  intro σ nonneg js nd
+  let scale := (c.node.width : ℝ)^σ*(c.cutoff : ℝ)^(M8.Machine.BudgetBound.tau-σ)*c.cells
+  have cut : 1 ≤ c.cutoff := by omega
+  have unit := (Real.one_le_rpow (by exact_mod_cast cut : (1 : ℝ) ≤ c.cutoff)
+    M8.Machine.BudgetBound.exponent_range.1.le).trans (cutoffScale_le c σ nonneg (by omega))
+  have vol : (c.cells : ℝ) ≤ scale := le_mul_of_one_le_left (Nat.cast_nonneg _) unit
+  have scalePos := (Nat.cast_nonneg c.cells (α := ℝ)).trans vol
+  have price : r*c.cells+⌊rate*scale⌋₊ ≤ ⌊(r+max 0 rate)*scale⌋₊ := by
+    apply Nat.le_floor
+    push_cast
+    rw [add_mul]
+    exact add_le_add (mul_le_mul_of_nonneg_left vol (Nat.cast_nonneg _)) ((Nat.cast_le.mpr
+      (Nat.floor_mono (mul_le_mul_of_nonneg_right (le_max_right 0 rate) scalePos))).trans
+      (Nat.floor_le (mul_nonneg (le_max_left ..) scalePos)))
+  exact (bill σ nonneg js nd).trans (Nat.add_le_add_right (Nat.add_le_add_left price _) _)
 
 theorem CutoffNodeInput.sweepVolume (c : CutoffNodeInput) :
     (prime^(c.w+1))^128*(c.B*prime^(64*((c.w+1)*64))*c.stageFactor) =
