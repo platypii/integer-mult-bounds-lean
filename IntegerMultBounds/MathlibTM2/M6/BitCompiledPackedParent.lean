@@ -148,7 +148,9 @@ theorem compiledPackedParent [M8.Machine.Net] (P U Config R : Type) {N : ℕ} :
       p.cutoff < p.node.width →
       (compiledParentLocal p work init fixed base swaps assemble : ℝ) ≤
         D*((volume prime p.node : ℝ)*(p.node.width : ℝ)^M8.Machine.BudgetBound.tau) →
-      price c ≤ cutoffTreeBudget D (max leafRate rate) p.cutoff (fuel c+1) p.node := by
+      price c ≤ cutoffTreeBudget D (max leafRate rate) p.cutoff (fuel c+1) p.node ∧
+      (7*(p.w+1) ≤ p.cutoff →
+        price c ≤ cutoffBandBudget D (max leafRate rate) p.cutoff (min (fuel c+1) 6) p.node) := by
   classical
   intro l r I
   have stages := flatDispatchedHandoff
@@ -171,8 +173,9 @@ theorem compiledPackedParent [M8.Machine.Net] (P U Config R : Type) {N : ℕ} :
   constructor
   rotate_left
   · intro c p active localBound
-    exact cutoffDirectoryCharge_le p _ D leafRate rate _ (fuel c) active
+    have bound := cutoffDirectoryCharge_le p _ D leafRate rate _ (fuel c) active
       (le_max_left _ _) (le_max_right _ _) localBound
+    exact ⟨bound,fun band => bound.trans_eq (cutoffTreeBudget_band _ _ _ p band)⟩
   let branch : Config → Fin 9 → Fin idleCopies.length → ℕ := fun (c : Config) (i : Fin 9) (j : Fin idleCopies.length) => let p := input c; if p.cutoff < (child c i j).width then
       idleRecordOverhead p (fixed i) (base i) (swaps i)+cutoffTreeBudget D leafRate p.cutoff (fuel c) (child c i j)
       else ⌊leaf i*((child c i j).width : ℝ)^M8.Machine.BudgetBound.tau*volume prime (child c i j)⌋₊

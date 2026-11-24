@@ -43,6 +43,95 @@ private theorem stopped_treeBudget [M8.Machine.Net] (D rate : ℝ) (cutoff fuel 
     ⌊rate*(v.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime v⌋₊ := by
   cases fuel <;> simp [cutoffTreeBudget,Nat.not_lt_of_ge stop]
 
+/-- In the seven-atom cutoff band only the rank-42 descriptor can recurse.
+Compute its budget once per level and multiply by its scheduled multiplicity. -/
+noncomputable def cutoffBandBudget [M8.Machine.Net] (D rate : ℝ) (cutoff : ℕ) :
+    ℕ → Descriptor → ℕ
+  | 0, v => ⌊rate*(v.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime v⌋₊
+  | fuel+1, v =>
+    let leaf := fun (x : Descriptor) => ⌊rate*(x.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime x⌋₊
+    let child := fun r => rankDescriptor prime (r*(v.width/64)) ((64-r)*(v.width/64)) (role v 142080)
+    if cutoff < v.width then
+      ⌊D*((volume prime v : ℝ)*(v.width : ℝ)^M8.Machine.BudgetBound.tau)⌋₊ +
+      (((fiveHistogram.take 7).map (fun e => e.2 * leaf (child e.1))).sum +
+        1440*cutoffBandBudget D rate cutoff fuel (child 42))
+    else leaf v
+
+theorem cutoffBandBudget_eq [M8.Machine.Net] (D rate : ℝ) (cutoff fuel : ℕ) (v : Descriptor)
+    (band : 7*(v.width/64) ≤ cutoff) :
+    cutoffTreeBudget D rate cutoff fuel v = cutoffBandBudget D rate cutoff fuel v := by
+  induction fuel generalizing v with
+  | zero => rfl
+  | succ fuel ih =>
+    let child := fun r => rankDescriptor prime (r*(v.width/64)) ((64-r)*(v.width/64)) (role v 142080)
+    let price := fun r => cutoffTreeBudget D rate cutoff fuel (child r)
+    have directory : (∑ i : Fin nodeChildren5.length, price nodeChildren5[i.val]) =
+        (fiveHistogram.map (fun e => e.2*price e.1)).sum := by
+      rw [← List.sum_ofFn]
+      change (List.ofFn (price ∘ fun i : Fin nodeChildren5.length => nodeChildren5[i.val])).sum = _
+      rw [← List.map_ofFn,List.ofFn_getElem]
+      simpa only [smul_eq_mul] using (nodeChildren5_realizes.map price).sum_eq.trans
+        (Layer.SelectedMoments.sum_map_expand fiveHistogram price)
+    have ranks : fiveHistogram = fiveHistogram.take 7 ++ [(42,1440)] := by decide
+    have small : ∀ e ∈ fiveHistogram.take 7, e.1 ≤ 7 := by decide
+    have shrink : (child 42).width/64 ≤ v.width/64 := by
+      change 42*(v.width/64)/64 ≤ v.width/64
+      omega
+    simp only [cutoffTreeBudget,cutoffBandBudget]
+    split
+    · apply congrArg (_ + ·)
+      change (∑ i : Fin nodeChildren5.length, price nodeChildren5[i.val]) = _
+      rw [directory]
+      conv_lhs => rw [ranks]
+      simp only [List.map_append,List.map_cons,List.map_nil,List.sum_append,List.sum_cons,List.sum_nil,Nat.add_zero]
+      apply congrArg₂ (· + ·)
+      · apply congrArg List.sum
+        apply List.map_congr_left
+        intro e he
+        exact congrArg (e.2 * ·) (stopped_treeBudget D rate cutoff fuel (child e.1)
+          ((Nat.mul_le_mul_right _ (small e he)).trans band))
+      · exact congrArg (1440 * ·) (ih (child 42) ((Nat.mul_le_mul_left 7 shrink).trans band))
+    · rfl
+
+private theorem treeBudget_extra_fuel [M8.Machine.Net] (D rate : ℝ) (cutoff depth extra : ℕ)
+    (v : Descriptor) (stop : ∀ path : List (Fin nodeChildren5.length), path.length = depth →
+      (path.foldl (scheduledChild prime) v).width ≤ cutoff) :
+    cutoffTreeBudget D rate cutoff (depth+extra) v = cutoffTreeBudget D rate cutoff depth v := by
+  induction depth generalizing v with
+  | zero =>
+    simpa only [Nat.zero_add,cutoffTreeBudget] using stopped_treeBudget D rate cutoff extra v (stop [] rfl)
+  | succ depth ih =>
+    rw [Nat.succ_add]
+    simp only [cutoffTreeBudget]
+    split
+    · apply congrArg (_ + ·)
+      exact Finset.sum_congr rfl fun k _ => ih _ fun path len =>
+        stop (k :: path) (by simp [len])
+    · rfl
+
+/-- A physical child call still above the cutoff is fewer than six edges
+from the parent where the seven-atom sweep stopped. -/
+theorem cutoffBandActiveDepth (p : CutoffNodeInput) (band : 7*(p.w+1) ≤ p.cutoff)
+    (path : List (Fin nodeChildren5.length)) (active : p.cutoff < (path.foldl (scheduledChild prime) p.node).width) :
+    path.length < 6 :=
+  scheduledPath_length_lt prime p.node 6 p.cutoff (by rw [p.width]; omega) path active
+
+/-- Once the sweeps stop, the entire remaining tree uses at most six active
+levels, independently of the root width or the original recursion depth. -/
+theorem cutoffTreeBudget_band [M8.Machine.Net] (D rate : ℝ) (fuel : ℕ) (p : CutoffNodeInput)
+    (band : 7*(p.w+1) ≤ p.cutoff) :
+    cutoffTreeBudget D rate p.cutoff fuel p.node =
+      cutoffBandBudget D rate p.cutoff (min fuel 6) p.node := by
+  have stop (path : List (Fin nodeChildren5.length)) (len : path.length = 6) :
+      (path.foldl (scheduledChild prime) p.node).width ≤ p.cutoff := by
+    exact Nat.le_of_not_gt fun active => (len ▸ cutoffBandActiveDepth p band path active).false
+  rw [← cutoffBandBudget_eq D rate _ _ _ (by simpa [p.width] using band)]
+  by_cases short : fuel ≤ 6
+  · rw [Nat.min_eq_left short]
+  · rw [Nat.min_eq_right (by omega : 6 ≤ fuel)]
+    simpa only [Nat.add_sub_of_le (by omega : 6 ≤ fuel)] using
+      treeBudget_extra_fuel D rate p.cutoff 6 (fuel-6) p.node stop
+
 /-- Increasing the stopped-leaf allowance preserves every active subtree budget. -/
 theorem cutoffTreeBudget_leaf_mono [M8.Machine.Net] (D : ℝ) {a b : ℝ} (rates : a ≤ b)
     (cutoff fuel : ℕ) (v : Descriptor) :
