@@ -15,6 +15,13 @@ private theorem packedVolume (v : Descriptor) :
   simp only [volume,packedDescriptor,CopyChildLayout.spectators]
   ring
 
+theorem CutoffNodeInput.packedCells (c : CutoffNodeInput) : volume prime (packedDescriptor (64*(c.w+1)) (CopyChildLayout.spectators c.node/142080)) = c.cells := by
+  have alignment := scheduledPackedDescriptor c.node (c.w+1) c.width (c.rows ▸ dvd_mul_right ..)
+  have mass := c.cells_share
+  rw [← packedVolume c.node,alignment] at mass
+  simp only [volume,packedDescriptor,one_mul,mul_one] at mass ⊢
+  nlinarith only [mass]
+
 theorem scheduledSeededRows {P R U : Type} {T H Q scratchCount : ℕ}
     {reserve : (Fin 2 → List (Fin (prime+4))) → (Fin 2 → List (Fin (prime+4))) → ℕ}
     (body : P → Pr P T Q prime U) (entry : P) (src dst : Fin (142081+2) ↪ Fin T)
@@ -66,12 +73,6 @@ theorem scheduledSeededRows {P R U : Type} {T H Q scratchCount : ℕ}
   refine ⟨table,(headers.seq move).seq (clearWorkTapes cleanup),rate,labels,?_⟩
   intro p c price child handoff tl tr br vacant wide u S x input left right empty clock radix middle free inherited cutoff fresh hc hs al ar
   have size : volume prime wide = p.cells := (packedVolume c.node).trans (child ▸ scheduledChildVolume p i)
-  have packedCells : volume prime (packedDescriptor (64*(c.w+1)) (CopyChildLayout.spectators c.node/142080)) = c.cells := by
-    have alignment := scheduledPackedDescriptor c.node (c.w+1) c.width (c.rows ▸ dvd_mul_right ..)
-    have mass := c.cells_share
-    rw [← packedVolume c.node,alignment] at mass
-    simp only [volume,packedDescriptor,one_mul,mul_one] at mass ⊢
-    nlinarith only [mass]
   let data := fun j : Fin p.cells => x (j.cast size.symm)
   have word : RecordPayload payload (fun _ => blank) 0 data S := by
     have castList {a b : ℕ} (h : a = b) (f : Fin b → ZMod 2) :
@@ -81,7 +82,7 @@ theorem scheduledSeededRows {P R U : Type} {T H Q scratchCount : ℕ}
   obtain ⟨a,D,n,prepare,user,paid,ready,frame⟩ := generate p c child u S data word left right empty clock radix middle free inherited cutoff
   have payloadAt := frame payload payloadOff
   obtain ⟨b,G,m,run,same,bill,out,kept⟩ := call c c.node (c.w+1) price c.width (c.rows ▸ dvd_mul_right ..)
-    (packedCells ▸ handoff) (by rw [packedCells]; exact Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) (Nat.mul_pos c.idlePositive (by decide)))
+    (c.packedCells ▸ handoff) (by rw [c.packedCells]; exact Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) (Nat.mul_pos c.idlePositive (by decide)))
     tl tr br vacant x a D (fun j => by simpa only [payloadAt.1,payloadAt.2] using input j) ready
     ((frame _ countOff).2.trans hc) ((frame _ savedOff).2.trans hs) ((frame _ auxOff).1.trans al) ((frame _ auxOff).2.trans ar)
   have sameMass : (slots.map (fun j => (D.L j).length+(D.R j).length+2)) =
