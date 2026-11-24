@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitClearBank
 public import IntegerMultBounds.MathlibTM2.M6.BitPackedPhysicalStage
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCleanup
 public import IntegerMultBounds.MathlibTM2.M6.BitStagePlacement
@@ -43,9 +44,6 @@ theorem runAfterPackedStage {T N Q V D : ℕ} {P R U : Type}
       rw [(shared (j.natAdd 142081)).1,(shared (j.natAdd 142081)).2]
       rw [returnedFan_counter]; exact words.controls j z)
   exact ⟨z,G,k,ran,paid,done⟩
-
-/-- Cost of clearing both stacks of a tape. -/
-def cleanupWeight (l r : List (Fin (prime+4))) : ℕ := 4*l.length+2*r.length+4
 
 /-- Copy a represented result to fresh owner words, keeping the two live
 counters on the chart. The cost includes every owner and the spare. -/

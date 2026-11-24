@@ -84,41 +84,6 @@ theorem workerRecordTranspose {T Q : ℕ} {P U : Type} (body : P → Pr P T Q pr
   simp only [Nat.add_mul] at paid ⊢
   omega
 
-/-- Charge the child once on the union of the cleared bank and the caller's
-observed tapes. A cleared tape has minimum weight even when the caller observes it. -/
-theorem cleanupBound_clearBank {T : ℕ} {S D F : Stacks T prime} {n m price localCost : ℕ}
-    (work : List (Fin T)) (unique : work.Nodup) (child : CleanupBound S D n price)
-    (time : m ≤ tapeCharge cleanupWeight work D + localCost)
-    (empty : ∀ j ∈ work, F.L j = [] ∧ F.R j = [])
-    (stock : ∀ j, (F.L j).length ≤ (D.L j).length ∧ (F.R j).length ≤ (D.R j).length) :
-    CleanupBound S F (n+m) (price+tapeCharge cleanupWeight work S+localCost) := by
-  intro js distinct
-  let outside := js.filter fun j => j ∉ work
-  have disjoint : work.Disjoint outside := by
-    intro j hj hout
-    exact (of_decide_eq_true (List.mem_filter.mp hout).2) hj
-  have paid := child (work++outside) (List.nodup_append.mpr
-    ⟨unique,distinct.filter _,fun _ ha _ hb eq => disjoint ha (eq ▸ hb)⟩)
-  change n+tapeCharge cleanupWeight (work++outside) D ≤ tapeCharge cleanupWeight (work++outside) S+price at paid
-  simp only [tapeCharge,List.map_append,List.sum_append] at paid
-  have split (xs : List (Fin T)) :
-      tapeCharge cleanupWeight xs F + tapeCharge cleanupWeight (xs.filter fun j => j ∉ work) S ≤
-      tapeCharge cleanupWeight xs S + tapeCharge cleanupWeight (xs.filter fun j => j ∉ work) D := by
-    induction xs with
-    | nil => simp [tapeCharge]
-    | cons j xs ih =>
-      by_cases h : j ∈ work
-      · obtain ⟨left,right⟩ := empty j h
-        simp [tapeCharge,h,cleanupWeight,left,right] at ih ⊢
-        omega
-      · obtain ⟨left,right⟩ := stock j
-        simp [tapeCharge,h,cleanupWeight] at ih ⊢
-        omega
-  have bound := split js
-  change n+m+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+_
-  dsimp only [outside,tapeCharge] at paid time bound ⊢
-  omega
-
 /-- A row continuation can pay for private tape cleanup at merge exit. Its
 budget then appears once in the cost of the complete return to the caller. -/
 theorem finishIntervalRecord {T Q m : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
