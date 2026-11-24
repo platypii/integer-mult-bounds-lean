@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitDirectoryIntervalSplit
+public import IntegerMultBounds.MathlibTM2.M6.BitIdleParentArchive
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode

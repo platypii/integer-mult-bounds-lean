@@ -13,6 +13,15 @@ private theorem splitCharge {n final overhead initial growth localCost : ℕ}
     (bound : n+final ≤ overhead+(initial+growth+localCost)) :
     n+final ≤ initial+(overhead+growth+localCost) := by omega
 
+/-- Splitting, merging, header preparation and writeback cost a fixed amount
+per cell of the interleaved word. The child and its layout passes are billed separately. -/
+private theorem splitLocalCost (K pushes cells layout budget stock : ℕ) (positive : 0 < cells) :
+    (149*K+13)*cells+34+(2*cells+6*(pushes*((149*K+5)*cells+24)))+
+      (512008*cells+(layout+budget)+113+13*(149*cells*K+6))+stock+(18*cells+23) ≤
+    (2086*K+512289+6*pushes*(149*K+29))*cells+layout+budget+stock := by
+  have fixed := Nat.mul_le_mul_left (144*pushes+248) positive
+  nlinarith only [fixed]
+
 /-- Split the interleaved word, execute the scheduled child, and restore the transposed word on the original payload tape. -/
 theorem splitDirectoryInterval {A U : Type} {N T Q : ℕ}
     (i : Fin 9) (j : Fin idleCopies.length)
@@ -37,16 +46,13 @@ theorem splitDirectoryInterval {A U : Type} {N T Q : ℕ}
     let embed := caller.trans (intervalExtend T N)
     let small := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
     let ports := intervalRecordBank (((intervalOwners 142080).trans splitter).trans caller) (small 24)
-    let split : Pr Empty intervalSplitTapes Q prime U := intervalPrepare.seq
-      (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))
     ∀ work : List (Fin (intervalHostSize T N)), work.Nodup → embed (splitter 0) ∈ work → embed src ∉ work →
-    ∃ code, ∀ (p c : CutoffNodeInput) rate budget,
+    ∃ (code : Pr A (intervalHostSize T N) Q prime U) (fixed base swaps : ℕ), ∀ (p c : CutoffNodeInput) rate budget,
       c.node = scheduledChild prime p.node (idleDirectoryIndex (i,j)) →
       DirectoryIntervalRun (Nat.succ_le_succ bounds.1) (Nat.succ_le_succ bounds.2)
         ((intervalOwners 142080).trans splitter) headers width record dst bank outer worker p.w p.idleWidth c rate budget →
       let e := idleInterval i idleCopies[j.val].2
       let lane := phaseIntervalChild (e.1+1) (e.2+1) (p.w+1) p.idleWidth 64
-      let V := volume prime lane
       let wide := {lane with afterD := lane.afterD*142080}
       ∀ (word : Fin (volume prime wide) → ZMod 2) u S,
         RecordPayload (embed src) (fun _ => blank) 0 word S →
@@ -64,16 +70,17 @@ theorem splitDirectoryInterval {A U : Type} {N T Q : ℕ}
         (∀ k ∈ idleRecordWork, S.L (embed (record k)) = [] ∧ S.R (embed (record k)) = []) →
         (∀ k : Fin 142082, let t := intervalExtend T N ((k.castAdd T).castAdd N); S.L t = [] ∧ S.R t = []) →
         (∀ k : Fin N, let t := intervalExtend T N (k.natAdd (142082+T)); S.L t = [] ∧ S.R t = []) →
-        let localCost := 512008*p.cells+(rate*intervalLayoutCost U (e.1+1) (e.2+1) p.w p.idleWidth 64+budget)+113+
-          13*(149*(V*142080)*(intervalSplitTapes+5)+6)
-        let splitGrowth := 2*(V*142080)+6*(Fast.Main.mnProgPush split*((149*(intervalSplitTapes+5)+5)*(V*142080)+24))
         ∃ z F n, Exec outer code (mk u S) n (mk z F) ∧ z.user = u.user ∧
-          CleanupBound S F n ((149*(intervalSplitTapes+5)+13)*(V*142080)+34+splitGrowth+localCost+tapeCharge cleanupWeight work S+(18*volume prime wide+23)) ∧
+          CleanupBound S F n (fixed*p.cells+
+            rate*((base+swaps*swapVolumeRate p.w)*c.cells)+budget+tapeCharge cleanupWeight work S) ∧
           RecordPayload (embed src) (fun _ => blank) 0
             (Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word) F ∧
           (∀ k ∈ work, F.L k = [] ∧ F.R k = []) ∧
           ∀ t, t ≠ src → embed t ∉ work → (∀ k, splitter k ≠ t) → F.L (embed t) = S.L (embed t) ∧ F.R (embed t) = S.R (embed t) := by
-  intro bounds caller embed small ports split work unique inside away
+  intro bounds caller embed small ports work unique inside away
+  let split : Pr Empty intervalSplitTapes Q prime U := intervalPrepare.seq
+      (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))
+  let fixed := 2086*(intervalSplitTapes+5)+512289+6*Fast.Main.mnProgPush split*(149*(intervalSplitTapes+5)+29)
   let initial := splitter.trans embed
   obtain ⟨merge,returned,target,run⟩ := mergedDirectoryInterval i j splitter capacity headers width record dst bank
     bankFrame (fun r k hk => workOff _ k ((List.mem_filter.mpr ⟨List.mem_finRange _,by simp [hk]⟩) : k ∈ idleRecordWork))
@@ -86,8 +93,13 @@ theorem splitDirectoryInterval {A U : Type} {N T Q : ℕ}
     simp [initial,embed.injective.eq_iff,srcTmp,(rawOff 0).1.symm,(rawOff 0).2.1.symm]
   let write : Pr A (intervalHostSize T N) Q prime U := (loadCompactWord (initial 0) (embed tmp) (embed count)).seq
     (((Node.usub (embed count) (embed src) (embed tmp)).seq (Mult.PhaseCellToeplitz.movePrefix (embed count) (initial 0) (embed src) (embed saved) (embed tmp))).seq (bclear (embed count)))
-  refine ⟨(((loadCompactWord (embed src) (embed tmp) (initial 0)).seq (embProg initial Empty.elim split)).seq merge).seq (write.seq (clearWorkTapes work)),?_⟩
-  intro p c rate budget scheduled child e lane V wide word u S payload hc hs tl tr fresh clock radix middle empty inherited dims scratch cut free bridge vacant localCost splitGrowth
+  obtain ⟨base,swaps,layoutCost⟩ := scheduledIdleLayoutCost U
+  refine ⟨(((loadCompactWord (embed src) (embed tmp) (initial 0)).seq (embProg initial Empty.elim split)).seq merge).seq (write.seq (clearWorkTapes work)),fixed,base,swaps,?_⟩
+  intro p c rate budget scheduled child e lane wide word u S payload hc hs tl tr fresh clock radix middle empty inherited dims scratch cut free bridge vacant
+  let V := volume prime lane
+  let localCost := 512008*p.cells+(rate*intervalLayoutCost U (e.1+1) (e.2+1) p.w p.idleWidth 64+budget)+113+
+          13*(149*(V*142080)*(intervalSplitTapes+5)+6)
+  let splitGrowth := 2*(V*142080)+6*(Fast.Main.mnProgPush split*((149*(intervalSplitTapes+5)+5)*(V*142080)+24))
   have vol : 0 < V := by
     change 0 < volume prime (phaseIntervalChild _ _ _ _ _)
     rw [intervalChild_volume (Nat.succ_le_succ bounds.1) (Nat.succ_le_succ bounds.2)]
@@ -146,10 +158,29 @@ theorem splitDirectoryInterval {A U : Type} {N T Q : ℕ}
     ((frame _ ⟨count,rfl,fun k => (rawOff k).2.2.1⟩).2.trans hc)
     ((frame _ ⟨saved,rfl,fun k => (rawOff k).2.2.2⟩).2.trans hs) (temp.1.trans tl) (temp.2.trans tr)
   have total := cleanupBound_clearBank work unique core (cost.trans (Nat.add_comm ..).le) clean stock
-  refine ⟨v,G,_,exec.seq finish,same.trans user,total,result,clean,?_⟩
-  intro t ne outside notSplit
-  have h := keep _ (embed.injective.ne ne) outside
-  have f := frame _ ⟨t,rfl,notSplit⟩
-  exact ⟨h.1.trans f.1,h.2.trans f.2⟩
+  refine ⟨v,G,_,exec.seq finish,same.trans user,?_,result,clean,?_⟩
+  · have bounds' := idleBounds i idleCopies[j.val].2
+    have volumeEq : V*142080 = p.cells := by
+      dsimp only [V,lane]
+      rw [intervalChild_volume (Nat.succ_le_succ bounds'.1) (Nat.succ_le_succ bounds'.2)]
+      unfold CutoffNodeInput.cells
+      ac_rfl
+    have wideEq : volume prime wide = p.cells := by
+      rw [← volumeEq]
+      simp [wide,V,volume,Nat.mul_assoc]
+    have positive : 0 < p.cells := volumeEq ▸ Nat.mul_pos vol (by decide)
+    have overhead := splitLocalCost (intervalSplitTapes+5) (Fast.Main.mnProgPush split) p.cells
+      (rate*intervalLayoutCost U (e.1+1) (e.2+1) p.w p.idleWidth 64) budget (tapeCharge cleanupWeight work S) positive
+    have layoutBound := Nat.mul_le_mul_left rate (layoutCost p c i j scheduled)
+    intro js nd
+    have charge := total js nd
+    dsimp only [localCost,splitGrowth] at charge
+    rw [volumeEq,wideEq] at charge
+    exact charge.trans (Nat.add_le_add_left (overhead.trans
+      (Nat.add_le_add_right (Nat.add_le_add_right (Nat.add_le_add_left layoutBound _) _) _)) _)
+  · intro t ne outside notSplit
+    have h := keep _ (embed.injective.ne ne) outside
+    have f := frame _ ⟨t,rfl,notSplit⟩
+    exact ⟨h.1.trans f.1,h.2.trans f.2⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

@@ -43,7 +43,7 @@ atom clock. The same ten words initialize every sweep at this node. -/
 noncomputable def sweepSeedWords (c : CutoffNodeInput) : Fin 10 → List (Fin (prime+4)) :=
   Fin.cons (binSyms c.root.width.size c.cutoff) (fun i => (parentArchiveSeed c.node c.w).R (parentArchivePorts i))
 
-private theorem archiveSeedLoadCost (c : CutoffNodeInput) :
+theorem archiveSeedLoadCost (c : CutoffNodeInput) :
     seedLoadBill (fun i => (parentArchiveSeed c.node c.w).R (parentArchivePorts i))+31 ≤
       (133*142080+65)*c.cells := by
   let M := prime^(c.w+1)
