@@ -109,8 +109,8 @@ theorem compiledPackedParent [M8.Machine.Net] (P U Config : Type) :
     ∃ (ts : Fin 9 → I → ℕ) (states : ℕ) (ports : ∀ n i, Fin (rowSwapBlock.tapes+35) ↪ Fin (ts n i)),
     ∀ {Q : ℕ}, states ≤ Q →
     ∀ {R : Type} {N : ℕ} {tree : R → Pr R N Q prime U} {dst : Fin (142081+2) ↪ Fin N} {leafRate : ℝ}
-      {permits : {c : CutoffNodeInput // c.cutoff < c.node.width} → ℕ → ℕ → Prop},
-    RecordTreeFamily Subtype.val tree dst leafRate permits →
+      {Child : Type} {childInput : Child → CutoffNodeInput} {permits : Child → ℕ → ℕ → Prop},
+    RecordTreeFamily childInput tree dst leafRate permits →
     ∃ sweepRate : ℝ, ∀ (large : ∀ n i, P → Pr (WorkerLabel P) (ts n i) Q prime U) (f : Fin 9 → I → P),
     ∃ body : ∀ n i, WorkerLabel P → Pr (WorkerLabel P) (ts n i) Q prime U,
     (∀ n i g, body n i (.active g) = large n i g) ∧
@@ -125,10 +125,7 @@ theorem compiledPackedParent [M8.Machine.Net] (P U Config : Type) :
     let child := fun (c : Config) (i : Fin 9) (j : Fin idleCopies.length) => scheduledChild prime (input c).node (idleDirectoryIndex (i,j))
     let fuel := fun (c : Config) => (input c).depth-((input c).path.length+1)
     (∀ c i j, let p := input c; p.cutoff < (child c i j).width →
-      ∀ (x : {v : CutoffNodeInput // v.cutoff < v.node.width}),
-        x.val.root = p.root → x.val.path = p.path++[idleDirectoryIndex (i,j)] → x.val.cutoff = p.cutoff →
-        ∀ k : Fin nodeChildren5.length, let d := scheduledChild prime (child c i j) k
-        p.cutoff < d.width → permits x k.val (cutoffTreeBudget D leafRate p.cutoff (fuel c-1) d)) →
+      ChildRecordAt childInput permits D leafRate p (idleDirectoryIndex (i,j))) →
     let desc := fun (c : Config) (n : Fin 9) (i : I) => scheduledChild prime (input c).node (sweepChild n i)
     ∃ position : ∀ c n i, Fin (volume prime (desc c n i)) ≃ Fin ((prime^((input c).w+1))^16*(input c).stageWidth),
     (∀ c n i, invocationCoordinates i.2.1 ((input c).w+1) (input c).stageWidth (position c n i)) ∧
@@ -158,7 +155,7 @@ theorem compiledPackedParent [M8.Machine.Net] (P U Config : Type) :
   choose pre post ts states ports rates build using stages
   obtain ⟨q,parent⟩ := assembledIdleParent (U := U) (Config := Config)
   refine ⟨pre,post,ts,max (Finset.univ.sup states) q,ports,?_⟩
-  intro Q capacity R N tree dst leafRate permits family
+  intro Q capacity R N tree dst leafRate Child childInput permits family
   obtain ⟨init,fixed,base,swaps,minimum,leaf,assemble,nonneg,pos,join⟩ :=
     parent ((Nat.le_max_right ..).trans capacity) family
   refine ⟨max (Finset.univ.sup' Finset.univ_nonempty rates) (Finset.univ.sup' Finset.univ_nonempty leaf),?_⟩

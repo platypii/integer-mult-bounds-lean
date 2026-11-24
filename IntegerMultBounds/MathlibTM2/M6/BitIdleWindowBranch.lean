@@ -125,18 +125,15 @@ theorem dispatchIdleWindow [M8.Machine.Net] {A U : Type} {T Q : ℕ} (capacity :
     ∃ (K : ℕ) (C : ℝ) (table : Label → Pr Label (T+K) Q prime U) (code : Job → Pr Label (T+K) Q prime U),
       let bank := Fin.castAddEmb K (n := T)
       0 ≤ C ∧ (∀ f, table (.inl f) = embProg bank Sum.inl (body f)) ∧
-      ∀ (D leafRate : ℝ) (permits) (fixed base swaps : ℕ),
+      ∀ (D leafRate : ℝ) (readyAt) (fixed base swaps : ℕ),
       (∀ j, ScheduledIdleRecordRun body (.call (entry j)) (raw j) (fields j) scratch
-        i j D leafRate permits fixed base swaps) →
+        i j D leafRate readyAt fixed base swaps) →
       ∀ j (p : CutoffNodeInput) blocks, p.root.Positive → 142080^(p.depth+1) ∣ p.root.rows →
       p.root.beforeH = blocks*prime^(64*p.root.width) →
       let index := idleDirectoryIndex (i,j)
       let child := scheduledChild prime p.node index
       let fuel := p.depth-(p.path.length+1)
-      (p.cutoff < child.width → ∀ (x : {c : CutoffNodeInput // c.cutoff < c.node.width}),
-        x.val.root = p.root → x.val.path = p.path++[index] → x.val.cutoff = p.cutoff →
-        ∀ k : Fin nodeChildren5.length, let d := scheduledChild prime child k
-        p.cutoff < d.width → permits x k.val (cutoffTreeBudget D leafRate p.cutoff (fuel-1) d)) →
+      (p.cutoff < child.width → readyAt p index) →
       ∀ (word : Fin p.cells → ZMod 2) u S,
         RecordPayload (bank (raw j 24)) (fun _ => blank) 0 word S →
         IdleDispatchReady ((raw j).trans bank) p.w p.idleWidth p.root.width.size p.cutoff S →
@@ -163,7 +160,7 @@ theorem dispatchIdleWindow [M8.Machine.Net] {A U : Type} {T Q : ℕ} (capacity :
   let leafCode (j : Job) : Pr Label (T+(72+N)) Q prime U := embProg (place j) (fun _ => Sum.inr j) (leaf j)
   choose code compare using fun j => idleWindowBranch table ((raw j).trans bank) i j (activeCode j) (leafCode j)
   refine ⟨72+N,C,table,code,nonneg,fun _ => rfl,?_⟩
-  intro D leafRate permits fixed base swaps large j p blocks positive rows align index child fuel children word u S payload ready fresh roles empty
+  intro D leafRate readyAt fixed base swaps large j p blocks positive rows align index child fuel children word u S payload ready fresh roles empty
   let result := fun F : Stacks (T+(72+N)) prime => ∃ y, RecordPayload (bank (raw j 24)) (fun _ => blank) 0 y F ∧
     parentIntervalRead i idleCopies[j.val].2 (p.w+1) (p.idleWidth*142080) word y ∧
     ∀ t, t ≠ bank (raw j 24) → F.L t = S.L t ∧ F.R t = S.R t

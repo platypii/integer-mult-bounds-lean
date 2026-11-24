@@ -12,8 +12,8 @@ open RecursiveInterchangeLayout
 nine-stage parent. Runtime division touches only the shared archive. -/
 theorem seededIdleWindow [M8.Machine.Net] {P U : Type} {N Q : ℕ}
     {body : P → Pr P N Q prime U} {dst : Fin (142081+2) ↪ Fin N} {leafRate : ℝ}
-    {permits : {c : CutoffNodeInput // c.cutoff < c.node.width} → ℕ → ℕ → Prop}
-    (family : RecordTreeFamily Subtype.val body dst leafRate permits)
+    {Child : Type} {childInput : Child → CutoffNodeInput} {permits : Child → ℕ → ℕ → Prop}
+    (family : RecordTreeFamily childInput body dst leafRate permits)
     (column : columnCapacity ≤ Q) (swapCap : (@rowSwapBlock BinaryRadixEqualShared.supplierNet).states ≤ Q)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
     (headerCap : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q)
@@ -27,10 +27,7 @@ theorem seededIdleWindow [M8.Machine.Net] {P U : Type} {N Q : ℕ}
       p.root.beforeH = blocks*prime^(64*p.root.width) →
       let child j := scheduledChild prime p.node (idleDirectoryIndex (i,j))
       let fuel := p.depth-(p.path.length+1)
-      (∀ j, p.cutoff < (child j).width → ∀ (x : {c : CutoffNodeInput // c.cutoff < c.node.width}),
-        x.val.root = p.root → x.val.path = p.path++[idleDirectoryIndex (i,j)] → x.val.cutoff = p.cutoff →
-        ∀ k : Fin nodeChildren5.length, let d := scheduledChild prime (child j) k
-        p.cutoff < d.width → permits x k.val (cutoffTreeBudget D leafRate p.cutoff (fuel-1) d)) →
+      (∀ j, p.cutoff < (child j).width → ChildRecordAt childInput permits D leafRate p (idleDirectoryIndex (i,j))) →
       let branch j := if p.cutoff < (child j).width then idleRecordOverhead p fixed base swaps+
         cutoffTreeBudget D leafRate p.cutoff fuel (child j)
         else ⌊C*((child j).width : ℝ)^M8.Machine.BudgetBound.tau*volume prime (child j)⌋₊
@@ -101,7 +98,7 @@ theorem seededIdleWindow [M8.Machine.Net] {P U : Type} {N Q : ℕ}
       change hostBank (board j ((24 : Fin 72).castAdd 6)) = hostBank (fan (owner j))
       exact congrArg hostBank (payload j)
     rw [← slot] at input ⊢
-    apply dispatch D leafRate permits fixed base swaps (large D enough) j p blocks positive rows align (children j) word v R input
+    apply dispatch D leafRate (ChildRecordAt childInput permits D leafRate) fixed base swaps (large D enough) j p blocks positive rows align (children j) word v R input
     · intro h ne
       have eq := frame (hostBank (board j (h.castAdd 6))) (fun r => by
         change hostBank (fan r) ≠ hostBank (board j (h.castAdd 6))

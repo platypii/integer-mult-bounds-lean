@@ -12,8 +12,8 @@ open RecursiveInterchangeLayout
 same machine. The entries address their payloads on the parent's owner fan. -/
 theorem preparedIdleDirectory [M8.Machine.Net] {P U : Type} {N Q : ℕ}
     {body : P → Pr P N Q prime U} {dst : Fin (142081+2) ↪ Fin N} {leafRate : ℝ}
-    {permits : {c : CutoffNodeInput // c.cutoff < c.node.width} → ℕ → ℕ → Prop}
-    (family : RecordTreeFamily Subtype.val body dst leafRate permits)
+    {Child : Type} {childInput : Child → CutoffNodeInput} {permits : Child → ℕ → ℕ → Prop}
+    (family : RecordTreeFamily childInput body dst leafRate permits)
     (swapCap : (@rowSwapBlock BinaryRadixEqualShared.supplierNet).states ≤ Q)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
     (headerCap : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q)
@@ -34,7 +34,7 @@ theorem preparedIdleDirectory [M8.Machine.Net] {P U : Type} {N Q : ℕ}
           (∀ j k, F.R (fields j k) = (Routines.hdr (role p.node 142080) k).map bitSymbol) ∧
           (∀ t ∈ scratch, F.L t = [] ∧ F.R t = []) ∧ ∀ k, F.L (master k) = S.L (master k) ∧ F.R (master k) = S.R (master k)) ∧
       ∀ D : ℝ, minimum ≤ D → ∀ j, ScheduledIdleRecordRun table (.call (.inl j))
-        (raw j) (fields j) scratch i j D leafRate permits fixed base swaps := by
+        (raw j) (fields j) scratch i j D leafRate (ChildRecordAt childInput permits D leafRate) fixed base swaps := by
   intro Job Label
   let owner : Job ↪ Fin 142081 := ⟨fun j => idleTape i idleCopies[j.val],fun {a b} eq =>
     (idleCopyIndex_at a).symm.trans ((congrArg idleCopyIndex ((idleTape_injective i) eq)).trans (idleCopyIndex_at b))⟩
