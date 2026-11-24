@@ -108,6 +108,7 @@ theorem packedPhaseRecordCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
       (∀ (x : Fin (volume prime lane) → ZMod 2) u (D : Stacks T prime),
         (∀ i, D.R (fields i) = (Routines.hdr lane i).map bitSymbol) →
         D.R (bank 34) = binSyms L cutoff →
+        (D.R (bank 33)).length = w → D.R (bank 2) = binSyms (prime^(w+1)).size (prime^(w+1)) →
         (∀ j : Fin (rowSwapBlock.tapes+35), 35 ≤ j.val → j ≠ slot → D.L (ports j) = [] ∧ D.R (ports j) = []) →
         RecordPayload (bank 24) (fun _ => blank) 0 x D →
         ∃ z F t, Exec body worker (mk u D) t (mk z F) ∧ CleanupBound D F t price ∧ z.user = u.user ∧
@@ -149,7 +150,12 @@ theorem packedPhaseRecordCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
       let data := fun i : Fin (volume prime lane) => x (i.cast size)
       have castWord {a b : ℕ} (h : a = b) (f : Fin b → ZMod 2) :
           List.ofFn (fun i : Fin a => f (i.cast h)) = List.ofFn f := by subst b; rfl
-      obtain ⟨z,F,t,exec,cost,zu,output,keep⟩ := work data v D dimensions archive (fun j hj ne =>
+      obtain ⟨z,F,t,exec,cost,zu,output,keep⟩ := work data v D dimensions archive
+        (by change (Function.update B.R (bank 1) _ (bank 33)).length = w
+            rw [Function.update_of_ne (bank.injective.ne (by decide : (33 : Fin 35) ≠ 1)),atBank]; exact ready.clock)
+        (by change Function.update B.R (bank 1) _ (bank 2) = _
+            rw [Function.update_of_ne (bank.injective.ne (by decide : (2 : Fin 35) ≠ 1)),atBank]; exact ready.modulus)
+        (fun j hj ne =>
         ⟨(free j hj ne).1,(Function.update_of_ne (off j hj (moveWidthPorts 3)).symm ..).trans (free j hj ne).2⟩)
         (fun j => by simpa only [data,castWord] using payload j)
       refine ⟨z,F,t,exec,cost,zu,?_,fun j ne _ => keep j ne⟩
