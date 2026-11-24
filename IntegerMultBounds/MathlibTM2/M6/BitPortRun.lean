@@ -664,17 +664,20 @@ private theorem flatMatrix_owner {d : ℕ} (word : List (PortInverse.Op d))
     (matrix : ∀ w : ℕ, Matrix (Fin d) (Fin d) (ZMod (prime^w)))
     (unit : ∀ w, IsUnit (matrix w))
     (action : ∀ w x, OrderedAffine.run (word.map (OrderedAffine.mapOp (ratMod (prime^w)))) x = matrix w *ᵥ x) :
-    ∃ (C : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < W →
+    let ops := FlatCoordinateSchedule.ofList word support
+    ∃ (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < W →
       let V := (prime^w)^d*W
       ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
-        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = C*V ∧
-        HasStackSeed stage.metadata ∧ ∀ x a j,
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = FlatCoordinateCleanSchedule.constant ops*V ∧
+        (∃ size : stage.tapes = FlatCoordinateCleanSchedule.tapeCount ops,
+          let seed := basisHeaderStacks ops w W
+          RepT stage.metadata (seed.L ∘ Fin.cast size) (seed.R ∘ Fin.cast size)) ∧ ∀ x a j,
           stage.transform x (FlatCoordinateLayout.index (matrix w *ᵥ a) j) =
             x (FlatCoordinateLayout.index a j) := by
-  let ops := FlatCoordinateSchedule.ofList word support
+  intro ops
   let machine : SharedBankSkeleton.Skeleton 1 prime :=
     ⟨_,_,FlatCoordinateCleanSchedule.program ops,fun _ => segmentSource ops,fun _ _ _ => Subsingleton.elim _ _⟩
-  refine ⟨FlatCoordinateCleanSchedule.constant ops,machine,?_⟩
+  refine ⟨machine,?_⟩
   intro w W hW V
   let M := matrix w
   let addr := (FlatCoordinateLayout.rankEquiv (Q := prime^w) (d := d)).prodCongr (Equiv.refl (Fin W))
@@ -722,7 +725,7 @@ private theorem flatMatrix_owner {d : ℕ} (word : List (PortInverse.Op d))
            output := fun x => bank (out x),slots := slot,slots_injective := fun _ _ _ => Subsingleton.elim _ _,
            cost := FlatCoordinateCleanSchedule.constant ops*V,metadata := basisWorkspace ops (0 : Fin V → ZMod 2),
            input_payload := payload,output_payload := fun x => payload _,realizes := exec,
-           strip_input := fun x => (strip x).trans (basisWorkspace_eq ops x 0) },rfl,rfl,⟨_,basisHeaderStacks_rep ops 0⟩,move⟩
+           strip_input := fun x => (strip x).trans (basisWorkspace_eq ops x 0) },rfl,rfl,⟨rfl,basisHeaderStacks_rep ops 0⟩,move⟩
 
 open Matrix IntegerMultBounds.Swap.Modular in
 theorem triangularPortWord {d : ℕ} (E : Matrix (Fin d) (Fin d) ℚ)
@@ -766,6 +769,29 @@ theorem triangularPortWord {d : ℕ} (E : Matrix (Fin d) (Fin d) ℚ)
       exact (congrArg (OrderedAffine.run _) cancel.symm).trans back
 
 open Matrix IntegerMultBounds.Swap.Modular in
+theorem triangularPort_withHeaders {d : ℕ} (E : Matrix (Fin d) (Fin d) ℚ)
+    (bound : ∀ i j, M8.Height.ht (E i j) ≤ coefficientBound)
+    (valid : ∀ w, let M := reduce (prime^w) E
+      IntegerMultBounds.Swap.Shear.LowerTriangular M ∧ IsUnit M) (inverse : Bool) :
+    ∃ (ops : List (FlatCoordinateSchedule.Op d)) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < W →
+      let V := (prime^w)^d*W
+      let M := reduce (prime^w) E
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = FlatCoordinateCleanSchedule.constant ops*V ∧
+        (∃ size : stage.tapes = FlatCoordinateCleanSchedule.tapeCount ops,
+          let seed := basisHeaderStacks ops w W
+          RepT stage.metadata (seed.L ∘ Fin.cast size) (seed.R ∘ Fin.cast size)) ∧ ∀ x a j,
+          stage.transform x (FlatCoordinateLayout.index ((if inverse then M⁻¹ else M) *ᵥ a) j) =
+            x (FlatCoordinateLayout.index a j) := by
+  obtain ⟨word,support,action⟩ := triangularPortWord E bound valid inverse
+  refine ⟨FlatCoordinateSchedule.ofList word support,?_⟩
+  apply flatMatrix_owner word support _ _ action
+  intro w
+  cases inverse with
+  | false => exact (valid w).2
+  | true => exact isUnit_nonsing_inv_iff.mpr (valid w).2
+
+open Matrix IntegerMultBounds.Swap.Modular in
 theorem triangularPort_owner {d : ℕ} (E : Matrix (Fin d) (Fin d) ℚ)
     (bound : ∀ i j, M8.Height.ht (E i j) ≤ coefficientBound)
     (valid : ∀ w, let M := reduce (prime^w) E
@@ -778,12 +804,12 @@ theorem triangularPort_owner {d : ℕ} (E : Matrix (Fin d) (Fin d) ℚ)
         HasStackSeed stage.metadata ∧ ∀ x a j,
           stage.transform x (FlatCoordinateLayout.index ((if inverse then M⁻¹ else M) *ᵥ a) j) =
             x (FlatCoordinateLayout.index a j) := by
-  obtain ⟨word,support,action⟩ := triangularPortWord E bound valid inverse
-  apply flatMatrix_owner word support _ _ action
-  intro w
-  cases inverse with
-  | false => exact (valid w).2
-  | true => exact isUnit_nonsing_inv_iff.mpr (valid w).2
+  obtain ⟨ops,machine,build⟩ := triangularPort_withHeaders E bound valid inverse
+  refine ⟨FlatCoordinateCleanSchedule.constant ops,machine,?_⟩
+  intro w W pos
+  obtain ⟨stage,fixed,cost,⟨size,rep⟩,read⟩ := build w W pos
+  let seed := basisHeaderStacks ops w W
+  exact ⟨stage,fixed,cost,⟨⟨[],[],seed.L ∘ Fin.cast size,seed.R ∘ Fin.cast size⟩,rep⟩,read⟩
 
 open Matrix M8.Height IntegerMultBounds.Swap.Modular in
 private theorem rationalPortBasis_bounds (t : Fin 111) (atExit : Bool) :
@@ -1046,19 +1072,25 @@ private theorem negateDigit_owner (i : Fin 16) :
         SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V ∧
         HasStackSeed stage.metadata ∧ ∀ x a j,
           stage.transform x (FlatCoordinateLayout.index (D *ᵥ a) j) = x (FlatCoordinateLayout.index a j) := by
-  apply flatMatrix_owner [.scale i (-1)] _ (fun w => diagonal (fun a => if a=i then (-1 : ZMod (prime^w)) else 1))
-  · intro w
-    apply Matrix.isUnit_diagonal.mpr
-    exact Pi.isUnit_iff.mpr fun a => by split <;> simp
-  · intro w x
-    funext a
-    by_cases eq : a=i <;>
-      simp [OrderedAffine.run,OrderedAffine.execute,OrderedAffine.mapOp,mulVec_diagonal,eq,
-        M8.AtomSegment.ratMod_neg_one,Function.update_apply]
-  · intro op mem
+  let word : List (PortInverse.Op 16) := [.scale i (-1)]
+  have support : ∀ op ∈ word, FlatCoordinateSchedule.Supported op := by
+    intro op mem
     obtain rfl := List.mem_singleton.mp mem
     have one : 1 ≤ coefficientBound := Nat.one_le_two_pow
     exact Or.inr ⟨by decide,by simpa using one,by simpa using one⟩
+  obtain ⟨machine,run⟩ := flatMatrix_owner word support
+    (fun w => diagonal (fun a => if a=i then (-1 : ZMod (prime^w)) else 1))
+    (fun w => Matrix.isUnit_diagonal.mpr (Pi.isUnit_iff.mpr fun a => by split <;> simp)) (by
+      intro w x
+      funext a
+      by_cases eq : a=i <;>
+        simp [word,OrderedAffine.run,OrderedAffine.execute,OrderedAffine.mapOp,mulVec_diagonal,eq,
+          M8.AtomSegment.ratMod_neg_one,Function.update_apply])
+  refine ⟨FlatCoordinateCleanSchedule.constant (FlatCoordinateSchedule.ofList word support),machine,?_⟩
+  intro w W pos
+  obtain ⟨stage,fixed,cost,⟨size,rep⟩,read⟩ := run w W pos
+  let seed := basisHeaderStacks (FlatCoordinateSchedule.ofList word support) w W
+  exact ⟨stage,fixed,cost,⟨⟨[],[],seed.L ∘ Fin.cast size,seed.R ∘ Fin.cast size⟩,rep⟩,read⟩
 
 open AffineFieldCoordinates in
 /-- Inverting the backward shift on packed fields needs one swap. Reflection

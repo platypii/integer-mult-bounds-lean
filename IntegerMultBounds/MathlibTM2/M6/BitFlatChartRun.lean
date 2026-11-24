@@ -22,6 +22,122 @@ def DigitSwapCost (d : ℕ) (price : ℕ → ℕ → ℕ) : Prop :=
           ∀ x a k, stage.transform x (FlatCoordinateLayout.index (a ∘ Equiv.swap i j) k) =
             x (FlatCoordinateLayout.index a k)
 
+/-- The head pair runs after the tail, matching composition of the port machines. -/
+def digitSwapPermutation {d : ℕ} (pairs : List {p : Fin d × Fin d // p.1 < p.2}) : Equiv.Perm (Fin d) :=
+  pairs.foldr (fun p π => π * Equiv.swap p.val.1 p.val.2) 1
+
+theorem exists_digitSwapPairs {d : ℕ} (π : Equiv.Perm (Fin d)) :
+    ∃ pairs, digitSwapPermutation pairs = π := by
+  induction π using Equiv.Perm.swap_induction_on' with
+  | one => exact ⟨[],rfl⟩
+  | mul_swap π i j ne ih =>
+    obtain ⟨pairs,rfl⟩ := ih
+    by_cases lt : i < j
+    · exact ⟨⟨(i,j),lt⟩ :: pairs,rfl⟩
+    · refine ⟨⟨(j,i),lt_of_le_of_ne (le_of_not_gt lt) ne.symm⟩ :: pairs,?_⟩
+      exact congrArg (digitSwapPermutation pairs * ·) (Equiv.swap_comm j i)
+
+noncomputable def digitSwapSkeleton {d : ℕ} (machine : {p : Fin d × Fin d // p.1 < p.2} → SharedBankSkeleton.Skeleton 1 prime)
+    (pairs : List {p : Fin d × Fin d // p.1 < p.2}) : SharedBankSkeleton.Skeleton 1 prime :=
+  pairs.foldr (fun p rest => SharedBankSkeleton.compose rest (machine p))
+    (SharedBankSkeleton.identity 1 prime (by decide))
+
+/-- Physical subbank for an occurrence in a compiled permutation. Each
+composition prepends one shared owner slot before its two child banks. -/
+noncomputable def digitSwapBank {d : ℕ}
+    (machine : {p : Fin d × Fin d // p.1 < p.2} → SharedBankSkeleton.Skeleton 1 prime)
+    (pairs : List {p : Fin d × Fin d // p.1 < p.2}) (a : Fin pairs.length) :
+    Fin (machine pairs[a]).tapes ↪ Fin (digitSwapSkeleton machine pairs).tapes :=
+  match pairs, a with
+  | [], a => Fin.elim0 a
+  | p :: ps, a => Fin.cases (Fin.natAddEmb (1+(digitSwapSkeleton machine ps).tapes))
+      (fun b => ((digitSwapBank machine ps b).trans (Fin.natAddEmb 1)).trans (Fin.castAddEmb (machine p).tapes)) a
+
+theorem digitSwapBank_disjoint {d : ℕ}
+    (machine : {p : Fin d × Fin d // p.1 < p.2} → SharedBankSkeleton.Skeleton 1 prime)
+    (pairs : List {p : Fin d × Fin d // p.1 < p.2}) :
+    ∀ a b : Fin pairs.length, a ≠ b → ∀ h l, digitSwapBank machine pairs a h ≠ digitSwapBank machine pairs b l := by
+  induction pairs with
+  | nil => exact fun a => Fin.elim0 a
+  | cons p ps ih =>
+    have apart (a : Fin ps.length) (h : Fin (machine p).tapes) (l : Fin (machine ps[a]).tapes) :
+        digitSwapBank machine (p :: ps) 0 h ≠ digitSwapBank machine (p :: ps) a.succ l := by
+      intro eq
+      have val := congrArg Fin.val eq
+      change 1+(digitSwapSkeleton machine ps).tapes+h.val = 1+(digitSwapBank machine ps a l).val at val
+      have := (digitSwapBank machine ps a l).isLt
+      omega
+    intro a b ne
+    induction a using Fin.cases with
+    | zero =>
+      induction b using Fin.cases with
+      | zero => exact False.elim (ne rfl)
+      | succ b => exact apart b
+    | succ a =>
+      induction b using Fin.cases with
+      | zero => exact fun h l => (apart a l h).symm
+      | succ b =>
+        let place := (Fin.natAddEmb 1 (m := (digitSwapSkeleton machine ps).tapes)).trans (Fin.castAddEmb (machine p).tapes)
+        exact fun h l => place.injective.ne (ih a b (fun eq => ne (congrArg Fin.succ eq)) h l)
+
+/-- Compile the supplied stages themselves, retaining each occurrence's
+private tape contents in the composite machine. -/
+noncomputable def digitSwapStage {d V : ℕ}
+    (stage : {p : Fin d × Fin d // p.1 < p.2} → SharedBankStage.Stage _ 1 prime (@portOwner V))
+    (pairs : List {p : Fin d × Fin d // p.1 < p.2}) :=
+  pairs.foldr (fun p rest => SharedBankStage.compose rest (stage p))
+    (SharedBankStage.identity _ (by decide))
+
+theorem digitSwapStage_run {d w W : ℕ}
+    (stage : {p : Fin d × Fin d // p.1 < p.2} →
+      SharedBankStage.Stage _ 1 prime (@portOwner ((prime^w)^d*W)))
+    (price : ℕ) (cost : ∀ p, (stage p).cost = price)
+    (read : ∀ p x (a : Fin d → ZMod (prime^w)) (j : Fin W), (stage p).transform x
+      (FlatCoordinateLayout.index (a ∘ Equiv.swap p.val.1 p.val.2) j) =
+      x (FlatCoordinateLayout.index a j))
+    (pairs : List {p : Fin d × Fin d // p.1 < p.2}) :
+    SharedBankSkeleton.ofStage (digitSwapStage stage pairs) =
+        digitSwapSkeleton (fun p => SharedBankSkeleton.ofStage (stage p)) pairs ∧
+      (digitSwapStage stage pairs).cost = pairs.length*(price+1) ∧
+      ∀ x a j, (digitSwapStage stage pairs).transform x
+        (FlatCoordinateLayout.index (a ∘ digitSwapPermutation pairs) j) =
+        x (FlatCoordinateLayout.index a j) := by
+  induction pairs with
+  | nil => exact ⟨rfl,(Nat.zero_mul _).symm,fun _ _ _ => rfl⟩
+  | cons p ps ih =>
+    obtain ⟨fixed,paid,action⟩ := ih
+    refine ⟨?_,?_,?_⟩
+    · exact (SharedBankSkeleton.ofStage_compose _ _).trans
+        (congrArg (fun m => SharedBankSkeleton.compose m _) fixed)
+    · change (digitSwapStage stage ps).cost + (stage p).cost + 1 = (ps.length+1)*(price+1)
+      rw [paid,cost]; ring
+    · intro x a j
+      exact (read p ((digitSwapStage stage ps).transform x) (a ∘ digitSwapPermutation ps) j).trans
+        (action x a j)
+
+/-- Use the same list for the machine, its swap bill and its address permutation. -/
+theorem digitPerm_from_pairs {d : ℕ} (pairs : List {p : Fin d × Fin d // p.1 < p.2})
+    (price : ℕ → ℕ → ℕ) (swaps : DigitSwapCost d price) :
+    ∃ machine : {p : Fin d × Fin d // p.1 < p.2} → SharedBankSkeleton.Skeleton 1 prime, ∀ w W, 0 < w → 0 < W →
+      let V := (prime^w)^d*W
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        SharedBankSkeleton.ofStage stage = digitSwapSkeleton machine pairs ∧ stage.cost = pairs.length*(price w W+1) ∧
+        HasStackSeed stage.metadata ∧ ∀ x a j,
+          stage.transform x (FlatCoordinateLayout.index (a ∘ digitSwapPermutation pairs) j) =
+            x (FlatCoordinateLayout.index a j) := by
+  classical
+  choose machine build using fun p : {p : Fin d × Fin d // p.1 < p.2} => swaps p.val.1 p.val.2 p.property
+  refine ⟨machine,?_⟩
+  intro w W hw hW V
+  choose stage fixed cost seed read using fun p => build p w W hw hW
+  obtain ⟨skeleton,paid,action⟩ := digitSwapStage_run stage _ cost read pairs
+  refine ⟨digitSwapStage stage pairs,?_,paid,?_,action⟩
+  · exact skeleton.trans (congrArg (fun m => digitSwapSkeleton m pairs) (funext fixed))
+  · clear skeleton paid action
+    induction pairs with
+    | nil => exact HasStackSeed.empty 1
+    | cons p ps ih => exact compose_seed ih (seed p)
+
 theorem digitPerm_from_swaps {d : ℕ} (π : Equiv.Perm (Fin d))
     (price : ℕ → ℕ → ℕ)
     (swaps : DigitSwapCost d price) :
@@ -32,27 +148,9 @@ theorem digitPerm_from_swaps {d : ℕ} (π : Equiv.Perm (Fin d))
         stage.cost = k*(price w W + 1) ∧ HasStackSeed stage.metadata ∧
         ∀ x a j, stage.transform x (FlatCoordinateLayout.index (a ∘ π) j) =
           x (FlatCoordinateLayout.index a j) := by
-  induction π using Equiv.Perm.swap_induction_on' with
-  | one =>
-    refine ⟨0,SharedBankSkeleton.identity 1 prime (by decide),?_⟩
-    intro w W hw hW V
-    exact ⟨SharedBankStage.identity _ (by decide),rfl,(Nat.zero_mul _).symm,HasStackSeed.empty 1,fun _ _ _ => rfl⟩
-  | mul_swap π i j ne ih =>
-    obtain ⟨k,m,run⟩ := ih
-    wlog lt : i < j generalizing i j
-    · rw [Equiv.swap_comm i j]
-      exact this j i ne.symm (lt_of_le_of_ne (le_of_not_gt lt) ne.symm)
-    obtain ⟨s,swap⟩ := swaps i j lt
-    refine ⟨k+1,SharedBankSkeleton.compose m s,?_⟩
-    intro w W hw hW V
-    obtain ⟨A,fa,ca,sa,ra⟩ := run w W hw hW
-    obtain ⟨B,fb,cb,sb,rb⟩ := swap w W hw hW
-    refine ⟨SharedBankStage.compose A B,?_,?_,compose_seed sa sb,?_⟩
-    · simp only [SharedBankSkeleton.ofStage_compose,fa,fb]
-    · change A.cost+B.cost+1 = _
-      rw [ca,cb]; ring
-    · intro x a j
-      exact (rb (A.transform x) (a ∘ π) j).trans (ra x a j)
+  obtain ⟨pairs,rfl⟩ := exists_digitSwapPairs π
+  obtain ⟨machine,run⟩ := digitPerm_from_pairs pairs price swaps
+  exact ⟨pairs.length,digitSwapSkeleton machine pairs,run⟩
 
 open Matrix IntegerMultBounds.Swap.Modular in
 /-- For fixed chart data, both the tape program and number of digit swaps

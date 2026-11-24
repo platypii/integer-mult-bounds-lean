@@ -57,6 +57,64 @@ noncomputable def compiledPortStacks {k V : ℕ} {α : Type*} (slot : α → Fin
       (adjacentStageStacks (blankPortStacks _) (adjacentStageStacks (seed j) (blankPortStacks k)))
       (compiledPortStacks slot port seed js)
 
+/-- Each scheduled occurrence has a disjoint physical bank containing its
+port tapes followed by the spare slots introduced by placement. -/
+theorem compiledPortBanks {k V : ℕ} {α : Type*} (slot : α → Fin (k+1))
+    (port : α → SharedBankStage.Stage _ 1 prime (@portOwner V)) (jobs : List α) :
+    let stage := SharedBankStage.compile _ (Nat.zero_lt_succ k) (jobs.map fun a => placePort (slot a) (port a))
+    ∃ bank : ∀ a : Fin jobs.length, Fin ((port jobs[a]).tapes+k) ↪ Fin stage.tapes,
+      (∀ a b, a ≠ b → ∀ h l, bank a h ≠ bank b l) ∧
+      ∀ seed a h, let S := compiledPortStacks slot port seed jobs
+        let words := adjacentStageStacks (seed jobs[a]) (blankPortStacks k)
+        S.L (bank a h) = words.L h ∧ S.R (bank a h) = words.R h := by
+  have left {m n} (L : Stacks m prime) (R : Stacks n prime) (i : Fin m) :
+      (adjacentStageStacks L R).L (i.castAdd n) = L.L i ∧ (adjacentStageStacks L R).R (i.castAdd n) = L.R i := by
+    simp [adjacentStageStacks]
+  have right {m n} (L : Stacks m prime) (R : Stacks n prime) (i : Fin n) :
+      (adjacentStageStacks L R).L (i.natAdd m) = R.L i ∧ (adjacentStageStacks L R).R (i.natAdd m) = R.R i := by
+    simp [adjacentStageStacks]
+  induction jobs with
+  | nil => exact ⟨fun a => Fin.elim0 a,fun a => Fin.elim0 a,fun _ a => Fin.elim0 a⟩
+  | cons j jobs ih =>
+    obtain ⟨bank,separate,read⟩ := ih
+    let tail := SharedBankStage.compile _ (Nat.zero_lt_succ k) (jobs.map fun a => placePort (slot a) (port a))
+    let head := (Fin.natAddEmb (k+1) (m := (port j).tapes+k)).trans (Fin.castAddEmb tail.tapes)
+    let rest := Fin.natAddEmb ((k+1)+((port j).tapes+k)) (m := tail.tapes)
+    have apart (h l) : head h ≠ rest l := by
+      intro eq
+      have val := congrArg Fin.val eq
+      change k+1+h.val = (k+1+((port j).tapes+k))+l.val at val
+      omega
+    let place (a : Fin (j :: jobs).length) : Fin ((port ((j :: jobs)[a])).tapes+k) ↪ Fin _ :=
+      Fin.cases head (fun b => (bank b).trans rest) a
+    refine ⟨place,?_,?_⟩
+    · intro a b ne
+      induction a using Fin.cases with
+      | zero =>
+        induction b using Fin.cases with
+        | zero => exact False.elim (ne rfl)
+        | succ b => exact fun h l => apart h (bank b l)
+      | succ a =>
+        induction b using Fin.cases with
+        | zero => exact fun h l => (apart l (bank a h)).symm
+        | succ b => exact fun h l => rest.injective.ne (separate a b (fun eq => ne (congrArg Fin.succ eq)) h l)
+    · intro seed a
+      induction a using Fin.cases with
+      | zero =>
+        intro h
+        let words := adjacentStageStacks (seed j) (blankPortStacks k)
+        let localBank := adjacentStageStacks (blankPortStacks (k+1)) words
+        have outer := left localBank (compiledPortStacks slot port seed jobs) (h.natAdd (k+1))
+        have inner := right (blankPortStacks (k+1)) words h
+        exact ⟨outer.1.trans inner.1,outer.2.trans inner.2⟩
+      | succ b =>
+        intro h
+        let localBank := adjacentStageStacks (blankPortStacks (k+1))
+          (adjacentStageStacks (seed j) (blankPortStacks k))
+        have outer := right localBank (compiledPortStacks slot port seed jobs) (bank b h)
+        exact ⟨outer.1.trans (read seed b h).1,outer.2.trans (read seed b h).2⟩
+
+
 theorem compiledPortStacks_rep {k V : ℕ} {α : Type*} (slot : α → Fin (k+1))
     (port : α → SharedBankStage.Stage _ 1 prime (@portOwner V)) (seed : ∀ j, Stacks (port j).tapes prime)
     (jobs : List α) (ready : ∀ j ∈ jobs, RepT (port j).metadata (seed j).L (seed j).R) :

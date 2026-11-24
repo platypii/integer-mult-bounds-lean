@@ -110,6 +110,120 @@ theorem loadSwapPortFromWords {P U : Type} {T Q K : ℕ} (body : P → Pr P T Q 
     · have orig := off k (fun a eq => h (eq ▸ List.mem_map_of_mem (f := targets) (List.mem_finRange a)))
       simpa only [F,ite_eq_right h] using And.intro (frame k away).1 ((frame k away).2.trans orig)
 
+/-- Prepare a list of digit swaps from one header bank. Caller workspace can
+be shared between jobs because each call restores it before the next. -/
+theorem loadSwapPortSchedule {P U I : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (K : I → ℕ) (bank : ∀ a, Fin (35+(24+K a)) ↪ Fin T) (source : Fin 4 → Fin T)
+    (apart : ∀ a i j, bank a i ≠ source j) (d : ℕ) (degree : 2 ≤ d)
+    (i j : I → Fin d) (jobs : List I) (unique : jobs.Nodup) :
+    let suffix := fun a => (Fin.natAddEmb 35 (m := 24+K a)).trans (bank a)
+    (∀ a ∈ jobs, ∀ b ∈ jobs, a ≠ b → ∀ k h, suffix a k ≠ bank b h) →
+    ∃ rate : ℕ, ∃ code, ∀ w W, 0 < W → ∀ u (S : Stacks T prime),
+      let M := prime^(w+1)
+      S.R (source 0) = binSyms M.size M → S.R (source 1) = binSyms 1 1 →
+      S.R (source 2) = binSyms W.size W → (S.R (source 3)).length = w →
+      (∀ a ∈ jobs, ∀ k, S.L (bank a k) = [] ∧ S.R (bank a k) = []) →
+      ∃ z F n, Exec body code (mk u S) n (mk z F) ∧ z.user = u.user ∧
+        CleanupBound S F n (rate*(M^d*W)) ∧
+        (∀ a ∈ jobs, ∀ k, let seed := swapPrivateStacks (K a) (payloadView prime d (w+1) W) d (i a) (j a) (w+1)
+          F.L (suffix a k) = seed.L k ∧ F.R (suffix a k) = seed.R k) ∧
+        ∀ k, (∀ a ∈ jobs, ∀ h, suffix a h ≠ k) → F.L k = S.L k ∧ F.R k = S.R k := by
+  intro suffix
+  induction jobs with
+  | nil =>
+    intro _
+    refine ⟨1,Prog.act .done,?_⟩
+    intro w W pos u S M _ _ _ _ _
+    refine ⟨u,S,1,Exec.act .done _,rfl,?_,by simp,fun _ _ => ⟨rfl,rfl⟩⟩
+    have vol := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos (w+1)) d) pos
+    intro js nd
+    change 1+tapeCharge cleanupWeight js S ≤ tapeCharge cleanupWeight js S+1*((prime^(w+1))^d*W)
+    omega
+  | cons a jobs ih =>
+    intro disjoint
+    obtain ⟨r,load,run⟩ := loadSwapPortFromWords body (bank a) source (apart a) d (i a) (j a) degree
+    obtain ⟨q,rest,finish⟩ := ih unique.tail (fun b hb c hc => disjoint b (.tail _ hb) c (.tail _ hc))
+    refine ⟨r+q,load.seq rest,?_⟩
+    intro w W pos u S M base unit width clock free
+    obtain ⟨v,D,t,first,user,paid,set,off⟩ := run w W pos u S base unit width clock (free a List.mem_cons_self)
+    have header h := (off (source h) (fun k => apart a _ h)).2
+    have away b (hb : b ∈ jobs) : a ≠ b := fun eq => unique.notMem (eq ▸ hb)
+    obtain ⟨z,F,n,last,same,bill,loaded,frame⟩ := finish w W pos v D ((header 0).trans base)
+      ((header 1).trans unit) ((header 2).trans width) ((congrArg List.length (header 3)).trans clock)
+      (fun b hb k => by
+        have keep := off (bank b k) (fun h => disjoint a List.mem_cons_self b (.tail _ hb) (away b hb) h k)
+        exact ⟨keep.1.trans (free b (.tail _ hb) k).1,keep.2.trans (free b (.tail _ hb) k).2⟩)
+    refine ⟨z,F,t+n,first.seq last,same.trans user,?_,?_,?_⟩
+    · simpa only [Nat.add_mul] using paid.seq bill
+    · intro b hb k
+      rcases List.mem_cons.mp hb with rfl | h
+      · have keep := frame (suffix b k) (fun c hc h => disjoint c (.tail _ hc) b List.mem_cons_self (away c hc).symm h _)
+        exact ⟨keep.1.trans (set k).1,keep.2.trans (set k).2⟩
+      · exact loaded b h k
+    · intro k outside
+      have left := off k (outside a List.mem_cons_self)
+      have right := frame k (fun b hb => outside b (.tail _ hb))
+      exact ⟨right.1.trans left.1,right.2.trans left.2⟩
+
+/-- Place a scheduled digit swap in its compiled port bank. Slot zero holds
+the live row, slots 1 onward hold the swap metadata, and the first 35 spare
+slots serve as the caller's temporary registers. -/
+theorem loadCompiledSwapPorts {P U I : Type} {T Q spare : ℕ} (room : 35 ≤ spare)
+    (body : P → Pr P T Q prime U) (K : I → ℕ)
+    (bank : ∀ a, Fin ((1+(24+K a))+spare) ↪ Fin T) (source : Fin 4 → Fin T)
+    (headersOff : ∀ a h j, bank a h ≠ source j)
+    (separate : ∀ a b, a ≠ b → ∀ h l, bank a h ≠ bank b l)
+    (d : ℕ) (degree : 2 ≤ d) (i j : I → Fin d) (jobs : List I) (unique : jobs.Nodup) :
+    let data := fun a (h : Fin (24+K a)) => bank a ((h.natAdd 1).castAdd spare)
+    ∃ rate : ℕ, ∃ code, ∀ w W, 0 < W → ∀ u (S : Stacks T prime),
+      let M := prime^(w+1)
+      S.R (source 0) = binSyms M.size M → S.R (source 1) = binSyms 1 1 →
+      S.R (source 2) = binSyms W.size W → (S.R (source 3)).length = w →
+      (∀ a ∈ jobs, ∀ h, 0 < h.val → S.L (bank a h) = [] ∧ S.R (bank a h) = []) →
+      ∃ z F n, Exec body code (mk u S) n (mk z F) ∧ z.user = u.user ∧
+        CleanupBound S F n (rate*(M^d*W)) ∧
+        (∀ a ∈ jobs, ∀ h, let seed := swapPrivateStacks (K a) (payloadView prime d (w+1) W) d (i a) (j a) (w+1)
+          F.L (data a h) = seed.L h ∧ F.R (data a h) = seed.R h) ∧
+        ∀ k, (∀ a ∈ jobs, ∀ h, data a h ≠ k) → F.L k = S.L k ∧ F.R k = S.R k := by
+  intro data
+  let tmp a := (Fin.castLEEmb room).trans (Fin.natAddEmb (1+(24+K a)))
+  let headers a := (Fin.natAddEmb 1 (m := 24+K a)).trans (Fin.castAddEmb spare)
+  have disjoint a h l : tmp a h ≠ headers a l := by
+    intro eq
+    have val := congrArg Fin.val eq
+    change 1+(24+K a)+h.val = 1+l.val at val
+    omega
+  let layout a := appendPorts (tmp a) (headers a) (disjoint a)
+  let place a := (layout a).trans (bank a)
+  obtain ⟨rate,code,run⟩ := loadSwapPortSchedule body K place source (fun a h j => headersOff a _ j)
+    d degree i j jobs unique (fun a _ b _ ne h l => separate a b ne _ _)
+  refine ⟨rate,code,?_⟩
+  intro w W pos u S M base unit width clock free
+  have privateSlot a (h : Fin (35+(24+K a))) : 0 < (layout a h).val := by
+    induction h using Fin.addCases with
+    | left h =>
+      simp only [layout,appendPorts,Function.Embedding.coeFn_mk,Fin.addCases_left]
+      change 0 < 1+(24+K a)+h.val
+      omega
+    | right h =>
+      simp only [layout,appendPorts,Function.Embedding.coeFn_mk,Fin.addCases_right]
+      change 0 < 1+h.val
+      omega
+  obtain ⟨z,F,n,exec,user,paid,set,off⟩ := run w W pos u S base unit width clock
+    (fun a ha h => free a ha _ (privateSlot a h))
+  have atPort a h : place a (h.natAdd 35) = data a h := by
+    simp [place,layout,appendPorts,headers,data]
+  refine ⟨z,F,n,exec,user,paid,?_,?_⟩
+  · intro a ha h
+    rw [← atPort]
+    exact set a ha h
+  · intro k away
+    apply off
+    intro a ha h
+    change place a (h.natAdd 35) ≠ k
+    rw [atPort]
+    exact away a ha h
+
 noncomputable def basisSeedPorts {d : ℕ} (ops : List (FlatCoordinateSchedule.Op d)) :
     Fin 2 ↪ Fin (FlatCoordinateCleanSchedule.tapeCount ops) :=
   (Fin.natAddEmb 2 (m := 2)).trans (Fin.castLEEmb (by
