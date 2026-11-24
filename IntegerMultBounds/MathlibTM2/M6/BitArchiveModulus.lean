@@ -72,6 +72,41 @@ def descriptorArchiveSources {T : ℕ} (fields : Fin 6 → Fin T) (clock : Fin 7
 def outsideArchiveOutputs {T : ℕ} (clock : Fin 7 ↪ Fin T) (power : Fin 10 ↪ Fin T) (j : Fin T) : Prop :=
   j ≠ clock 1 ∧ j ≠ clock 2 ∧ j ≠ power 1 ∧ j ≠ power 3
 
+/-- Generate the unit, radix and both clock words from the binary width alone. -/
+theorem widthArchiveWords {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (clock : Fin 7 ↪ Fin T) (power : Fin 10 ↪ Fin T) (longPort : power 0 = clock 1)
+    (shortFree : ∀ j, clock 2 ≠ power j) :
+    ∃ code, ∀ w u (S : Stacks T prime),
+      S.R (clock 0) = binSyms (64*(w+1)).size (64*(w+1)) →
+      (∀ j : Fin 7, j ≠ 0 → S.R (clock j) = []) →
+      (∀ j : Fin 10, j ≠ 0 → S.R (power j) = []) →
+      ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        CleanupBound S F t ((18*(w+1)+11*(w+1).size+17)+(47*prime^(w+1)+15)) ∧
+        F.R (clock 1) = List.replicate (w+1) blank ∧ F.R (clock 2) = List.replicate w blank ∧
+        F.R (power 1) = binSyms 1 1 ∧ F.R (power 3) = binSyms (prime^(w+1)).size (prime^(w+1)) ∧
+        ∀ j, j ≠ clock 1 → j ≠ clock 2 → j ≠ power 1 → j ≠ power 3 →
+          F.L j = S.L j ∧ F.R j = S.R j := by
+  obtain ⟨read,divide⟩ := idleDispatchClocks body clock
+  obtain ⟨make,encode⟩ := archiveModulus body power
+  refine ⟨read.seq make,?_⟩
+  intro w u S bits empty free
+  obtain ⟨v,n,start,user,paid⟩ := divide w u S bits empty
+  let D := {S with R := Function.update (Function.update S.R (clock 1) (List.replicate (w+1) blank)) (clock 2) (List.replicate w blank)}
+  have live : (D.R (power 0)).length = w+1 := by simp [D,longPort,clock.injective.eq_iff]
+  have clear j (ne : j ≠ 0) : D.R (power j) = [] := by
+    have away : power j ≠ clock 1 := longPort ▸ power.injective.ne ne
+    simp [D,(shortFree j).symm,away,free j ne]
+  obtain ⟨z,t,finish,same,charge⟩ := encode (w+1) v D live clear
+  refine ⟨z,_,_,start.seq finish,same.trans user,paid.seq charge,?_,?_,?_,?_,?_⟩
+  · have a : clock 1 ≠ power 1 := longPort ▸ power.injective.ne (by decide : (0 : Fin 10) ≠ 1)
+    have b : clock 1 ≠ power 3 := longPort ▸ power.injective.ne (by decide : (0 : Fin 10) ≠ 3)
+    simp [D,a,b,clock.injective.eq_iff]
+  · simp [D,shortFree]
+  · simp
+  · simp
+  · intro j a b c d
+    exact ⟨rfl,by simp [D,a,b,c,d]⟩
+
 /-- Use a shared long clock for width division and exponentiation. The resulting
 nine source words are exactly the inputs of the parent archive loader. -/
 theorem descriptorArchiveWords {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
@@ -91,32 +126,22 @@ theorem descriptorArchiveWords {P U : Type} {T Q : ℕ} (body : P → Pr P T Q p
           ∀ j, j ≠ clock 1 → j ≠ clock 2 → j ≠ power 1 → j ≠ power 3 →
             F.L j = S.L j ∧ F.R j = S.R j := by
   intro src
-  obtain ⟨read,divide⟩ := idleDispatchClocks body clock
-  obtain ⟨make,encode⟩ := archiveModulus body power
-  refine ⟨read.seq make,?_⟩
+  obtain ⟨code,make⟩ := widthArchiveWords body clock power longPort shortFree
+  refine ⟨code,?_⟩
   intro node w width u S digits empty free
   have bits := (digits 3).trans (canonicalBits_symbols node.width)
   rw [width] at bits
-  obtain ⟨v,n,start,user,paid⟩ := divide w u S (widthPort ▸ bits) empty
-  let D := {S with R := Function.update (Function.update S.R (clock 1) (List.replicate (w+1) blank)) (clock 2) (List.replicate w blank)}
-  have live : (D.R (power 0)).length = w+1 := by simp [D,longPort,clock.injective.eq_iff]
-  have clear j (ne : j ≠ 0) : D.R (power j) = [] := by
-    have away : power j ≠ clock 1 := longPort ▸ power.injective.ne ne
-    simp [D,(shortFree j).symm,away,free j ne]
-  obtain ⟨z,t,finish,same,charge⟩ := encode (w+1) v D live clear
-  refine ⟨z,_,_,start.seq finish,same.trans user,paid.seq charge,?_,?_,?_⟩
-  · have a : clock 1 ≠ power 1 := longPort ▸ power.injective.ne (by decide : (0 : Fin 10) ≠ 1)
-    have b : clock 1 ≠ power 3 := longPort ▸ power.injective.ne (by decide : (0 : Fin 10) ≠ 3)
-    simp [D,a,b,clock.injective.eq_iff]
-  · intro i
-    change _ = (fun j => (parentArchiveSeed node w).R (parentArchivePorts j)) i
-    rw [parentArchiveSeed_words]
-    induction i using Fin.addCases (m := 6) (n := 3) with
-    | left j => simpa [src,descriptorArchiveSources,D,(outside j).1,(outside j).2.1,(outside j).2.2.1,(outside j).2.2.2] using digits j
-    | right j =>
-      simp only [src,descriptorArchiveSources,Fin.addCases_right]
-      fin_cases j <;> simp [D,power.injective.eq_iff,shortFree]
-  · intro j a b c d
-    exact ⟨rfl,by simp [D,a,b,c,d]⟩
+  obtain ⟨z,F,t,run,user,paid,long,short,unit,radix,frame⟩ := make w u S (widthPort ▸ bits) empty free
+  refine ⟨z,F,t,run,user,paid,long,?_,frame⟩
+  intro i
+  change _ = (fun j => (parentArchiveSeed node w).R (parentArchivePorts j)) i
+  rw [parentArchiveSeed_words]
+  induction i using Fin.addCases (m := 6) (n := 3) with
+  | left j =>
+    simp only [src,descriptorArchiveSources,Fin.addCases_left]
+    exact ((frame _ (outside j).1 (outside j).2.1 (outside j).2.2.1 (outside j).2.2.2).2).trans (digits j)
+  | right j =>
+    simp only [src,descriptorArchiveSources,Fin.addCases_right]
+    fin_cases j <;> first | exact radix | exact unit | exact short
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
