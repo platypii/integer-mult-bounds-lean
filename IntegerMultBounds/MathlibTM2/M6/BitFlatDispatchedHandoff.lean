@@ -123,7 +123,7 @@ private theorem flatWorkerSeed_loader {k H N : ℕ} (fan : Fin (k+1) ↪ Fin H)
     have r := frame j (fun i => away _)
     exact ⟨r.1.trans l.1,r.2.trans l.2⟩
 
-private theorem parentInput_congr {node w} {A B : Stacks (80+273) prime} (left : A.L = B.L) (right : A.R = B.R)
+theorem parentInput_congr {node w} {A B : Stacks (80+273) prime} (left : A.L = B.L) (right : A.R = B.R)
     (ready : ParentArchiveInput node w A) : ParentArchiveInput node w B := by
   cases A
   cases B

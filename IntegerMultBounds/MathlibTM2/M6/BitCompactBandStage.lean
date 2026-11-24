@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitCompactInitializedStage
 public import IntegerMultBounds.MathlibTM2.M6.BitSweepChildWidth
+public import IntegerMultBounds.MathlibTM2.M6.BitNodeSeedWords
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
@@ -161,6 +162,203 @@ theorem compactBandStage [M8.Machine.Net] (n : Fin 9) :
   dsimp only [owner,stage,scratch,outer,place,H] at *
   omega
 
+noncomputable def compactHeaderSeed (c : CutoffNodeInput) : Stacks 37 prime :=
+  ⟨[],[],fun _ => [],callerHeaderBank (fun j => (Routines.hdr c.node j).map bitSymbol)⟩
+
+/-- Populate the compact descriptor bank directly from the caller's node
+words. The remaining thirty-one tapes, including both copy registers, end blank. -/
+theorem compactHeaderSeed_load :
+    LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells compactHeaderSeed := by
+  classical
+  let field (j : Fin 6) : Fin 12 := ((j.castAdd 3).succ).castAdd 2
+  have read (c : CutoffNodeInput) (j : Fin 6) :
+      nodeSeedWords c (field j) = (Routines.hdr c.node j).map bitSymbol := by
+    simp only [field,nodeSeedWords,Fin.addCases_left,sweepSeedWords,Fin.cons_succ]
+    exact congrFun (parentArchiveSeed_words c.node c.w) (j.castAdd 3) |>.trans (Fin.addCases_left ..)
+  let tmp : Fin 37 := 6
+  let saved : Fin 37 := 7
+  have away (j : Fin 6) : callerHeaderPorts j ≠ tmp ∧ callerHeaderPorts j ≠ saved := by
+    constructor <;> intro h <;> have v := congrArg Fin.val h
+    · change j.val = 6 at v
+      omega
+    · change j.val = 7 at v
+      omega
+  have load := LoadsPackedSeed.headers nodeSeedWords CutoffNodeInput.cells callerHeaderPorts field tmp saved
+    (by decide) (fun j => (away j).1) (fun j => (away j).2) (133*142080) (by
+      intro c
+      simp only [read]
+      have pos : 0 < c.cells := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)
+        (Nat.mul_pos c.idlePositive (by decide))
+      have h := descriptorSeedBill c.node (c.cells_share ▸ Nat.mul_pos pos (by decide))
+      rw [← c.cells_share] at h
+      exact h.trans_eq (by ring))
+  convert load using 1
+  funext c
+  unfold compactHeaderSeed
+  congr 1
+  funext j
+  by_cases h : j.val < 6
+  · let i : Fin 6 := ⟨j.val,h⟩
+    have atPort := callerHeaderPorts.injective.extend_apply (fun i => nodeSeedWords c (field i))
+      (fun _ => []) i
+    change Function.extend _ _ _ j = _ at atPort
+    rw [atPort,read]
+    exact dite_eq_left h
+  · have off : ¬ ∃ i, callerHeaderPorts i = j := by
+      rintro ⟨i,rfl⟩
+      exact h i.isLt
+    rw [Function.extend_apply' _ _ _ off]
+    exact dite_eq_right h
+
+noncomputable def compactDimensionSeed (c : CutoffNodeInput) : Stacks 7 prime :=
+  let M := prime^(c.w+1)
+  let W := c.stageWidth
+  ⟨[],[],fun _ => [],![binSyms M.size M,binSyms W.size W,binSyms 1 1,binSyms (c.w+1).size (c.w+1),
+    [],[],binSyms c.root.width.size c.cutoff]⟩
+
+/-- The inner correction chart and the compact stage use the same four
+dimension words. The cutoff occupies the seventh tape, outside the chart. -/
+theorem prepareCompactDimensions {P U : Type} {H Q : ℕ} (body : P → Pr P H Q prime U)
+    (archive : Fin (80+273) ↪ Fin H) (outer : Fin 6 ↪ Fin H) (dims : Fin 7 ↪ Fin H)
+    (capacity : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q)
+    (outerOff : ∀ i j, outer i ≠ archive j) (dimsOff : ∀ i j, dims i ≠ archive j)
+    (apart : ∀ i j, outer i ≠ dims j) :
+    ∃ code rate, ∀ (c : CutoffNodeInput) u S,
+      ParentArchiveInput c.node c.w (embStk archive S) →
+      (∀ i, S.R (outer i) = []) → (∀ i : Fin 6, S.R (dims (i.castAdd 1)) = []) →
+      S.R (dims 6) = binSyms c.root.width.size c.cutoff →
+      ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧ CleanupBound S F t (rate*c.cells) ∧
+        (∀ i, F.R (dims i) = (compactDimensionSeed c).R i) ∧
+        (∀ i : Fin 4, F.R (outer (i.castAdd 2)) =
+          stageChartWords (c.w+1) (c.idleWidth*142080) false i) ∧
+        ∀ j, (∀ i, archive i ≠ j) → (∀ i, outer i ≠ j) → (∀ i, dims i ≠ j) →
+          F.L j = S.L j ∧ F.R j = S.R j := by
+  let inner := (Fin.castAddEmb 1 (n := 6)).trans dims
+  obtain ⟨code,rate,prepare⟩ := parentStageChartCallers body archive outer inner capacity outerOff
+    (fun i => dimsOff _) (fun i j => apart i _)
+  refine ⟨code,rate,?_⟩
+  intro c u S ready clear blank cutoff
+  obtain ⟨z,F,t,exec,user,paid,flat,owned,scratch,frame⟩ := prepare c u S ready clear blank
+  rw [c.stageCells] at paid
+  refine ⟨z,F,t,exec,user,paid,?_,?_,fun j a b d => frame j a (fun i => b _) (fun i => d _)⟩
+  · let W := c.B*prime^(64*((c.w+1)*64))*c.stageFactor
+    have suffix : (prime^(c.w+1))^112*W = c.stageWidth := by simp only [W,CutoffNodeInput.stageWidth,Nat.mul_assoc]
+    have kept := frame (dims 6) (fun j => (dimsOff 6 j).symm) (fun i => apart _ _)
+      (fun i => dims.injective.ne (by fin_cases i <;> decide))
+    have spectator : F.R (dims 1) = binSyms c.stageWidth.size c.stageWidth := by
+      rw [← suffix]
+      exact owned 1
+    intro i
+    fin_cases i <;> first | exact owned 0 | exact spectator | exact owned 2 | exact owned 3 |
+      exact (scratch 0).2 | exact (scratch 1).2 | exact kept.2.trans cutoff
+  · simpa only [c.stageTail] using flat
+
+/-- Read the node fields with the cutoff already on the seventh dimension tape.
+The archive is private scratch and starts empty. -/
+theorem loadCompactDimensions {P U : Type} {H Q : ℕ} (body : P → Pr P H Q prime U)
+    (archive : Fin (80+273) ↪ Fin H) (outer : Fin 6 ↪ Fin H) (dims : Fin 7 ↪ Fin H)
+    (source : Fin 9 → Fin H) (away : ∀ i j, archive i ≠ source j)
+    (capacity : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q)
+    (outerOff : ∀ i j, outer i ≠ archive j) (dimsOff : ∀ i j, dims i ≠ archive j)
+    (apart : ∀ i j, outer i ≠ dims j) :
+    ∃ code rate, ∀ (c : CutoffNodeInput) u S,
+      (∀ i, S.R (source i) = sweepSeedWords c i.succ) →
+      (∀ i, S.L (archive i) = [] ∧ S.R (archive i) = []) →
+      (∀ i, S.R (outer i) = []) → (∀ i : Fin 6, S.R (dims (i.castAdd 1)) = []) →
+      S.R (dims 6) = sweepSeedWords c 0 →
+      ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧ CleanupBound S F t (rate*c.cells) ∧
+        (∀ i, F.R (dims i) = (compactDimensionSeed c).R i) ∧
+        (∀ i : Fin 4, F.R (outer (i.castAdd 2)) =
+          stageChartWords (c.w+1) (c.idleWidth*142080) false i) ∧
+        ∀ j, (∀ i, archive i ≠ j) → (∀ i, outer i ≠ j) → (∀ i, dims i ≠ j) →
+          F.L j = S.L j ∧ F.R j = S.R j := by
+  have regs i : [source i,archive (parentArchivePorts i),archive 0,archive 1].Nodup := by
+    have zero := (by decide : ∀ i, parentArchivePorts i ≠ 0) i
+    have one := (by decide : ∀ i, parentArchivePorts i ≠ 1) i
+    simp [List.nodup_cons,fun j => (away j i).symm,archive.injective.eq_iff,zero,one]
+  obtain ⟨a,load⟩ := loadParentArchiveSeed body archive source (archive 0) (archive 1)
+    (fun i j => away _ _) regs
+  obtain ⟨b,rate,prepare⟩ := prepareCompactDimensions body archive outer dims capacity outerOff dimsOff apart
+  refine ⟨a.seq b,(133*142080+65)+rate,?_⟩
+  intro c u S words vacant clear blank cutoff
+  obtain ⟨v,D,n,start,user,price,stored,keep⟩ := load c.node c.w u S words vacant (vacant 0).2 (vacant 1).2
+  have ready : ParentArchiveInput c.node c.w (embStk archive D) :=
+    parentInput_congr (funext (fun i => (stored i).1.symm)) (funext (fun i => (stored i).2.symm))
+      (parentArchiveSeed_ready c.node c.w)
+  obtain ⟨z,F,m,finish,last,bill,dim,flat,frame⟩ := prepare c v D ready
+    (fun i => (keep _ (fun j => (outerOff i j).symm)).2.trans (clear i))
+    (fun i => (keep _ (fun j => (dimsOff _ j).symm)).2.trans (blank i))
+    ((keep _ (fun j => (dimsOff 6 j).symm)).2.trans cutoff)
+  refine ⟨z,F,n+m,start.seq finish,last.trans user,?_,dim,flat,?_⟩
+  · intro js nd
+    apply ((price.seq bill) js nd).trans
+    rw [Nat.add_mul]
+    exact Nat.add_le_add_left (Nat.add_le_add_right (archiveSeedLoadCost c) _) _
+  · intro j ar out d
+    exact ⟨(frame j ar out d).1.trans (keep j ar).1,(frame j ar out d).2.trans (keep j ar).2⟩
+
+/-- Install the descriptor and dimension words read by the stage worker.
+The caller places its cutoff on the last dimension tape. -/
+theorem loadCompactStageInputs {P U : Type} {H Q : ℕ} (body : P → Pr P H Q prime U)
+    (archive : Fin (80+273) ↪ Fin H) (outer : Fin 6 ↪ Fin H) (dims : Fin 7 ↪ Fin H)
+    (header : Fin 37 ↪ Fin H) (source : Fin 12 → Fin H) (cut : source 0 = dims 6)
+    (capacity : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q)
+    (outerOff : ∀ i j, outer i ≠ archive j) (dimsOff : ∀ i j, dims i ≠ archive j)
+    (apart : ∀ i j, outer i ≠ dims j) (away : ∀ i j, archive i ≠ source j)
+    (ha : ∀ i j, header i ≠ archive j) (ho : ∀ i j, header i ≠ outer j)
+    (hd : ∀ i j, header i ≠ dims j) (hs : ∀ i j, header i ≠ source j) :
+    ∃ code rate, ∀ (c : CutoffNodeInput) u S, (∀ i, S.R (source i) = nodeSeedWords c i) →
+      (∀ i, S.L (header i) = [] ∧ S.R (header i) = []) →
+      (∀ i, S.L (archive i) = [] ∧ S.R (archive i) = []) →
+      (∀ i, S.R (outer i) = []) → (∀ i : Fin 6, S.R (dims (i.castAdd 1)) = []) →
+      ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧ CleanupBound S F t (rate*c.cells) ∧
+        (∀ i, F.R (header i) = (compactHeaderSeed c).R i) ∧
+        (∀ i, F.R (dims i) = (compactDimensionSeed c).R i) ∧
+        (∀ i : Fin 4, F.R (outer (i.castAdd 2)) = stageChartWords (c.w+1) (c.idleWidth*142080) false i) ∧
+        ∀ j, (∀ i, header i ≠ j) → (∀ i, archive i ≠ j) → (∀ i, outer i ≠ j) → (∀ i, dims i ≠ j) →
+          F.L j = S.L j ∧ F.R j = S.R j := by
+  obtain ⟨r,compile⟩ := compactHeaderSeed_load
+  obtain ⟨a,load⟩ := compile body header source hs
+  let field (i : Fin 9) := i.succ.castAdd 2
+  obtain ⟨b,v,prepare⟩ := loadCompactDimensions body archive outer dims (source ∘ field)
+    (fun i j => away i _) capacity outerOff dimsOff apart
+  refine ⟨a.seq b,r+v,?_⟩
+  intro c u S words free vacant clear blank
+  obtain ⟨p,D,n,start,user,paid,set,keep⟩ := load c u S words free
+  have read i := (keep (source i) (fun j => hs j i)).2.trans (words i)
+  obtain ⟨z,F,m,finish,last,bill,dim,flat,frame⟩ := prepare c p D
+    (fun i => by simpa only [Function.comp_apply,field,nodeSeedWords,Fin.addCases_left] using read (field i))
+    (fun i => ⟨(keep _ (fun j => ha j i)).1.trans (vacant i).1,(keep _ (fun j => ha j i)).2.trans (vacant i).2⟩)
+    (fun i => (keep _ (fun j => ho j i)).2.trans (clear i))
+    (fun i => (keep _ (fun j => hd j _)).2.trans (blank i))
+    (by rw [← cut]; exact read 0)
+  refine ⟨z,F,n+m,start.seq finish,last.trans user,?_,?_,dim,flat,?_⟩
+  · simpa only [Nat.add_mul] using paid.seq bill
+  · intro i
+    exact (frame _ (fun j => (ha i j).symm) (fun j => (ho i j).symm) (fun j => (hd i j).symm)).2.trans (set i).2
+  · intro j h ar out d
+    exact ⟨(frame j ar out d).1.trans (keep j h).1,(frame j ar out d).2.trans (keep j h).2⟩
+
+private noncomputable def compactWorkerSeed (H : ℕ) (c : CutoffNodeInput) : Stacks ((H+37)+7) prime :=
+  ⟨[],[],fun _ => [],Fin.addCases (Fin.addCases (fun _ => []) (compactHeaderSeed c).R) (compactDimensionSeed c).R⟩
+
+private theorem compactWorkerSeed_load (H : ℕ)
+    (dims : LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells compactDimensionSeed) :
+    LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells (compactWorkerSeed H) := by
+  let blank : Stacks H prime := ⟨[],[],fun _ => [],fun _ => []⟩
+  have empty := LoadsPackedSeed.fixed nodeSeedWords CutoffNodeInput.cells (fun c =>
+    Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) (Nat.mul_pos c.idlePositive (by decide))) blank
+  convert (empty.join compactHeaderSeed_load).join dims using 1
+  funext c
+  unfold compactWorkerSeed adjacentStageStacks
+  congr 1
+  funext j
+  induction j using Fin.addCases with
+  | right j => rw [Fin.addCases_right]; rfl
+  | left j =>
+    simp only [Fin.addCases_left]
+    induction j using Fin.addCases <;> simp [blank,compactHeaderSeed]
+
 private theorem headerSeedReady {k H a b : ℕ} (fan : Fin k ↪ Fin H)
     (header : Fin a → List (Fin (prime+4))) (dims : Fin b → List (Fin (prime+4))) :
     let place := Fin.castAddEmb a (n := H)
@@ -200,9 +398,12 @@ The worker and its live tape placement are independent of that node. -/
 theorem seededCompactBandStage [M8.Machine.Net] (n : Fin 9) :
     ∃ (T states : ℕ) (fan : Fin (142081+2) ↪ Fin T), ∀ {U : Type} {Q : ℕ}, states ≤ Q →
       ∃ (Label : Type) (host : Label → Pr Label T Q prime U) (code : Pr Label T Q prime U) (rate : ℝ),
-      ∀ c : CutoffNodeInput, 7*(c.w+1) ≤ c.cutoff → ∃ seed : Stacks T prime,
+      ∃ seed : CutoffNodeInput → Stacks T prime,
+      (LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells compactDimensionSeed →
+        LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells seed) ∧
+      ∀ c : CutoffNodeInput, 7*(c.w+1) ≤ c.cutoff →
       ∀ (x : Fin 142081 → Fin ((prime^(c.w+1))^16*c.stageWidth) → ZMod 2) u S, HelperFan fan x S →
-      (∀ j, (∀ i, fan i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
+      (∀ j, (∀ i, fan i ≠ j) → S.L j = (seed c).L j ∧ S.R j = (seed c).R j) →
       ∃ z F t y, Exec host code (mk u S) t (mk z F) ∧ z.user = u.user ∧ HelperFan fan y F ∧
         RestoredBorrowedStage n (c.w+1) c.B c.stageFactor x y ∧
         ∀ σ : ℝ, 0 ≤ σ → ∀ js : List _, js.Nodup →
@@ -219,15 +420,10 @@ theorem seededCompactBandStage [M8.Machine.Net] (n : Fin 9) :
   refine ⟨_,states,live,?_⟩
   intro U Q fits
   obtain ⟨Label,host,code,rate,run⟩ := build (U := U) fits
-  refine ⟨Label,host,code,rate,?_⟩
+  refine ⟨Label,host,code,rate,compactWorkerSeed H,compactWorkerSeed_load H,?_⟩
   intro c band
-  let M := prime^(c.w+1)
-  let W := c.stageWidth
-  let dims : Fin 7 → List (Fin (prime+4)) := ![binSyms M.size M,binSyms W.size W,binSyms 1 1,
-    binSyms (c.w+1).size (c.w+1),[],[],binSyms c.root.width.size c.cutoff]
-  let header := callerHeaderBank (fun j => (Routines.hdr c.node j).map bitSymbol)
-  let seed : Stacks ((H+37)+7) prime := ⟨[],[],fun _ => [],Fin.addCases (Fin.addCases (fun _ => []) header) dims⟩
-  refine ⟨seed,?_⟩
+  let dims := (compactDimensionSeed c).R
+  let header := (compactHeaderSeed c).R
   intro x u S ready fresh
   obtain ⟨external,words,blank⟩ := headerSeedReady (fan.trans inner) header dims S fresh
   exact run c band x u S ready words
@@ -277,14 +473,15 @@ theorem correctedCompactBandStage [M8.Machine.Net] (n : Fin 9) :
   obtain ⟨a,b,qa,qb,stages⟩ := charts n
   refine ⟨base,tapes,max q r,?_⟩
   intro U Q fits
-  obtain ⟨Label,body,worker,rate,run⟩ := build (U := U) ((le_max_left ..).trans fits)
+  obtain ⟨Label,body,worker,rate,seedFor,_,run⟩ := build (U := U) ((le_max_left ..).trans fits)
   let reserve := tapeCharge cleanupWeight (frameSlots localFan)
   obtain ⟨T,bank,code,allocate⟩ := allocatedChartWorkerWithReserve localFan body worker a b
     (qa.trans ((le_max_right ..).trans fits)) (qb.trans ((le_max_right ..).trans fits))
     reserve 12 (fun bank => chartOwnerReserveGrowth localFan bank)
   refine ⟨T,localFan.trans bank,Label,fun f => embProg bank id (body f),code,rate,?_⟩
   intro c band σ nonneg
-  obtain ⟨initial,workerRun⟩ := run c band
+  let initial := seedFor c
+  have workerRun := run c band
   have cells : 0 < c.cells := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)
     (Nat.mul_pos c.idlePositive (by decide))
   rw [← c.stageCells] at cells
