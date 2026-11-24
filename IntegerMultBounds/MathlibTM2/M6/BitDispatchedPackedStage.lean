@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitInitializedPackedStage
-import IntegerMultBounds.MathlibTM2.M6.BitStageCallerLayout
+public import IntegerMultBounds.MathlibTM2.M6.BitStageCallerLayout
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
@@ -9,7 +9,7 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover.Fallb
 open Shared50ModularControl (prime)
 open Cover Certificates.PR589 Certificates.PR589.Nine RecursiveInterchangeLayout
 
-private def callerSeed {k H : ℕ} (fan : Fin (k+1) ↪ Fin H) (cutoff : List (Fin (prime+4)))
+def callerSeed {k H : ℕ} (fan : Fin (k+1) ↪ Fin H) (cutoff : List (Fin (prime+4)))
     (external : Fin 37 → List (Fin (prime+4))) : Stacks (H+37) prime :=
   ⟨[],[],fun _ => [],Fin.append (Function.update (fun _ => []) (fan (Fin.last k)) cutoff) external⟩
 
@@ -36,6 +36,76 @@ private theorem callerSeed_ready {k H : ℕ} (fan : Fin (k+1) ↪ Fin H) (cutoff
   · have h := fresh (place (fan (Fin.last k))) (fun i eq =>
       ne_of_lt i.castSucc_lt_last (fan.injective (place.injective eq)))
     simpa only [callerSeed,place,Fin.coe_castAddEmb,Fin.append_left,Function.update_self] using h.2
+
+private theorem stageHeaderLoadCost (node : Descriptor) (positive : node.Positive) :
+    seedLoadBill (fun i => (Routines.hdr node i).map (bitSymbol (a := prime))) ≤
+      48*volume prime node+85 := by
+  have bits (i : Fin 6) : (Routines.hdr node i).length ≤ volume prime node+1 := by
+    have width := GrowingCounterData.canonical_width _ ((Routines.hdr_headers node).2 i)
+    rw [(Routines.hdr_headers node).1 i] at width
+    exact width.trans (Nat.add_le_add_right ((Nat.log2_le_self _).trans
+      (RecursiveHeaderBounds.values_le_volume Shared50ModularControl.prime_prime.two_le node positive i)) 1)
+  have total := Finset.sum_le_sum (s := (Finset.univ : Finset (Fin 6)))
+    (f := fun i => 8*(Routines.hdr node i).length+6) (g := fun _ => 8*(volume prime node+1)+6)
+    (fun i _ => Nat.add_le_add_right (Nat.mul_le_mul_left 8 (bits i)) 6)
+  simp only [Finset.sum_const,Finset.card_univ,Fintype.card_fin,smul_eq_mul] at total
+  simp only [seedLoadBill,List.length_map]
+  omega
+
+/-- With the cutoff on the last fan tape, copying the six descriptor words
+establishes the private-tape invariant of the dispatched stage. -/
+theorem loadStageCallerSeed {k H T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (fan : Fin (k+1) ↪ Fin H) (bank : Fin (H+37) ↪ Fin T)
+    (source : Fin 6 → Fin T) (tmp saved : Fin T) :
+    let ext := (Fin.natAddEmb H (m := 37)).trans bank
+    let core := (Fin.castAddEmb 37 (n := H)).trans bank
+    let data := ((Fin.castAddEmb 1 (n := k)).trans fan).trans (Fin.castAddEmb 37)
+    (∀ i j, ext (callerHeaderPorts i) ≠ source j) →
+    (∀ i, [source i,ext (callerHeaderPorts i),tmp,saved].Nodup) →
+    ∃ code : Pr P T Q prime U, ∀ (node : Descriptor) u (S : Stacks T prime),
+      let words := fun i => (Routines.hdr node i).map (bitSymbol (a := prime))
+      let cutoff := S.R (core (fan (Fin.last k)))
+      node.Positive → (∀ i, S.R (source i) = words i) →
+      (∀ j, S.L (ext j) = [] ∧ S.R (ext j) = []) →
+      (∀ j, (∀ i : Fin k, fan (i.castAdd 1) ≠ j) → S.L (core j) = []) →
+      (∀ j, (∀ i, fan i ≠ j) → S.R (core j) = []) →
+      S.R tmp = [] → S.R saved = [] →
+      ∃ v R n, Exec body code (mk u S) n (mk v {S with R := R}) ∧ v.user = u.user ∧
+        CleanupBound S {S with R := R} n (48*volume prime node+85) ∧
+        PrivateTapes data (callerSeed fan cutoff (callerHeaderBank words)) (embStk bank {S with R := R}) ∧
+        ∀ j, (∀ i, ext (callerHeaderPorts i) ≠ j) → R j = S.R j := by
+  intro ext core data apart regs
+  obtain ⟨code,load⟩ := loadCallerHeaderBank body ext source tmp saved apart regs
+  refine ⟨code,?_⟩
+  intro node u S words cutoff positive headers vacant left right ht hs
+  obtain ⟨v,R,n,run,user,bill,loaded,off⟩ := load u S (fun j => (vacant j).2) ht hs
+  rw [show (fun i => S.R (source i)) = words from funext headers] at bill loaded
+  refine ⟨v,R,n,run,user,fun js nd => (bill js nd).trans (Nat.add_le_add_left (stageHeaderLoadCost node positive) _),?_,off⟩
+  intro j
+  induction j using Fin.addCases with
+  | right j =>
+    intro _
+    exact ⟨(vacant j).1,(loaded j).trans (Fin.append_right ..).symm⟩
+  | left j =>
+    intro outside
+    have away (i : Fin k) : fan (i.castAdd 1) ≠ j := fun eq => outside i (congrArg (Fin.castAdd 37) eq)
+    have keep : R (core j) = S.R (core j) := off _ (fun i eq => by
+      have val := congrArg Fin.val (bank.injective eq)
+      change H+(callerHeaderPorts i).val = j.val at val
+      have := j.isLt
+      omega)
+    refine ⟨left j away,?_⟩
+    change R (core j) = Fin.append _ (callerHeaderBank words) (j.castAdd 37)
+    rw [Fin.append_left,keep]
+    by_cases hit : j = fan (Fin.last k)
+    · subst j
+      rw [Function.update_self]
+    · rw [Function.update_of_ne hit]
+      apply right
+      intro i
+      induction i using Fin.lastCases with
+      | last => exact Ne.symm hit
+      | cast i => exact away i
 
 private theorem helperFan_trans {k V H M : ℕ} (fan : Fin (k+2) ↪ Fin H) (place : Fin H ↪ Fin M)
     (x : Fin k → Fin V → ZMod 2) (S : Stacks M prime) :
