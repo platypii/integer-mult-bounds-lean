@@ -14,7 +14,7 @@ local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularContro
 noncomputable def sourceOwner (n : Fin 9) (k : (Fin 32 × Fin 5) × Fin 111) : Fin 142081 :=
   ownerTape n k.1.1 k.1.2 (k.2.castLE (by decide))
 
-private theorem source_injective (n : Fin 9) : Function.Injective (sourceOwner n) := by
+theorem source_injective (n : Fin 9) : Function.Injective (sourceOwner n) := by
   rintro ⟨p,t⟩ ⟨q,u⟩ eqn
   have same : p = q := by
     by_contra other
