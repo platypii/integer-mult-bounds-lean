@@ -12,7 +12,7 @@ open Shared50ModularControl (prime)
 def bandHeight (width cutoff : ℕ) : ℕ :=
   6-Nat.findGreatest (fun k => width*42^(6-k) ≤ cutoff*64^(6-k)) 6
 
-private theorem bandHeight_spec (w cutoff : ℕ) (band : 7*(w+1) ≤ cutoff) :
+theorem bandHeight_spec (w cutoff : ℕ) (band : 7*(w+1) ≤ cutoff) :
     let width := 64*(w+1)
     let h := bandHeight width cutoff
     width*42^h ≤ cutoff*64^h ∧ ∀ n, width*42^n ≤ cutoff*64^n → h ≤ n := by
