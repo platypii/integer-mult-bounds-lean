@@ -11,13 +11,13 @@ open Shared50ModularControl (prime)
 open RecursiveInterchangeLayout (volume)
 local notation "N" => rowSwapBlock.tapes
 
-private theorem castFan {c T m n : ℕ} (eq : m = n) (fan : Fin (c+2) ↪ Fin T)
+theorem castFan {c T m n : ℕ} (eq : m = n) (fan : Fin (c+2) ↪ Fin T)
     (x : Fin c → Fin m → ZMod 2) (S : Stacks T prime) :
     HelperFan fan (fun r i => x r (i.cast eq.symm)) S ↔ HelperFan fan x S := by
   subst n
   rfl
 
-private theorem placedOwners {T H A m c : ℕ} (splitter : Fin (((1+c)+2)+2) ↪ Fin T)
+theorem placedOwners {T H A m c : ℕ} (splitter : Fin (((1+c)+2)+2) ↪ Fin T)
     (caller : Fin T ↪ Fin H) (extend : Fin H ↪ Fin A) (target : ℤ → Fin (prime+4))
     (data : Fin c → Fin m → ZMod 2) (S : Stacks A prime)
     (split : RepT (intervalOwnerBank target data) (embStk ((splitter.trans caller).trans extend) S).L
@@ -25,7 +25,7 @@ private theorem placedOwners {T H A m c : ℕ} (splitter : Fin (((1+c)+2)+2) ↪
     HelperFan ((((intervalOwners c).trans splitter).trans caller).trans extend) data S :=
   intervalOwners_ready target data _ split
 
-private theorem outsideReturnedMergeBank {c T : ℕ} (saved : Fin 3 ↪ Fin T) (returned : Fin (c+2) ↪ Fin T)
+theorem outsideReturnedMergeBank {c T : ℕ} (saved : Fin 3 ↪ Fin T) (returned : Fin (c+2) ↪ Fin T)
     (apart : ∀ i j, saved i ≠ returned j) {j : Fin T} (savedOff : ∀ i, saved i ≠ j)
     (returnedOff : ∀ i, returned i ≠ j) : ∀ i, returnedMergeBank saved returned apart i ≠ j := by
   refine Fin.addCases ?_ ?_

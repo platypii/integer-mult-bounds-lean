@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitDirectoryIntervalHeaders
+public import IntegerMultBounds.MathlibTM2.M6.BitDirectoryIntervalSplit
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
