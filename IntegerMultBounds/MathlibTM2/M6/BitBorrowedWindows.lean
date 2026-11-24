@@ -957,12 +957,14 @@ open Cover in
 /-- Packing and the placed invocation share one cleanup allowance. -/
 theorem archivedBorrowedCallWithCharge [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     (n : Fin 9) (p : Fin 32 × Fin 5) (fan : Fin (142081+2) ↪ Fin T)
-    (capacity : columnCapacity ≤ Q) (body : P → Pr P T Q prime U) :
+    (capacity : columnCapacity ≤ Q) (body : P → Pr P T Q prime U)
+    (observed : {js : List (Fin T) // js.Nodup} := ⟨[],by simp⟩) :
     let bank := Fin.castAddEmb 273 (n := T)
     let scratch := Fin.castAddEmb LeafCore.small (n := T+273)
     let full := (fan.trans bank).trans scratch
     let owner := bank.trans scratch
     let outer := fun f => embProg owner id (body f)
+    let reserve := fun D : Stacks T prime => tapeCharge (fun l r => 4*l.length+2*r.length+4) observed.val D
     ∃ (rate : ℝ) (pack : Pr P ((T+273)+LeafCore.small) Q prime U), ∀ w B K : ℕ,
       let W := B*prime^(64*(w*64))*K
       let blocks := (prime^w)^112*B
@@ -974,19 +976,19 @@ theorem archivedBorrowedCallWithCharge [M8.Machine.Net] {T Q : ℕ} {P U : Type}
       (∀ j : Fin LeafCore.small, S.L (j.natAdd (T+273)) = [] ∧ S.R (j.natAdd (T+273)) = []) →
       (∀ a y D, HelperFan fan a D →
         (∀ j, (∀ h, fan h ≠ j) → D.L j = S.L (scratch (bank j)) ∧ D.R j = S.R (scratch (bank j))) →
-        ∃ z F m b, Exec body call (mk y D) m (mk z F) ∧ (∀ js : List (Fin T), js.Nodup → m+tapeCharge (fun l r => 4*l.length+2*r.length+4) js F ≤
-          tapeCharge (fun l r => 4*l.length+2*r.length+4) js D+price) ∧ z.user = y.user ∧
+        ∃ z F m b, Exec body call (mk y D) m (mk z F) ∧ (∀ js : List (Fin T), js.Nodup → m+reserve F+tapeCharge (fun l r => 4*l.length+2*r.length+4) js F ≤
+          tapeCharge (fun l r => 4*l.length+2*r.length+4) js D+(price+reserve D)) ∧ z.user = y.user ∧
           HelperFan fan b F ∧ BorrowedStep n w blocks K p a b ∧ saved F) →
       ∃ z F t b, Exec outer (.seq pack (embProg owner id call)) (mk u S) t (mk z F) ∧
         (∀ js : List (Fin ((T+273)+LeafCore.small)), js.Nodup →
-          (t : ℝ)+tapeCharge (fun l r => 4*l.length+2*r.length+4) js F ≤
-          tapeCharge (fun l r => 4*l.length+2*r.length+4) js S+rate*((V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)+price) ∧
+          ((t+reserve (embStk owner F) : ℕ) : ℝ)+tapeCharge (fun l r => 4*l.length+2*r.length+4) js F ≤
+          tapeCharge (fun l r => 4*l.length+2*r.length+4) js S+rate*((V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)+((price+reserve (embStk owner S) : ℕ) : ℝ)) ∧
         z.user = u.user ∧ HelperFan full b F ∧ borrowedPackedStep n w B K p data b ∧ saved (embStk owner F) ∧
         (∀ i j, F.R (scratch (borrowedHeaders T i j)) = S.R (scratch (borrowedHeaders T i j))) ∧
         ∀ j : Fin LeafCore.small, F.L (j.natAdd (T+273)) = [] ∧ F.R (j.natAdd (T+273)) = [] := by
-  intro bank scratch full owner outer
+  intro bank scratch full owner outer reserve
   obtain ⟨rate,pack,run⟩ := archivedPackingWithCharge n p fan capacity outer
-  refine ⟨rate,pack,?_⟩
+  refine ⟨2*rate,pack,?_⟩
   intro w B K W blocks V pos data u S call price saved ready live free invoke
   obtain ⟨v,D,k,x,user,packed,charge,rep,trace,keep,clean⟩ := run w B K pos data u S ready live free
   obtain ⟨z,F,m,y,exec,paid,same,done,act,retained⟩ := invoke x (embDn owner v) (embStk owner D) rep
@@ -1001,13 +1003,20 @@ theorem archivedBorrowedCallWithCharge [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   · intro js unique
     rw [← view] at paid
     let weight := fun (l r : List (Fin (prime+4))) => 4*l.length+2*r.length+4
-    have bill := placedCleanup_cost_le owner D F' weight m price off paid js unique
-    have lifted : (m : ℝ)+tapeCharge weight js F' ≤ tapeCharge weight js D+(price : ℝ) := by exact_mod_cast bill
+    have bill := placedCleanup_cost_le owner D F' weight (m+reserve (embStk owner F'))
+      (price+reserve (embStk owner D)) off paid js unique
+    have lifted : ((m+reserve (embStk owner F') : ℕ) : ℝ)+tapeCharge weight js F' ≤
+        tapeCharge weight js D+((price+reserve (embStk owner D) : ℕ) : ℝ) := by exact_mod_cast bill
+    have observe (G : Stacks ((T+273)+LeafCore.small) prime) :
+        tapeCharge weight (observed.val.map owner) G = reserve (embStk owner G) := by
+      simp [reserve,tapeCharge,weight,embStk,Function.comp_def]
     have first := charge js unique
+    have second := charge (observed.val.map owner) (observed.property.map owner.injective)
+    change (k : ℝ)+tapeCharge weight _ D ≤ tapeCharge weight _ S+rate*((V : ℝ)*_) at second
+    rw [observe,observe] at second
     change (k : ℝ)+tapeCharge weight js D ≤ tapeCharge weight js S+rate*((V : ℝ)*_) at first
-    change ((k+m : ℕ) : ℝ)+tapeCharge weight js F' ≤ tapeCharge weight js S+rate*((V : ℝ)*_)+price
-    rw [Nat.cast_add]
-    linarith only [first,lifted]
+    push_cast at first second lifted ⊢
+    linarith only [first,second,lifted,Nat.cast_nonneg (α := ℝ) k]
   · intro i j
     have outside h : owner h ≠ scratch (borrowedHeaders T i j) :=
       fun eq => borrowedHeaders_apart i j h (scratch.injective eq).symm
