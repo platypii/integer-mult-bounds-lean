@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitCompactBandStage
+public import IntegerMultBounds.MathlibTM2.M6.BitCompactPackedStage
 public import IntegerMultBounds.MathlibTM2.M6.BitFlatNodeHandoff
 public import IntegerMultBounds.MathlibTM2.M6.BitSeededIdleWindow
 public import IntegerMultBounds.MathlibTM2.M6.BitCutoffBandSupplier
@@ -23,6 +23,15 @@ private theorem stageInParent {P U : Type} {T Q w W V Z price : ℕ} (n : Fin 9)
   subst Z V
   exact run
 
+private theorem loadAtInput {Config : Type} {T : ℕ} (input : Config → CutoffNodeInput)
+    {seed : CutoffNodeInput → Stacks T prime} (load : LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells seed) :
+    LoadsPackedSeed (nodeSeedWords ∘ input) (CutoffNodeInput.cells ∘ input) (seed ∘ input) := by
+  obtain ⟨r,compile⟩ := load
+  refine ⟨r,?_⟩
+  intro P U N Q body bank src apart
+  obtain ⟨code,run⟩ := compile body bank src apart
+  exact ⟨code,fun c => run (input c)⟩
+
 /-- Install all compact stages and bridges in the parent. The remaining
 supplier provides only the nine remainder windows in flat node order. -/
 theorem compactBandParent [M8.Machine.Net] {U Config : Type} :
@@ -35,10 +44,12 @@ theorem compactBandParent [M8.Machine.Net] {U Config : Type} :
     let scale := fun c => ((input c).node.width : ℝ)^σ*((input c).cutoff : ℝ)^(M8.Machine.BudgetBound.tau-σ)*V c
     ∀ idleCost : Config → Fin 9 → ℕ,
     (∀ n : Fin 9, ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst, ∃ seed : Config → Stacks T prime,
+      LoadsPackedSeed (nodeSeedWords ∘ input) (CutoffNodeInput.cells ∘ input) seed ∧
       ∀ c, PackedPieceHandoffWithReserve cleanupWeight (fun l r => ∑ j, cleanupWeight (l j) (r j)) (V c)
         (fun x y => ∀ j : Fin (W c), let addr := fun z => flatWindowEquiv (w c) (W c) (windowState (w c) z,j)
           readRoles addr y = (Piece.remainder n.val).run (readRoles addr x)) body code src dst (seed c) (idleCost c n)) →
     ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst, ∃ seed : Config → Stacks T prime,
+      LoadsPackedSeed (nodeSeedWords ∘ input) (CutoffNodeInput.cells ∘ input) seed ∧
       ∀ c, PackedPieceHandoffWithReserve cleanupWeight (fun l r => ∑ j, cleanupWeight (l j) (r j)) (V c)
         (packedChildOutput (w c) (V c)) body code src dst (seed c)
         ((∑ i, ⌊stageRate i*scale c⌋₊)+(∑ i, idleCost c i)+bridgeRate*V c+2) := by
@@ -48,20 +59,20 @@ theorem compactBandParent [M8.Machine.Net] {U Config : Type} :
   refine ⟨max (Finset.univ.sup qs) q,?_⟩
   intro Q fits
   obtain ⟨bridgeRate,assemble⟩ := build ((le_max_right ..).trans fits)
-  choose T src dst Label host code rate run using fun n => stages n (U := U)
+  choose T src dst Label host code rate seed loader run using fun n => stages n (U := U)
     ((Finset.le_sup (Finset.mem_univ n)).trans ((le_max_left ..).trans fits))
   refine ⟨bridgeRate,rate,?_⟩
   intro input band σ positive w W V scale idleCost windows
   have pos (c) : 0 < V c := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)
     (Nat.mul_pos (input c).idlePositive (by decide))
-  have parent := assemble (fun _ => True) (fun _ => trivial) (fun _ _ _ _ => trivial)
+  have parent := assemble (LoadsPackedSeed (nodeSeedWords ∘ input) V)
+    (LoadsPackedSeed.fixed _ _ pos) (fun _ _ left right => left.join right)
     w W V (fun _ => rfl) pos (fun _ => Equiv.refl _) (fun c i => ⌊rate i*scale c⌋₊) idleCost
-  simp only [true_and,Equiv.refl_apply] at parent
+  simp only [Equiv.refl_apply] at parent
   apply parent
   · intro n
-    choose seed step using fun c => run n (input c) (band c) σ positive
-    exact ⟨Label n,T n,host n,code n,src n,dst n,seed,fun c => stageInParent n (input c).stageTail
-      (input c).sweepVolume (step c)⟩
+    exact ⟨Label n,T n,host n,code n,src n,dst n,seed n ∘ input,loadAtInput input (loader n),fun c => stageInParent n (input c).stageTail
+      (input c).sweepVolume (run n (input c) (band c) σ positive)⟩
   · exact windows
 
 /-- The compact parent executes both the nine stage sweeps and their compiled
@@ -88,6 +99,7 @@ theorem compactBandParentWithRecords [M8.Machine.Net] {U Config : Type} :
                           init i*V+(735*V+(∑ j, branch c i j)+1)+(142081*(10*V+10)+1)
       ∀ σ : ℝ, 0 ≤ σ →
       ∃ (A : Type) (T : ℕ) (host : A → Pr A T Q prime U), ∃ code src dst, ∃ seed : Config → Stacks T prime,
+      LoadsPackedSeed (nodeSeedWords ∘ input) (CutoffNodeInput.cells ∘ input) seed ∧
         ∀ c, let p := input c
         PackedPieceHandoffWithReserve cleanupWeight (fun l r => ∑ j, cleanupWeight (l j) (r j)) p.cells
           (packedChildOutput (p.w+1) p.cells) host code src dst (seed c)
@@ -112,7 +124,7 @@ theorem compactBandParentWithRecords [M8.Machine.Net] {U Config : Type} :
   intro D enough input blocks band root rows label child children branch idleCost σ nonnegσ
   apply assemble input band σ nonnegσ idleCost
   intro i
-  exact ⟨_,T i,table i,program i,src i,out i,seed i ∘ input,fun c =>
+  exact ⟨_,T i,table i,program i,src i,out i,seed i ∘ input,loadAtInput input (loader i),fun c =>
     run i D ((bound i).trans enough) (input c) (blocks c) (root c) (rows c) (label c) (children c i)⟩
 
 private structure ActiveBandRecord where
@@ -144,6 +156,7 @@ theorem compactBandParentExecution {U Config : Type} :
                           init i*V+(735*V+(∑ j, branch c i j)+1)+(142081*(10*V+10)+1)
       ∀ σ : ℝ, 0 ≤ σ →
       ∃ (A : Type) (T : ℕ) (host : A → Pr A T Q prime U), ∃ code src dst, ∃ seed : Config → Stacks T prime,
+      LoadsPackedSeed (nodeSeedWords ∘ input) (CutoffNodeInput.cells ∘ input) seed ∧
         ∀ c, let p := input c
         PackedPieceHandoffWithReserve cleanupWeight (fun l r => ∑ j, cleanupWeight (l j) (r j)) p.cells
           (packedChildOutput (p.w+1) p.cells) host code src dst (seed c)
