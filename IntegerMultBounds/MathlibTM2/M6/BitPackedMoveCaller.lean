@@ -270,7 +270,7 @@ private theorem coverReturnCharge {T : ℕ} {S F : Stacks T prime} {t price boun
 
 /-- Split the represented word into the actual packed node's input fan and
 merge its returned rows. The live source can have trailing physical blanks. -/
-theorem packedRowsFromPayload {P R U : Type} {T H Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
+theorem packedRowsFromPayloadWithReserve {P R U : Type} {T H Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
     (bank : Fin (intervalSplitTapes+1) ↪ Fin T) (tmp buf : Fin T)
     (tmpOff : ∀ i, bank i ≠ tmp) (bufOff : ∀ i, bank i ≠ buf) (distinct : tmp ≠ buf)
     (place : Fin T ↪ Fin H) (label : P → R) (host : R → Pr R H Q prime U)
@@ -281,7 +281,7 @@ theorem packedRowsFromPayload {P R U : Type} {T H Q : ℕ} (body : P → Pr P T 
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
     let fan := (withHelperPort (intervalOwners 142080)).trans bank
     ∀ dst : Fin (142081+2) ↪ Fin T, (∀ j i, bank (moveReturnPorts j) ≠ childReturnFan dst i) →
-    ∃ code : Pr R H Q prime U, ∀ (child : Descriptor) (atom price : ℕ) seed,
+    ∃ code : Pr R H Q prime U, ∀ (child : Descriptor) (atom price : ℕ) seed reserve,
       child.width = 64*atom → 142080 ∣ child.rows →
       let W := CopyChildLayout.spectators child / 142080
       let lane := packedDescriptor (64*atom) W
@@ -298,16 +298,17 @@ theorem packedRowsFromPayload {P R U : Type} {T H Q : ℕ} (body : P → Pr P T 
         CleanupBound S F t (price+1000000034*volume prime wide+49) ∧
         RecordPayload (N := volume prime wide) payload (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (v := wide) (one_dvd wide.rows) x) F ∧
         ∀ j, j ≠ payload → (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j
-      PackedPieceHandoffWithCharge cleanupWeight m (packedChildOutput atom m) body (body entry) fan dst seed price →
+      (∀ l r : Fin 2 → List (Fin (prime+4)), reserve l r ≤ ∑ i, cleanupWeight (l i) (r i)) →
+      PackedPieceHandoffWithReserve cleanupWeight reserve m (packedChildOutput atom m) body (body entry) fan dst seed price →
       0 < m → run (packedDescriptor child.width (CopyChildLayout.spectators child)) := by
   intro fan dst apart
-  obtain ⟨move,transpose⟩ := chargedPackedMoveTranspose body entry bank tmp buf tmpOff bufOff distinct capacity dst apart
+  obtain ⟨move,transpose⟩ := packedMoveTransposeWithReserve body entry bank tmp buf tmpOff bufOff distinct capacity dst apart
   let dest := place (bank (Fin.succ 0))
   let write : Pr R H Q prime U := (loadCompactWord dest aux count).seq
     (((Node.usub count payload aux).seq (Mult.PhaseCellToeplitz.movePrefix count dest payload saved aux)).seq (bclear count))
   refine ⟨((loadCompactWord payload aux dest).seq (embProg place label move)).seq
     (write.seq (clearWorkTapes [dest])),?_⟩
-  intro child atom price seed aligned groups W lane m run worker pos
+  intro child atom price seed reserve aligned groups W lane m run bounded worker pos
   have layout : packedDescriptor child.width (CopyChildLayout.spectators child) = {lane with afterD := lane.afterD*142080} :=
     scheduledPackedDescriptor child atom aligned groups
   rw [layout]
@@ -332,7 +333,7 @@ theorem packedRowsFromPayload {P R U : Type} {T H Q : ℕ} (body : P → Pr P T 
   have castWord {a b : ℕ} (h : a = b) (y : Fin b → ZMod 2) :
       List.ofFn (fun i : Fin a => SparseRoleCircuit.encode (a := prime) (y (i.cast h))) =
         List.ofFn (fun i => SparseRoleCircuit.encode (a := prime) (y i)) := by subst b; rfl
-  obtain ⟨z,F,t,run,same,out,bill⟩ := transpose atom W price seed worker pos x (embDn place v) localBank
+  obtain ⟨z,F,t,run,same,out,bill⟩ := transpose atom W price seed reserve bounded worker pos x (embDn place v) localBank
     (by rw [castWord]; exact Function.update_self ..) (fun i => (free i).1)
     (fun i hi => (right _ (bank.injective.ne hi)).trans (free i).2) tl
     ((right _ (tmpOff _).symm).trans tr) ((right _ (bufOff _).symm).trans br) privateSeed
@@ -384,6 +385,44 @@ theorem packedRowsFromPayload {P R U : Type} {T H Q : ℕ} (body : P → Pr P T 
   · intro j ne hj
     have h := off j ne (by simpa [dest] using (hj (bank (Fin.succ 0))).symm)
     exact ⟨h.1.trans (keep _ hj).1,h.2.trans (keep _ hj).2⟩
+
+theorem packedRowsFromPayload {P R U : Type} {T H Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
+    (bank : Fin (intervalSplitTapes+1) ↪ Fin T) (tmp buf : Fin T)
+    (tmpOff : ∀ i, bank i ≠ tmp) (bufOff : ∀ i, bank i ≠ buf) (distinct : tmp ≠ buf)
+    (place : Fin T ↪ Fin H) (label : P → R) (host : R → Pr R H Q prime U)
+    (installed : ∀ f, host (label f) = embProg place label (body f))
+    (payload count saved aux : Fin H)
+    (outside : ∀ i, place i ≠ payload ∧ place i ≠ count ∧ place i ≠ saved ∧ place i ≠ aux)
+    (separate : [count,place (bank (Fin.succ 0)),payload,saved,aux].Nodup)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    let fan := (withHelperPort (intervalOwners 142080)).trans bank
+    ∀ dst : Fin (142081+2) ↪ Fin T, (∀ j i, bank (moveReturnPorts j) ≠ childReturnFan dst i) →
+    ∃ code : Pr R H Q prime U, ∀ (child : Descriptor) (atom price : ℕ) seed,
+      child.width = 64*atom → 142080 ∣ child.rows →
+      let W := CopyChildLayout.spectators child / 142080
+      let lane := packedDescriptor (64*atom) W
+      let m := volume prime lane
+      let run := fun (wide : Descriptor) => ∀ (x : Fin (volume prime wide) → ZMod 2) u (S : Stacks H prime),
+      let B := embStk place S
+      RecordPayload (N := volume prime wide) payload (fun _ => blank) 0 x S →
+      S.R count = [] → S.R saved = [] → S.L aux = [] → S.R aux = [] →
+      (∀ i, B.L (bank i) = [] ∧ B.R (bank i) = []) →
+      B.L tmp = [] → B.R tmp = [] → B.R buf = [] →
+      (∀ j, (∀ i, fan i ≠ bank j) → seed.L (bank j) = [] ∧ seed.R (bank j) = []) →
+      (∀ j, (∀ i, bank i ≠ j) → B.L j = seed.L j ∧ B.R j = seed.R j) →
+      ∃ z F t, Exec host code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        CleanupBound S F t (price+1000000034*volume prime wide+49) ∧
+        RecordPayload (N := volume prime wide) payload (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (v := wide) (one_dvd wide.rows) x) F ∧
+        ∀ j, j ≠ payload → (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j
+      PackedPieceHandoffWithCharge cleanupWeight m (packedChildOutput atom m) body (body entry) fan dst seed price →
+      0 < m → run (packedDescriptor child.width (CopyChildLayout.spectators child)) := by
+  intro fan dst apart
+  obtain ⟨code,run⟩ := packedRowsFromPayloadWithReserve body entry bank tmp buf tmpOff bufOff distinct
+    place label host installed payload count saved aux outside separate capacity dst apart
+  refine ⟨code,?_⟩
+  intro child atom price seed aligned groups W lane m work handoff
+  exact run child atom price seed (fun _ _ => 0) aligned groups (fun _ _ => Nat.zero_le _)
+    (by simpa only [PackedPieceHandoffWithReserve,PackedPieceHandoffWithCharge,Nat.add_zero] using handoff)
 
 /-- A uniform program prepares the private tapes from the caller's header
 words, preserving all tapes outside the selected bank. -/
@@ -575,6 +614,68 @@ theorem LoadsPackedSeed.join {Config : Type} {k m n : ℕ} {words : Config → F
 
 /-- Split and merge on the installed child's actual input and output banks.
 Only the three return tapes need blank entries in the child's private seed. -/
+theorem packedRowsOnChildBankWithReserve {P R U : Type} {T H Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
+    (src dst : Fin (142081+2) ↪ Fin T) (ret : Fin 3 ↪ Fin T)
+    (srcOff : ∀ i j, ret i ≠ src j) (dstOff : ∀ i j, ret i ≠ childReturnFan dst j)
+    (tmp buf : Fin T) (srcTmp : ∀ i, src i ≠ tmp) (srcBuf : ∀ i, src i ≠ buf)
+    (retTmp : ∀ i, ret i ≠ tmp) (retBuf : ∀ i, ret i ≠ buf) (distinct : tmp ≠ buf)
+    (place : Fin T ↪ Fin H) (label : P → R) (host : R → Pr R H Q prime U)
+    (installed : ∀ f, host (label f) = embProg place label (body f))
+    (payload count saved aux : Fin H)
+    (outside : ∀ i, place i ≠ payload ∧ place i ≠ count ∧ place i ≠ saved ∧ place i ≠ aux)
+    (separate : [count,place (ret 0),payload,saved,aux].Nodup)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    ∃ code : Pr R H Q prime U, ∀ (child : Descriptor) (atom price : ℕ) seed reserve,
+      child.width = 64*atom → 142080 ∣ child.rows →
+      let W := CopyChildLayout.spectators child / 142080
+      let lane := packedDescriptor (64*atom) W
+      let m := volume prime lane
+      let run := fun (wide : Descriptor) => ∀ (x : Fin (volume prime wide) → ZMod 2) u (S : Stacks H prime),
+      let B := embStk place S
+      RecordPayload (N := volume prime wide) payload (fun _ => blank) 0 x S →
+      S.R count = [] → S.R saved = [] → S.L aux = [] → S.R aux = [] →
+      (∀ i, B.L (src i) = [] ∧ B.R (src i) = []) →
+      (∀ i, B.L (ret i) = [] ∧ B.R (ret i) = []) →
+      B.L tmp = [] → B.R tmp = [] → B.R buf = [] →
+      (∀ i, seed.L (ret i) = [] ∧ seed.R (ret i) = []) →
+      (∀ j, (∀ i, src i ≠ j) → (∀ i, ret i ≠ j) → B.L j = seed.L j ∧ B.R j = seed.R j) →
+      ∃ z F t, Exec host code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        CleanupBound S F t (price+1000000034*volume prime wide+49) ∧
+        RecordPayload (N := volume prime wide) payload (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (v := wide) (one_dvd wide.rows) x) F ∧
+        ∀ j, j ≠ payload → (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j
+      (∀ l r : Fin 2 → List (Fin (prime+4)), reserve l r ≤ ∑ i, cleanupWeight (l i) (r i)) →
+      PackedPieceHandoffWithReserve cleanupWeight reserve m (packedChildOutput atom m) body (body entry) src dst seed price →
+      0 < m → run (packedDescriptor child.width (CopyChildLayout.spectators child)) := by
+  obtain ⟨bank,fanEq,retEq,cover⟩ := splitBankForInput src ret srcOff
+  have retAt (i) := congrArg (fun e : Fin 3 ↪ Fin T => e i) retEq
+  have destination : bank (Fin.succ 0) = ret 0 := retAt 0
+  have excludes (j : Fin T) (a : ∀ i, src i ≠ j) (b : ∀ i, ret i ≠ j) (k) : bank k ≠ j := by
+    rcases cover k with ⟨i,h⟩ | ⟨i,h⟩ <;> rw [h]
+    · exact b i
+    · exact a i
+  obtain ⟨code,execute⟩ := packedRowsFromPayloadWithReserve body entry bank tmp buf
+    (excludes tmp srcTmp retTmp) (excludes buf srcBuf retBuf) distinct place label host installed
+    payload count saved aux outside (destination ▸ separate) capacity dst (fun i j => (retAt i) ▸ dstOff i j)
+  refine ⟨code,?_⟩
+  intro child atom price seed reserve aligned groups W lane m run bounded worker pos x u S B word hc hs al ar owners returns tl tr br vacant rest
+  refine execute child atom price seed reserve aligned groups bounded (fanEq ▸ worker) pos x u S word hc hs al ar ?_ tl tr br ?_ ?_
+  · intro j
+    rcases cover j with ⟨i,h⟩ | ⟨i,h⟩ <;> rw [h]
+    · exact returns i
+    · exact owners i
+  · intro j off
+    rcases cover j with ⟨i,h⟩ | ⟨i,h⟩
+    · exact h ▸ vacant i
+    · exact False.elim (off i ((congrArg (fun e : Fin (142081+2) ↪ Fin T => e i) fanEq).trans h.symm))
+  · intro j off
+    apply rest
+    · intro i
+      rw [← fanEq]
+      exact off _
+    · intro i
+      rw [← retAt i]
+      exact off _
+
 theorem packedRowsOnChildBank {P R U : Type} {T H Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
     (src dst : Fin (142081+2) ↪ Fin T) (ret : Fin 3 ↪ Fin T)
     (srcOff : ∀ i j, ret i ≠ src j) (dstOff : ∀ i j, ret i ≠ childReturnFan dst j)
@@ -606,34 +707,11 @@ theorem packedRowsOnChildBank {P R U : Type} {T H Q : ℕ} (body : P → Pr P T 
         ∀ j, j ≠ payload → (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j
       PackedPieceHandoffWithCharge cleanupWeight m (packedChildOutput atom m) body (body entry) src dst seed price →
       0 < m → run (packedDescriptor child.width (CopyChildLayout.spectators child)) := by
-  obtain ⟨bank,fanEq,retEq,cover⟩ := splitBankForInput src ret srcOff
-  have retAt (i) := congrArg (fun e : Fin 3 ↪ Fin T => e i) retEq
-  have destination : bank (Fin.succ 0) = ret 0 := retAt 0
-  have excludes (j : Fin T) (a : ∀ i, src i ≠ j) (b : ∀ i, ret i ≠ j) (k) : bank k ≠ j := by
-    rcases cover k with ⟨i,h⟩ | ⟨i,h⟩ <;> rw [h]
-    · exact b i
-    · exact a i
-  obtain ⟨code,execute⟩ := packedRowsFromPayload body entry bank tmp buf
-    (excludes tmp srcTmp retTmp) (excludes buf srcBuf retBuf) distinct place label host installed
-    payload count saved aux outside (destination ▸ separate) capacity dst (fun i j => (retAt i) ▸ dstOff i j)
+  obtain ⟨code,run⟩ := packedRowsOnChildBankWithReserve body entry src dst ret srcOff dstOff tmp buf
+    srcTmp srcBuf retTmp retBuf distinct place label host installed payload count saved aux outside separate capacity
   refine ⟨code,?_⟩
-  intro child atom price seed aligned groups W lane m run worker pos x u S B word hc hs al ar owners returns tl tr br vacant rest
-  refine execute child atom price seed aligned groups (fanEq ▸ worker) pos x u S word hc hs al ar ?_ tl tr br ?_ ?_
-  · intro j
-    rcases cover j with ⟨i,h⟩ | ⟨i,h⟩ <;> rw [h]
-    · exact returns i
-    · exact owners i
-  · intro j off
-    rcases cover j with ⟨i,h⟩ | ⟨i,h⟩
-    · exact h ▸ vacant i
-    · exact False.elim (off i ((congrArg (fun e : Fin (142081+2) ↪ Fin T => e i) fanEq).trans h.symm))
-  · intro j off
-    apply rest
-    · intro i
-      rw [← fanEq]
-      exact off _
-    · intro i
-      rw [← retAt i]
-      exact off _
+  intro child atom price seed aligned groups W lane m work handoff
+  exact run child atom price seed (fun _ _ => 0) aligned groups (fun _ _ => Nat.zero_le _)
+    (by simpa only [PackedPieceHandoffWithReserve,PackedPieceHandoffWithCharge,Nat.add_zero] using handoff)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

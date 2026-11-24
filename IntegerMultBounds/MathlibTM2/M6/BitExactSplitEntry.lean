@@ -108,13 +108,14 @@ theorem exactSplitEntry {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
 /-- Enter an installed packed child directly. Within the splitter bank all
 private ports start blank, while the surrounding host supplies the other
 private words. Their cleanup charge can be carried through the call. -/
-theorem exactSplitCall {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
+theorem exactSplitCallWithReserve {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
     (bank : Fin (intervalSplitTapes+1) ↪ Fin T) (tmp buf : Fin T)
     (tmpOff : ∀ i, bank i ≠ tmp) (bufOff : ∀ i, bank i ≠ buf) (distinct : tmp ≠ buf)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
     let fan := (withHelperPort (intervalOwners 142080)).trans bank
-    ∃ code : Pr P T Q prime U, ∀ {m price} dst effect seed,
-      PackedPieceHandoffWithCharge cleanupWeight m effect body (body entry) fan dst seed price →
+    ∃ code : Pr P T Q prime U, ∀ {m price} dst effect seed reserve allowance,
+      (∀ l r : Fin 2 → List (Fin (prime+4)), (∀ i, (l i).length+(r i).length ≤ 301*(m*142080)+2) → reserve l r ≤ allowance) →
+      PackedPieceHandoffWithReserve cleanupWeight reserve m effect body (body entry) fan dst seed price →
       0 < m → ∀ (x : Fin (m*142080) → ZMod 2) u (S : Stacks T prime),
       S.R (bank (Fin.succ 0)) = List.ofFn (fun i => SparseRoleCircuit.encode (x i)) →
       (∀ i, S.L (bank i) = []) → (∀ i, i ≠ Fin.succ 0 → S.R (bank i) = []) →
@@ -125,18 +126,18 @@ theorem exactSplitCall {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) 
         ParentStageWords (fun i => dst (i.castAdd 2)) dst m y F ∧
         effect (Fin.lastCases (fun _ => 0) (fun row i => x (finProdFinEquiv (i,row)))) y ∧
         (∀ js : List (Fin T), js.Nodup → (∀ j ∈ js, ∀ i, fan i ≠ j) →
-          t+tapeCharge cleanupWeight js F ≤ price+tapeCharge cleanupWeight js S+
+          t+tapeCharge cleanupWeight js F ≤ price+allowance+tapeCharge cleanupWeight js S+
             (149*(intervalSplitTapes+5)+5)*(m*142080)+28+
             142081*(12*m+19+4*(301*(m*142080)+2))+3*(4*(301*(m*142080)+2)+4)) ∧
         ∀ js : List (Fin T), js.Nodup →
-          t+tapeCharge cleanupWeight js F ≤ price+tapeCharge cleanupWeight js S+
+          t+tapeCharge cleanupWeight js F ≤ price+allowance+tapeCharge cleanupWeight js S+
             (149*(intervalSplitTapes+5)+5)*(m*142080)+28+
             142081*(12*m+19+4*(301*(m*142080)+2))+3*(4*(301*(m*142080)+2)+4)+
             (intervalSplitTapes+1)*(4*(301*(m*142080)+2)+4) := by
   intro fan
   obtain ⟨prep,run⟩ := exactSplitEntry body bank tmp buf tmpOff bufOff distinct capacity
   refine ⟨prep.seq (.call entry),?_⟩
-  intro m price dst effect seed child pos x u S source left empty tl tr br localSeed outerSeed
+  intro m price dst effect seed reserve allowance bounded child pos x u S source left empty tl tr br localSeed outerSeed
   obtain ⟨v,D,a,prepared,user,bill,words,fresh,space,frame⟩ := run pos x u S source left empty tl tr br
   obtain ⟨z,F,n,y,exec,paid,same,out,action⟩ := child _ v D words (by
     intro j away
@@ -145,6 +146,8 @@ theorem exactSplitCall {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) 
       exact ⟨(fresh k away).1.trans (localSeed k away).1.symm,(fresh k away).2.trans (localSeed k away).2.symm⟩
     · have off := fun k eq => h ⟨k,eq⟩
       exact ⟨(frame j off).1.trans (outerSeed j off).1,(frame j off).2.trans (outerSeed j off).2⟩)
+  have initial := bounded (fun i => D.L (fan (i.natAdd 142081))) (fun i => D.R (fan (i.natAdd 142081)))
+    (fun i => space ((withHelperPort (intervalOwners 142080)) (i.natAdd 142081)))
   refine ⟨z,F,_,y,prepared.seq (Exec.call exec),same.trans user,out,action,?_,?_⟩
   · intro js unique away
     have charge : tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S := by
@@ -175,6 +178,39 @@ theorem exactSplitCall {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) 
     have h := paid js unique
     dsimp only [extra,Nat.zero_add] at growth
     omega
+
+theorem exactSplitCall {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
+    (bank : Fin (intervalSplitTapes+1) ↪ Fin T) (tmp buf : Fin T)
+    (tmpOff : ∀ i, bank i ≠ tmp) (bufOff : ∀ i, bank i ≠ buf) (distinct : tmp ≠ buf)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    let fan := (withHelperPort (intervalOwners 142080)).trans bank
+    ∃ code : Pr P T Q prime U, ∀ {m price} dst effect seed,
+      PackedPieceHandoffWithCharge cleanupWeight m effect body (body entry) fan dst seed price →
+      0 < m → ∀ (x : Fin (m*142080) → ZMod 2) u (S : Stacks T prime),
+      S.R (bank (Fin.succ 0)) = List.ofFn (fun i => SparseRoleCircuit.encode (x i)) →
+      (∀ i, S.L (bank i) = []) → (∀ i, i ≠ Fin.succ 0 → S.R (bank i) = []) →
+      S.L tmp = [] → S.R tmp = [] → S.R buf = [] →
+      (∀ j, (∀ i, fan i ≠ bank j) → seed.L (bank j) = [] ∧ seed.R (bank j) = []) →
+      (∀ j, (∀ i, bank i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
+      ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        ParentStageWords (fun i => dst (i.castAdd 2)) dst m y F ∧
+        effect (Fin.lastCases (fun _ => 0) (fun row i => x (finProdFinEquiv (i,row)))) y ∧
+        (∀ js : List (Fin T), js.Nodup → (∀ j ∈ js, ∀ i, fan i ≠ j) →
+          t+tapeCharge cleanupWeight js F ≤ price+tapeCharge cleanupWeight js S+
+            (149*(intervalSplitTapes+5)+5)*(m*142080)+28+
+            142081*(12*m+19+4*(301*(m*142080)+2))+3*(4*(301*(m*142080)+2)+4)) ∧
+        ∀ js : List (Fin T), js.Nodup →
+          t+tapeCharge cleanupWeight js F ≤ price+tapeCharge cleanupWeight js S+
+            (149*(intervalSplitTapes+5)+5)*(m*142080)+28+
+            142081*(12*m+19+4*(301*(m*142080)+2))+3*(4*(301*(m*142080)+2)+4)+
+            (intervalSplitTapes+1)*(4*(301*(m*142080)+2)+4) := by
+  intro fan
+  obtain ⟨code,run⟩ := exactSplitCallWithReserve body entry bank tmp buf tmpOff bufOff distinct capacity
+  refine ⟨code,?_⟩
+  intro m price dst effect seed child
+  have h := run (m := m) (price := price) dst effect seed (fun _ _ => 0) 0 (fun _ _ _ => le_rfl)
+    (by simpa only [PackedPieceHandoffWithReserve,PackedPieceHandoffWithCharge,Nat.add_zero] using child)
+  simpa only [Nat.add_zero] using h
 
 /-- Run a packed row worker returning on the input fan and interleave its
 result on the original serialized tape. The spare helper is discarded. -/
@@ -296,15 +332,16 @@ theorem exactSplitReturnOn {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime
   omega
 
 /-- Charge the serialized MOVE and its returned workspace in one bound. -/
-theorem exactSplitReturnCharged {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
+theorem exactSplitReturnWithReserve {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
     (bank : Fin (intervalSplitTapes+1) ↪ Fin T) (tmp buf : Fin T)
     (tmpOff : ∀ i, bank i ≠ tmp) (bufOff : ∀ i, bank i ≠ buf) (distinct : tmp ≠ buf)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
     let fan := (withHelperPort (intervalOwners 142080)).trans bank
     ∀ (dst : Fin (142081+2) ↪ Fin T) (saved : Fin 3 ↪ Fin T),
     (∀ j i, saved j ≠ childReturnFan dst i) →
-    ∃ code : Pr P T Q prime U, ∀ {m price} effect seed,
-      PackedPieceHandoffWithCharge cleanupWeight m effect body (body entry) fan dst seed price →
+    ∃ code : Pr P T Q prime U, ∀ {m price} effect seed reserve,
+      (∀ l r : Fin 2 → List (Fin (prime+4)), reserve l r ≤ ∑ i, cleanupWeight (l i) (r i)) →
+      PackedPieceHandoffWithReserve cleanupWeight reserve m effect body (body entry) fan dst seed price →
       0 < m → ∀ (x : Fin (m*142080) → ZMod 2) u (S : Stacks T prime),
       S.R (bank (Fin.succ 0)) = List.ofFn (fun i => SparseRoleCircuit.encode (x i)) →
       (∀ i, S.L (bank i) = []) → (∀ i, i ≠ Fin.succ 0 → S.R (bank i) = []) →
@@ -321,11 +358,20 @@ theorem exactSplitReturnCharged {P U : Type} {T Q : ℕ} (body : P → Pr P T Q 
   intro fan dst saved disjoint
   let output := childReturnFan dst
   let ports := returnedMergeBank saved output disjoint
-  obtain ⟨start,run⟩ := exactSplitCall body entry bank tmp buf tmpOff bufOff distinct capacity
+  obtain ⟨start,run⟩ := exactSplitCallWithReserve body entry bank tmp buf tmpOff bufOff distinct capacity
   obtain ⟨finish,merge⟩ := placedChargedMergeReturn body ports capacity
   refine ⟨start.seq finish,?_⟩
-  intro m price effect seed worker pos x u S source left empty tl tr br localSeed outerSeed
-  obtain ⟨v,D,a,y,call,user,words,action,_,paid⟩ := run dst effect seed worker pos x u S source left empty tl tr br localSeed outerSeed
+  intro m price effect seed reserve bounded worker pos x u S source left empty tl tr br localSeed outerSeed
+  have initial (l r : Fin 2 → List (Fin (prime+4)))
+      (space : ∀ i, (l i).length+(r i).length ≤ 301*(m*142080)+2) :
+      reserve l r ≤ 2*(4*(301*(m*142080)+2)+4) := by
+    apply (bounded l r).trans
+    rw [Fin.sum_univ_two]
+    have left := space 0
+    have right := space 1
+    unfold cleanupWeight
+    omega
+  obtain ⟨v,D,a,y,call,user,words,action,_,paid⟩ := run dst effect seed reserve _ initial worker pos x u S source left empty tl tr br localSeed outerSeed
   have returned : HelperFan output (fun r => y r.castSucc) D := by
     have h := ParentStageWords.returnFan (bank := Function.Embedding.refl (Fin T)) (F := D) words
     exact h
@@ -350,5 +396,34 @@ theorem exactSplitReturnCharged {P U : Type} {T Q : ℕ} (body : P → Pr P T Q 
     (19*(149*(m*142080)*(intervalSplitTapes+5)+7)+13) at finishBill
   dsimp only [intervalSplitTapes] at *
   omega
+
+theorem exactSplitReturnCharged {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
+    (bank : Fin (intervalSplitTapes+1) ↪ Fin T) (tmp buf : Fin T)
+    (tmpOff : ∀ i, bank i ≠ tmp) (bufOff : ∀ i, bank i ≠ buf) (distinct : tmp ≠ buf)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    let fan := (withHelperPort (intervalOwners 142080)).trans bank
+    ∀ (dst : Fin (142081+2) ↪ Fin T) (saved : Fin 3 ↪ Fin T),
+    (∀ j i, saved j ≠ childReturnFan dst i) →
+    ∃ code : Pr P T Q prime U, ∀ {m price} effect seed,
+      PackedPieceHandoffWithCharge cleanupWeight m effect body (body entry) fan dst seed price →
+      0 < m → ∀ (x : Fin (m*142080) → ZMod 2) u (S : Stacks T prime),
+      S.R (bank (Fin.succ 0)) = List.ofFn (fun i => SparseRoleCircuit.encode (x i)) →
+      (∀ i, S.L (bank i) = []) → (∀ i, i ≠ Fin.succ 0 → S.R (bank i) = []) →
+      S.L tmp = [] → S.R tmp = [] → S.R buf = [] →
+      (∀ j, (∀ i, fan i ≠ bank j) → seed.L (bank j) = [] ∧ seed.R (bank j) = []) →
+      (∀ j, (∀ i, bank i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
+      ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        effect (Fin.lastCases (fun _ => 0) (fun row i => x (finProdFinEquiv (i,row)))) y ∧
+        RecordPayload (saved 0) (fun _ => blank) 0
+          (fun k : Fin (m*142080) => let p := finProdFinEquiv.symm k; y p.2.castSucc p.1) F ∧
+        ∀ js, js.Nodup → (∀ i, saved i ∈ js) →
+          t+tapeCharge cleanupWeight js F ≤ price+tapeCharge cleanupWeight js S+
+            1000000000*(m*142080) := by
+  intro fan dst saved disjoint
+  obtain ⟨code,run⟩ := exactSplitReturnWithReserve body entry bank tmp buf tmpOff bufOff distinct capacity dst saved disjoint
+  refine ⟨code,?_⟩
+  intro m price effect seed child
+  exact run (m := m) (price := price) effect seed (fun _ _ => 0) (fun _ _ => Nat.zero_le _)
+    (by simpa only [PackedPieceHandoffWithReserve,PackedPieceHandoffWithCharge,Nat.add_zero] using child)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

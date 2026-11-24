@@ -29,11 +29,12 @@ private theorem mem_moveScratch {T H k r : ℕ} (src : Fin k ↪ Fin T) (ret : F
     · exact ⟨i.natAdd _,by simp [moveFramePorts,Fin.Embedding.append]⟩
 
 /-- A suspended packed child receives its private seed from the header tapes. -/
-def SeededSuspendedRows {P R U Config : Type} {T H Q h : ℕ} (body : P → Pr P T Q prime U) (entry : P)
+def SeededSuspendedRowsWithReserve {P R U Config : Type} {T H Q h : ℕ} (body : P → Pr P T Q prime U) (entry : P)
     (src dst : Fin (142081+2) ↪ Fin T) (ret : Fin 3 ↪ Fin T) (tmp buf : Fin T)
     (place : Fin T ↪ Fin H) (host : R → Pr R H Q prime U) (payload count saved aux : Fin H)
     (words : Config → Fin h → List (Fin (prime+4))) (cells : Config → ℕ) (seed : Config → Stacks T prime)
-    (headers : Fin h → Fin H) (scratchCount : ℕ) : Prop :=
+    (headers : Fin h → Fin H) (scratchCount : ℕ)
+    (reserve : (Fin 2 → List (Fin (prime+4))) → (Fin 2 → List (Fin (prime+4))) → ℕ) : Prop :=
     let slots := frameSlots place
     let Label := (Fin T × Bool) ⊕ R
     ∃ (table : Label → Pr Label H Q prime U) (code : Pr Label H Q prime U) (rate : ℕ),
@@ -41,7 +42,7 @@ def SeededSuspendedRows {P R U Config : Type} {T H Q h : ℕ} (body : P → Pr P
       ∀ c (child : Descriptor) (atom price : ℕ), child.width = 64*atom → 142080 ∣ child.rows →
       let m := volume prime (packedDescriptor (64*atom) (CopyChildLayout.spectators child/142080))
       let wide := packedDescriptor child.width (CopyChildLayout.spectators child)
-      PackedPieceHandoffWithCharge cleanupWeight m (packedChildOutput atom m) body (body entry) src dst (seed c) price →
+      PackedPieceHandoffWithReserve cleanupWeight reserve m (packedChildOutput atom m) body (body entry) src dst (seed c) price →
       0 < m → (seed c).L tmp = [] → (seed c).R tmp = [] → (seed c).R buf = [] →
       (∀ i, (seed c).L (ret i) = [] ∧ (seed c).R (ret i) = []) →
       ∀ (x : Fin (volume prime wide) → ZMod 2) u (S : Stacks H prime),
@@ -52,6 +53,14 @@ def SeededSuspendedRows {P R U Config : Type} {T H Q h : ℕ} (body : P → Pr P
           4*slots.length+1+(prime+8)*(slots.map (fun j => (S.L j).length+(S.R j).length+2)).sum) ∧
         RecordPayload payload (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (v := wide) (one_dvd wide.rows) x) F ∧
         ∀ j, j ≠ payload → F.L j = S.L j ∧ F.R j = S.R j
+
+def SeededSuspendedRows {P R U Config : Type} {T H Q h : ℕ} (body : P → Pr P T Q prime U) (entry : P)
+    (src dst : Fin (142081+2) ↪ Fin T) (ret : Fin 3 ↪ Fin T) (tmp buf : Fin T)
+    (place : Fin T ↪ Fin H) (host : R → Pr R H Q prime U) (payload count saved aux : Fin H)
+    (words : Config → Fin h → List (Fin (prime+4))) (cells : Config → ℕ) (seed : Config → Stacks T prime)
+    (headers : Fin h → Fin H) (scratchCount : ℕ) : Prop :=
+  SeededSuspendedRowsWithReserve body entry src dst ret tmp buf place host payload count saved aux
+    words cells seed headers scratchCount (fun _ _ => 0)
 
 private theorem seededRowsWithScratch {P R U Config : Type} {T H Q h : ℕ} (body : P → Pr P T Q prime U) (entry : P)
     (src dst : Fin (142081+2) ↪ Fin T) (ret : Fin 3 ↪ Fin T)
@@ -67,13 +76,15 @@ private theorem seededRowsWithScratch {P R U Config : Type} {T H Q h : ℕ} (bod
     (words : Config → Fin h → List (Fin (prime+4))) (cells : Config → ℕ) (seed : Config → Stacks T prime)
     (loader : LoadsPackedSeed words cells seed) (headers : Fin h → Fin H)
     (away : ∀ i j, place i ≠ headers j) {k : ℕ} (fan : Fin k ↪ Fin H)
-    (belongs : ∀ j, j ∈ frameSlots fan ↔ (∃ i, place (ret i) = j) ∨ ∃ i, place (src i) = j) :
-    SeededSuspendedRows body entry src dst ret tmp buf place host payload count saved aux words cells seed headers k := by
-  unfold SeededSuspendedRows
+    (belongs : ∀ j, j ∈ frameSlots fan ↔ (∃ i, place (ret i) = j) ∨ ∃ i, place (src i) = j)
+    (reserve : (Fin 2 → List (Fin (prime+4))) → (Fin 2 → List (Fin (prime+4))) → ℕ)
+    (bounded : ∀ l r, reserve l r ≤ ∑ i, cleanupWeight (l i) (r i)) :
+    SeededSuspendedRowsWithReserve body entry src dst ret tmp buf place host payload count saved aux words cells seed headers k reserve := by
+  unfold SeededSuspendedRowsWithReserve
   intro slots Label
   obtain ⟨rate,compile⟩ := loader
   obtain ⟨loadSeed,load⟩ := compile host place headers away
-  obtain ⟨move,execute⟩ := packedRowsOnChildBank body entry src dst ret srcOff dstOff tmp buf
+  obtain ⟨move,execute⟩ := packedRowsOnChildBankWithReserve body entry src dst ret srcOff dstOff tmp buf
     srcTmp srcBuf retTmp retBuf distinct place label host installed payload count saved aux outside separate capacity
   let scratch := frameSlots fan
   let worker := (loadSeed.seq (clearWorkTapes scratch)).seq move
@@ -116,7 +127,7 @@ private theorem seededRowsWithScratch {P R U Config : Type} {T H Q h : ℕ} (bod
       simp only [List.map_const',List.sum_replicate,smul_eq_mul,frameLength,Nat.mul_comm,scratch]
     rw [charge] at pay
     have p := kept payload (fun i => (outside i).1)
-    obtain ⟨z,F,n,run,zu,cost,out,endFrame⟩ := execute child atom price (seed c) aligned groups handoff pos x b G
+    obtain ⟨z,F,n,run,zu,cost,out,endFrame⟩ := execute child atom price (seed c) reserve aligned groups bounded handoff pos x b G
       (fun j => by simpa only [p.1,p.2] using input j) ((kept _ (fun i => (outside i).2.1)).2.trans hc)
       ((kept _ (fun i => (outside i).2.2.1)).2.trans hs) ((kept _ (fun i => (outside i).2.2.2)).1.trans al)
       ((kept _ (fun i => (outside i).2.2.2)).2.trans ar)
@@ -130,6 +141,27 @@ private theorem seededRowsWithScratch {P R U Config : Type} {T H Q h : ℕ} (bod
   by_cases h : j ∈ slots
   · exact Or.inl h
   · exact Or.inr ⟨ne,fun i e => h (e ▸ on i)⟩
+
+theorem seededSuspendedMoveWithReserve {P R U Config : Type} {T H Q h : ℕ} (body : P → Pr P T Q prime U) (entry : P)
+    (src dst : Fin (142081+2) ↪ Fin T) (ret : Fin 3 ↪ Fin T)
+    (srcOff : ∀ i j, ret i ≠ src j) (dstOff : ∀ i j, ret i ≠ childReturnFan dst j)
+    (tmp buf : Fin T) (srcTmp : ∀ i, src i ≠ tmp) (srcBuf : ∀ i, src i ≠ buf)
+    (retTmp : ∀ i, ret i ≠ tmp) (retBuf : ∀ i, ret i ≠ buf) (distinct : tmp ≠ buf)
+    (place : Fin T ↪ Fin H) (label : P → R) (host : R → Pr R H Q prime U)
+    (installed : ∀ f, host (label f) = embProg place label (body f))
+    (payload count saved aux : Fin H)
+    (outside : ∀ i, place i ≠ payload ∧ place i ≠ count ∧ place i ≠ saved ∧ place i ≠ aux)
+    (separate : [count,place (ret 0),payload,saved,aux].Nodup)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
+    (words : Config → Fin h → List (Fin (prime+4))) (cells : Config → ℕ) (seed : Config → Stacks T prime)
+    (loader : LoadsPackedSeed words cells seed) (headers : Fin h → Fin H)
+    (away : ∀ i j, place i ≠ headers j)
+    (reserve : (Fin 2 → List (Fin (prime+4))) → (Fin 2 → List (Fin (prime+4))) → ℕ)
+    (bounded : ∀ l r, reserve l r ≤ ∑ i, cleanupWeight (l i) (r i)) :
+    SeededSuspendedRowsWithReserve body entry src dst ret tmp buf place host payload count saved aux words cells seed headers (3+(142081+2)) reserve :=
+  seededRowsWithScratch body entry src dst ret srcOff dstOff tmp buf srcTmp srcBuf retTmp retBuf distinct
+    place label host installed payload count saved aux outside separate capacity words cells seed loader headers away
+    (moveFramePorts src ret srcOff place) (mem_moveScratch src ret srcOff place) reserve bounded
 
 theorem seededSuspendedMove {P R U Config : Type} {T H Q h : ℕ} (body : P → Pr P T Q prime U) (entry : P)
     (src dst : Fin (142081+2) ↪ Fin T) (ret : Fin 3 ↪ Fin T)
@@ -146,9 +178,9 @@ theorem seededSuspendedMove {P R U Config : Type} {T H Q h : ℕ} (body : P → 
     (loader : LoadsPackedSeed words cells seed) (headers : Fin h → Fin H)
     (away : ∀ i j, place i ≠ headers j) :
     SeededSuspendedRows body entry src dst ret tmp buf place host payload count saved aux words cells seed headers (3+(142081+2)) :=
-  seededRowsWithScratch body entry src dst ret srcOff dstOff tmp buf srcTmp srcBuf retTmp retBuf distinct
+  seededSuspendedMoveWithReserve body entry src dst ret srcOff dstOff tmp buf srcTmp srcBuf retTmp retBuf distinct
     place label host installed payload count saved aux outside separate capacity words cells seed loader headers away
-    (moveFramePorts src ret srcOff place) (mem_moveScratch src ret srcOff place)
+    (fun _ _ => 0) (fun _ _ => Nat.zero_le _)
 
 /-- Run a seeded child from the scheduled record, preserving every tape except its payload. -/
 theorem openedSeededMove {P R U Config : Type} {T H Q h scratchCount : ℕ} (body : P → Pr P T Q prime U) (entry : P)

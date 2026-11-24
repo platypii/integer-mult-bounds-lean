@@ -16,6 +16,7 @@ private theorem packedVolume (v : Descriptor) :
   ring
 
 theorem scheduledSeededRows {P R U : Type} {T H Q scratchCount : ℕ}
+    {reserve : (Fin 2 → List (Fin (prime+4))) → (Fin 2 → List (Fin (prime+4))) → ℕ}
     (body : P → Pr P T Q prime U) (entry : P) (src dst : Fin (142081+2) ↪ Fin T)
     (ret : Fin 3 ↪ Fin T) (tmp buf : Fin T) (place : Fin T ↪ Fin H) (host : R → Pr R H Q prime U)
     (payload count saved aux : Fin H) (seed : CutoffNodeInput → Stacks T prime)
@@ -24,8 +25,8 @@ theorem scheduledSeededRows {P R U : Type} {T H Q scratchCount : ℕ}
     (fieldOff : ∀ i j, fields i ≠ r j) (cutOff : ∀ j, cut ≠ r j) (rowOff : ∀ j, counter 2 ≠ r j)
     (inheritedOff : ∀ i, fields i ≠ counter 2) (cutRow : cut ≠ counter 2)
     (i : Fin nodeChildren5.length)
-    (rows : SeededSuspendedRows body entry src dst ret tmp buf place host payload count saved aux
-      nodeSeedWords CutoffNodeInput.cells seed (moveSeedHeaders r fields cut) scratchCount) :
+    (rows : SeededSuspendedRowsWithReserve body entry src dst ret tmp buf place host payload count saved aux
+      nodeSeedWords CutoffNodeInput.cells seed (moveSeedHeaders r fields cut) scratchCount reserve) :
     let slots := frameSlots place
     let cleanup := counter 2 :: moveSeedOutputs r
     let Label := (Fin T × Bool) ⊕ R
@@ -34,7 +35,7 @@ theorem scheduledSeededRows {P R U : Type} {T H Q scratchCount : ℕ}
     ∃ (table : Label → Pr Label H Q prime U) (code : Pr Label H Q prime U) (rate : ℕ),
       (∀ f, table (.inr f) = stateMapProg id id Sum.inr (host f)) ∧
       ∀ (p c : CutoffNodeInput) price, c.node = scheduledChild prime p.node i →
-      PackedPieceHandoffWithCharge cleanupWeight c.cells (packedChildOutput (c.w+1) c.cells)
+      PackedPieceHandoffWithReserve cleanupWeight reserve c.cells (packedChildOutput (c.w+1) c.cells)
         body (body entry) src dst (seed c) price →
       (seed c).L tmp = [] → (seed c).R tmp = [] → (seed c).R buf = [] →
       (∀ j, (seed c).L (ret j) = [] ∧ (seed c).R (ret j) = []) →

@@ -133,6 +133,44 @@ theorem packedMoveTranspose {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prim
     dsimp only [intervalSplitTapes] at bill
     omega
 
+theorem packedMoveTransposeWithReserve {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
+    (bank : Fin (intervalSplitTapes+1) ↪ Fin T) (tmp buf : Fin T)
+    (tmpOff : ∀ i, bank i ≠ tmp) (bufOff : ∀ i, bank i ≠ buf) (distinct : tmp ≠ buf)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    let fan := (withHelperPort (intervalOwners 142080)).trans bank
+    ∀ dst : Fin (142081+2) ↪ Fin T,
+    (∀ j i, bank (moveReturnPorts j) ≠ childReturnFan dst i) →
+    ∃ code : Pr P T Q prime U, ∀ atom W price seed reserve,
+      let lane := packedDescriptor (64*atom) W
+      let m := volume prime lane
+      let wide := {lane with afterD := lane.afterD*142080}
+      let size : m*142080 = volume prime wide := by simp [m,wide,volume,Nat.mul_assoc]
+      (∀ l r : Fin 2 → List (Fin (prime+4)), reserve l r ≤ ∑ i, cleanupWeight (l i) (r i)) →
+      PackedPieceHandoffWithReserve cleanupWeight reserve m (packedChildOutput atom m) body (body entry) fan dst seed price →
+      0 < m → ∀ (x : Fin (volume prime wide) → ZMod 2) u (S : Stacks T prime),
+      S.R (bank (Fin.succ 0)) = List.ofFn (fun i => SparseRoleCircuit.encode (x (i.cast size))) →
+      (∀ i, S.L (bank i) = []) → (∀ i, i ≠ Fin.succ 0 → S.R (bank i) = []) →
+      S.L tmp = [] → S.R tmp = [] → S.R buf = [] →
+      (∀ j, (∀ i, fan i ≠ bank j) → seed.L (bank j) = [] ∧ seed.R (bank j) = []) →
+      (∀ j, (∀ i, bank i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
+      ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        RecordPayload (bank (Fin.succ 0)) (fun _ => blank) 0
+          (Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) x) F ∧
+        ∀ js, js.Nodup → (∀ i, bank (moveReturnPorts i) ∈ js) →
+          t+tapeCharge cleanupWeight js F ≤ price+tapeCharge cleanupWeight js S+
+            1000000000*volume prime wide := by
+  intro fan dst disjoint
+  obtain ⟨code,run⟩ := exactSplitReturnWithReserve body entry bank tmp buf tmpOff bufOff distinct capacity dst
+    (moveReturnPorts.trans bank) disjoint
+  refine ⟨code,?_⟩
+  intro atom W price seed reserve lane m wide size bounded worker pos x u S source left empty tl tr br localSeed outerSeed
+  obtain ⟨z,F,t,y,exec,user,effect,out,bill⟩ := run _ seed reserve bounded worker pos
+    (fun i => x (i.cast size)) u S source left empty tl tr br localSeed outerSeed
+  refine ⟨z,F,t,exec,user,?_,?_⟩
+  · exact packedMovePayload atom W _ F x y effect out
+  · rw [← size]
+    exact bill
+
 theorem chargedPackedMoveTranspose {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
     (bank : Fin (intervalSplitTapes+1) ↪ Fin T) (tmp buf : Fin T)
     (tmpOff : ∀ i, bank i ≠ tmp) (bufOff : ∀ i, bank i ≠ buf) (distinct : tmp ≠ buf)
@@ -159,16 +197,11 @@ theorem chargedPackedMoveTranspose {P U : Type} {T Q : ℕ} (body : P → Pr P T
           t+tapeCharge cleanupWeight js F ≤ price+tapeCharge cleanupWeight js S+
             1000000000*volume prime wide := by
   intro fan dst disjoint
-  obtain ⟨code,run⟩ := exactSplitReturnCharged body entry bank tmp buf tmpOff bufOff distinct capacity dst
-    (moveReturnPorts.trans bank) disjoint
+  obtain ⟨code,run⟩ := packedMoveTransposeWithReserve body entry bank tmp buf tmpOff bufOff distinct capacity dst disjoint
   refine ⟨code,?_⟩
-  intro atom W price seed lane m wide size worker pos x u S source left empty tl tr br localSeed outerSeed
-  obtain ⟨z,F,t,y,exec,user,effect,out,bill⟩ := run _ seed worker pos
-    (fun i => x (i.cast size)) u S source left empty tl tr br localSeed outerSeed
-  refine ⟨z,F,t,exec,user,?_,?_⟩
-  · exact packedMovePayload atom W _ F x y effect out
-  · rw [← size]
-    exact bill
+  intro atom W price seed lane m wide size child
+  exact run atom W price seed (fun _ _ => 0) (fun _ _ => Nat.zero_le _)
+    (by simpa only [PackedPieceHandoffWithReserve,PackedPieceHandoffWithCharge,Nat.add_zero] using child)
 
 theorem scheduledMoveSpectators (child : Descriptor) (atom : ℕ) (groups : 142080 ∣ child.rows) :
     let W := CopyChildLayout.spectators child / 142080

@@ -67,6 +67,7 @@ theorem splitParentFrame {P U Config : Type} {T Q h : ℕ} (body : P → Pr P T 
 
 /-- A scheduled MOVE pays linear overhead and preserves its saved-bank allowance. -/
 theorem linearParentDirectoryMove {P R U : Type} {T H Q scratchCount : ℕ}
+    {reserve : (Fin 2 → List (Fin (prime+4))) → (Fin 2 → List (Fin (prime+4))) → ℕ}
     (body : P → Pr P T Q prime U) (entry : P) (src dst : Fin (142081+2) ↪ Fin T)
     (ret : Fin 3 ↪ Fin T) (tmp buf : Fin T) (place : Fin T ↪ Fin H) (host : R → Pr R H Q prime U)
     (payload count saved aux : Fin H) (seed : CutoffNodeInput → Stacks T prime)
@@ -79,8 +80,8 @@ theorem linearParentDirectoryMove {P R U : Type} {T H Q scratchCount : ℕ}
     let cut := master 0
     (∀ i j, fields i ≠ r j) → (∀ j, counter 2 ≠ r j) →
     (∀ i, fields i ≠ counter 2) → cut ≠ counter 2 →
-    ( SeededSuspendedRows body entry src dst ret tmp buf place host payload count saved aux
-      nodeSeedWords CutoffNodeInput.cells seed (moveSeedHeaders r fields cut) scratchCount) →
+    ( SeededSuspendedRowsWithReserve body entry src dst ret tmp buf place host payload count saved aux
+      nodeSeedWords CutoffNodeInput.cells seed (moveSeedHeaders r fields cut) scratchCount reserve) →
     let slots := frameSlots place
     let cleanup := counter 2 :: moveSeedOutputs r
     let Label := (Fin T × Bool) ⊕ R
@@ -89,7 +90,7 @@ theorem linearParentDirectoryMove {P R U : Type} {T H Q scratchCount : ℕ}
     ∃ (table : Label → Pr Label H Q prime U) (code : Pr Label H Q prime U) (rate : ℕ),
       (∀ f, table (.inr f) = stateMapProg id id Sum.inr (host f)) ∧
       ∀ (p c : CutoffNodeInput) price, c.node = scheduledChild prime p.node i →
-      PackedPieceHandoffWithCharge cleanupWeight c.cells (packedChildOutput (c.w+1) c.cells)
+      PackedPieceHandoffWithReserve cleanupWeight reserve c.cells (packedChildOutput (c.w+1) c.cells)
         body (body entry) src dst (seed c) price →
       (seed c).L tmp = [] → (seed c).R tmp = [] → (seed c).R buf = [] →
       (∀ j, (seed c).L (ret j) = [] ∧ (seed c).R (ret j) = []) →
