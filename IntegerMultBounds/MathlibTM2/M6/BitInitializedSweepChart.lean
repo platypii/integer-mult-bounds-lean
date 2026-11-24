@@ -318,6 +318,10 @@ theorem prepareSweepFan [M8.Machine.Net] (n : Fin 9) (backward : Bool) :
           (∀ r i, routedCell backward (x (sweepRoleTape r)) (y (sweepRoleTape r)) i
             ((flatToSweep (w+1) W n r i).cast (by simpa only [Nat.one_mul] using ordinaryCompact_width M W))) ∧
           y (Fin.last 142080) = x (Fin.last 142080) ∧
+          (∀ i : Fin (rowSwapBlock.tapes+35), i.val ≠ 24 → let seed := moveRecordSeed w W [] [] []
+            F.L (workspace (i.castAdd space)) = seed.L i ∧ F.R (workspace (i.castAdd space)) = seed.R i) ∧
+          (∀ i : Fin space, let j := workspace (i.natAdd (rowSwapBlock.tapes+35))
+            F.L j = [] ∧ F.R j = []) ∧
           ∀ j, (∀ r, owners r ≠ j) → (∀ i, workspace i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   obtain ⟨space,states,build⟩ := initializedSweepFan n backward
   refine ⟨space,states,?_⟩
@@ -352,7 +356,7 @@ theorem prepareSweepFan [M8.Machine.Net] (n : Fin 9) (backward : Bool) :
       intro j
       have eq := off (work j) (fun i _ => (apart j i).symm)
       exact ⟨eq.1.trans (vacant _).1,eq.2.trans (vacant _).2⟩)
-  refine ⟨z,F,t+m,y,start.seq finish,last.trans user,?_,out,act,reserved,?_⟩
+  refine ⟨z,F,t+m,y,start.seq finish,last.trans user,?_,out,act,reserved,?_,?_,?_⟩
   · intro js nd
     have mass : M ≤ V := (Nat.le_self_pow (by decide : 128 ≠ 0) M).trans (Nat.le_mul_of_pos_right _ pos)
     have width : w+1 ≤ V := (Nat.lt_pow_self Shared50ModularControl.prime_prime.one_lt).le.trans mass
@@ -373,6 +377,13 @@ theorem prepareSweepFan [M8.Machine.Net] (n : Fin 9) (backward : Bool) :
     change (m : ℝ)+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js D+C*V*_ at done
     rw [Nat.cast_add t m]
     linarith only [charge,scale,done]
+  · intro i ne
+    have eq := frame (recBank i) (fun r => (fanOff _ _).symm)
+    exact ⟨eq.1.trans (seed i ne).1,eq.2.trans (seed i ne).2⟩
+  · intro i
+    have unchanged := frame (work i) (fun r => (fanOff _ _).symm)
+    have before := off (work i) (fun j _ => (apart i j).symm)
+    exact ⟨unchanged.1.trans (before.1.trans (vacant _).1),unchanged.2.trans (before.2.trans (vacant _).2)⟩
   · intro j away outside
     have f := frame j away
     have e := off j (fun _ _ => outside _)
