@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitFlatDispatchedHandoff
+public import IntegerMultBounds.MathlibTM2.M6.BitNodeSeedWords
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
@@ -45,6 +45,7 @@ theorem initializedPackedNode [M8.Machine.Net] (P U Config : Type) :
       IntervalWorkerExec idleBody (.inr (idleEntry n)) (phaseIntervalChild (e.1+1) (e.2+1) (v.w+1) v.idleWidth 64)
         (v.w+1) v.idleWidth (budget c i.val) (binSyms v.root.width.size v.cutoff)) →
     ∃ (R : Type) (T : ℕ) (table : R → Pr R T Q prime U), ∃ code src dst, ∃ seed : Config → Stacks T prime,
+      LoadsPackedSeed (nodeSeedWords ∘ input) (CutoffNodeInput.cells ∘ input) seed ∧
       ∀ c, let v := input c
         PackedPieceHandoffWithCharge cleanupWeight v.cells (packedChildOutput (v.w+1) v.cells) table code src dst (seed c)
           (v.localCharge localWork assemblyRate+∑ i : Fin nodeChildren5.length, time c i.val) := by
@@ -53,7 +54,7 @@ theorem initializedPackedNode [M8.Machine.Net] (P U Config : Type) :
   have stages := flatDispatchedHandoff
   dsimp only at stages
   choose pre post ts states ports rates build using stages
-  obtain ⟨q,assemble⟩ := alignedPackedNodeFamily (U := U) (Config := Config)
+  obtain ⟨q,assemble⟩ := assembledFlatNodeFamilyWithSeed (U := U) (Config := Config)
   let merge := 7+(CyclicRowCycle.states 142080+5)+4
   refine ⟨pre,post,ts,max (Finset.univ.sup states) (max q (max columnCapacity (merge+merge))),ports,?_⟩
   intro Q capacity
@@ -65,7 +66,7 @@ theorem initializedPackedNode [M8.Machine.Net] (P U Config : Type) :
   intro large f idleLarge idleEntry
   let idleBody : Unit ⊕ P → Pr (Unit ⊕ P) (72+N) Q prime U :=
     Sum.elim (fun g => embProg (Function.Embedding.refl _) Sum.inl (leaf g)) idleLarge
-  choose body active tapes src dst host code cost seed _ bound step using fun n => build n
+  choose body active tapes src dst host code cost seed load bound step using fun n => build n
     ((Finset.le_sup (Finset.mem_univ n)).trans ((Nat.le_max_left ..).trans capacity)) (large n) (f n)
   refine ⟨body,idleBody,active,fun _ => rfl,?_⟩
   obtain ⟨assemblyRate,join⟩ := assemble ((Nat.le_max_left ..).trans room)
@@ -80,42 +81,71 @@ theorem initializedPackedNode [M8.Machine.Net] (P U Config : Type) :
   let price := fun c n => work c n+((List.range' (stageChildStart n)
     (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map (time c)).sum
   let dispatch := fun c (i : Fin nodeChildren5.length) => 2*volume prime (scheduledChild prime (input c).node i)+time c i.val
-  refine join (fun c => (input c).w+1) (fun c => (input c).idleWidth*142080) (fun c =>
-    Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) (Nat.mul_pos (input c).idlePositive (by decide)))
-    (fun c => (input c).node) time price work dispatch (fun c => ⟨_,(input c).width⟩) (fun c => ⟨_,(input c).rows⟩)
-    (fun _ _ => le_rfl) (fun _ _ _ => le_rfl) ?_ ?_
-  swap
-  ·
-    intro n k
-    let j := idleCopyIndex k
-    obtain ⟨worker,run⟩ := dispatchIdle idleBody Sum.inl (fun _ => rfl) n j (.inr (idleEntry n))
-    refine ⟨72+N,_,(Fin.castAddEmb N) (24 : Fin 72),idleBody,worker,
-      fun c => idleDispatchStacks N (input c).w (input c).idleWidth (input c).root.width.size (input c).cutoff,?_⟩
-    intro c word u S left right fresh
-    let v := input c
-    let i := idleDirectoryIndex (n,j)
-    obtain ⟨z,F,t,y,exec,user,out,read,bill⟩ := run v.root v.path v.depth v.b v.cutoff v.w v.groups
-      v.levels v.base v.rootWidth v.stop v.active v.width v.rows v.idlePositive word u S left right fresh
-      (budget c i.val) (idle c n j)
-    refine ⟨z,F,t,y,exec,?_,user,out,?_⟩
-    · intro js nd
-      apply (bill js nd).trans
-      rw [Nat.add_assoc]
-      apply Nat.add_le_add_left
-      change 2*volume prime (scheduledChild prime v.node i)+_ ≤ 2*volume prime (scheduledChild prime v.node i)+time c i.val
-      apply Nat.add_le_add_left
-      simp only [time,stageBranchTime,dite_eq_left i.isLt]
-      split
-      · rfl
-      · apply Nat.floor_mono
-        exact mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right ((le_max_left _ _).trans enough) (by positivity)) (by positivity)
-    · change parentIntervalRead n idleCopies[j.val].2 (v.w+1) (v.idleWidth*142080) word y at read
-      simpa only [j,idleCopyIndex_get] using read
-  intro n
-  refine ⟨_,tapes n,host n,code n,src n,dst n,fun c => seed n (input c),?_⟩
-  intro c
-  have run := runs c n (budget c) rate ((Finset.le_sup' rates (Finset.mem_univ n)).trans
-    ((le_max_right _ _).trans enough)) (recurse c n)
-  exact stageCast n (input c).stageTail _ (cost n ((input c).w+1)) run
+  let W := fun c => (input c).idleWidth*142080
+  let V := fun c => (prime^((input c).w+1))^128*W c
+  let overhead := fun c => 1+(142081*(10*V c+10)+1)
+  let idleCost := fun c (n : Fin 9) => (∑ j : Fin idleCopies.length, dispatch c (idleDirectoryIndex (n,j)))+1+(142081*(10*V c+10)+1)
+  have positive (c : Config) : 0 < V c := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)
+    (Nat.mul_pos (input c).idlePositive (by decide))
+  let admissible := fun {T} (seed : Config → Stacks T prime) =>
+    LoadsPackedSeed (nodeSeedWords ∘ input) V seed
+  have assembleNode := join (@admissible) (LoadsPackedSeed.fixed _ V positive)
+    (fun _ _ => LoadsPackedSeed.join) (fun c => (input c).w+1) W V (fun _ => rfl) positive (fun _ => Equiv.refl _) price idleCost
+  obtain ⟨R,T,table,program,src,dst,initial,ready,run⟩ := assembleNode (by
+    intro n
+    refine ⟨_,tapes n,host n,code n,src n,dst n,_,nodeSweepLoader input (load n),?_⟩
+    intro c
+    have run := runs c n (budget c) rate ((Finset.le_sup' rates (Finset.mem_univ n)).trans
+      ((le_max_right _ _).trans enough)) (recurse c n)
+    exact stageCast n (input c).stageTail _ (cost n ((input c).w+1)) run) (by
+    intro n
+    let Job := (Fin 32 × Fin 5) × Fin 222
+    let slot := (Fin.castAddEmb N) (24 : Fin 72)
+    have workers (k : Job) := dispatchIdle idleBody Sum.inl (fun _ => rfl) n (idleCopyIndex k) (.inr (idleEntry n))
+    obtain ⟨H,host,worker,src,dst,origin,free,prep⟩ := uniformRemainderWindow n (fun _ => 72+N) (fun _ => Unit ⊕ P)
+      (fun _ => slot) (fun _ => idleBody) (fun k => (workers k).choose)
+    refine ⟨_,H,host,worker,src,dst,_,nodeIdleLoader input origin free,?_⟩
+    intro c
+    have installed := prep ((input c).w+1) (W c)
+      (fun _ => idleDispatchStacks N (input c).w (input c).idleWidth (input c).root.width.size (input c).cutoff) (dispatch c) (by
+      intro k
+      let j := idleCopyIndex k
+      have run := (workers k).choose_spec
+      intro word u S left right fresh
+      let v := input c
+      let i := idleDirectoryIndex (n,j)
+      obtain ⟨z,F,t,y,exec,user,out,read,bill⟩ := run v.root v.path v.depth v.b v.cutoff v.w v.groups
+        v.levels v.base v.rootWidth v.stop v.active v.width v.rows v.idlePositive word u S left right fresh
+        (budget c i.val) (idle c n j)
+      refine ⟨z,F,t,y,exec,?_,user,out,?_⟩
+      · intro js nd
+        apply (bill js nd).trans
+        rw [Nat.add_assoc]
+        apply Nat.add_le_add_left
+        change 2*volume prime (scheduledChild prime v.node i)+_ ≤ 2*volume prime (scheduledChild prime v.node i)+time c i.val
+        apply Nat.add_le_add_left
+        simp only [time,stageBranchTime,dite_eq_left i.isLt]
+        split
+        · rfl
+        · apply Nat.floor_mono
+          exact mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right ((le_max_left _ _).trans enough) (by positivity)) (by positivity)
+      · change parentIntervalRead n idleCopies[j.val].2 (v.w+1) (v.idleWidth*142080) word y at read
+        simpa only [j,idleCopyIndex_get] using read)
+    exact installed)
+  refine ⟨R,T,table,program,src,dst,initial,ready,?_⟩
+  intro c v x u S words fresh
+  obtain ⟨z,F,t,y,exec,paid,user,out,act⟩ := run c x u S words fresh
+  refine ⟨z,F,t,y,exec,?_,user,out,act⟩
+  intro js unique
+  have bill := alignedNodeDirectoryBill (input c).node ⟨_,(input c).width⟩ ⟨_,(input c).rows⟩
+    (time c) (price c) (idleCost c) (work c) (fun _ => overhead c)
+    (fun i j => dispatch c (idleDirectoryIndex (i,j))) (fun _ => le_rfl)
+    (fun i => by dsimp only [idleCost,overhead]; omega) (fun _ _ => le_rfl)
+  simp only [Finset.sum_const,Finset.card_univ,Fintype.card_fin,nsmul_eq_mul,Nat.cast_id] at bill
+  have charged := paid js unique
+  dsimp only [v]
+  unfold CutoffNodeInput.localCharge
+  dsimp only [work,overhead,V,W,CutoffNodeInput.cells] at bill charged ⊢
+  omega
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

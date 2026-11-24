@@ -604,6 +604,43 @@ theorem assembledFlatNode {U : Type} :
 
 /-- One physical node program transposes the packed owner words across a
 family of runtime sizes. Each scheduled child contributes its own budget. -/
+theorem assembledFlatNodeFamilyWithSeed {U Config : Type} :
+    ∃ states : ℕ, ∀ {Q : ℕ}, states ≤ Q → ∃ rate : ℕ, ∀
+    (admissible : ∀ {t : ℕ}, (Config → Stacks t prime) → Prop)
+    (fixed : ∀ {t} (S : Stacks t prime), admissible (fun _ => S))
+    (join : ∀ {m n} (L : Config → Stacks m prime) (D : Config → Stacks n prime),
+      admissible L → admissible D → admissible (fun c => adjacentStageStacks (L c) (D c))), ∀ w W V : Config → ℕ,
+      ∀ size : ∀ c, (prime^(w c))^128*W c = V c, (∀ c, 0 < V c) → ∀ place : ∀ c, Fin (V c) ≃ Fin (V c),
+      let address := fun c (j : Fin (W c)) s => place c ((flatWindowEquiv (w c) (W c) (s,j)).cast (size c))
+      let reads := fun c (piece : Piece) (x y : Fin 142081 → Fin (V c) → ZMod 2) =>
+        ∀ j, let addr := fun z => address c j (windowState (w c) z)
+          readRoles addr y = piece.run (readRoles addr x)
+      ∀ (sweepCost idleCost : Config → Fin 9 → ℕ),
+      (∀ n, ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst, ∃ seed : Config → Stacks T prime, admissible seed ∧
+        ∀ c, PackedPieceHandoffWithCharge cleanupWeight (V c) (reads c (.stage n)) body code src dst (seed c) (sweepCost c n)) →
+      (∀ n, ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst, ∃ seed : Config → Stacks T prime, admissible seed ∧
+        ∀ c, PackedPieceHandoffWithCharge cleanupWeight (V c) (reads c (.remainder n.val)) body code src dst (seed c) (idleCost c n)) →
+      ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst, ∃ seed : Config → Stacks T prime, admissible seed ∧
+        ∀ c, PackedPieceHandoffWithCharge cleanupWeight (V c)
+          (fun x y => packedChildOutput (w c) (V c) (fun r => x r ∘ place c) (fun r => y r ∘ place c))
+          body code src dst (seed c) ((∑ i, sweepCost c i)+(∑ i, idleCost c i)+rate*V c+2) := by
+  obtain ⟨states,build⟩ := assembledPackedNodeFamilyWithSeed (U := U) (Config := Config)
+  refine ⟨states,?_⟩
+  intro Q fits
+  obtain ⟨rate,assemble⟩ := build fits
+  refine ⟨rate,?_⟩
+  intro admissible fixed join w W V size pos place address reads sweepCost idleCost sweeps windows
+  have volume : (fun c => (prime^(w c))^16*(1*((prime^(w c))^112*W c))) = V := by
+    funext c
+    simpa only [Nat.one_mul] using (ordinaryCompact_width (prime^(w c)) (W c)).trans (size c)
+  subst V
+  obtain ⟨P,T,body,code,src,dst,seed,valid,run⟩ := assemble (@admissible) fixed join w (fun _ => 1) W pos
+    (fun c n => reads c (.stage n)) (fun c n => reads c (.remainder n.val)) sweepCost idleCost sweeps windows
+  refine ⟨P,T,body,code,src,dst,seed,valid,?_⟩
+  intro c x u S words privateTapes
+  obtain ⟨z,F,k,y,exec,paid,user,out,trace⟩ := run c x u S words privateTapes
+  exact ⟨z,F,k,y,exec,paid,user,out,packedOutputOfTrace (size c) (place c) x y trace⟩
+
 theorem assembledFlatNodeFamily {U Config : Type} :
     ∃ states : ℕ, ∀ {Q : ℕ}, states ≤ Q → ∃ rate : ℕ, ∀ w W V : Config → ℕ,
       ∀ size : ∀ c, (prime^(w c))^128*W c = V c, (∀ c, 0 < V c) → ∀ place : ∀ c, Fin (V c) ≃ Fin (V c),
@@ -620,22 +657,11 @@ theorem assembledFlatNodeFamily {U Config : Type} :
         ∀ c, PackedPieceHandoffWithCharge cleanupWeight (V c)
           (fun x y => packedChildOutput (w c) (V c) (fun r => x r ∘ place c) (fun r => y r ∘ place c))
           body code src dst (seed c) ((∑ i, sweepCost c i)+(∑ i, idleCost c i)+rate*V c+2) := by
-  obtain ⟨states,build⟩ := assembledPackedNodeFamily (U := U) (Config := Config)
+  obtain ⟨states,build⟩ := assembledFlatNodeFamilyWithSeed (U := U) (Config := Config)
   refine ⟨states,?_⟩
-  intro Q fits
+  intro q fits
   obtain ⟨rate,assemble⟩ := build fits
-  refine ⟨rate,?_⟩
-  intro w W V size pos place address reads sweepCost idleCost sweeps windows
-  have volume : (fun c => (prime^(w c))^16*(1*((prime^(w c))^112*W c))) = V := by
-    funext c
-    simpa only [Nat.one_mul] using (ordinaryCompact_width (prime^(w c)) (W c)).trans (size c)
-  subst V
-  obtain ⟨P,T,body,code,src,dst,seed,run⟩ := assemble w (fun _ => 1) W pos
-    (fun c n => reads c (.stage n)) (fun c n => reads c (.remainder n.val)) sweepCost idleCost sweeps windows
-  refine ⟨P,T,body,code,src,dst,seed,?_⟩
-  intro c x u S words privateTapes
-  obtain ⟨z,F,k,y,exec,paid,user,out,trace⟩ := run c x u S words privateTapes
-  exact ⟨z,F,k,y,exec,paid,user,out,packedOutputOfTrace (size c) (place c) x y trace⟩
+  exact ⟨rate,by simpa only [true_and] using assemble (fun _ => True) (fun _ => trivial) (fun _ _ _ _ => trivial)⟩
 
 /-- Sweeps and idle windows on exact flat words compose to interchange the two
 parent fields on every role. The spectator and the two piece-cost sums are preserved. -/
