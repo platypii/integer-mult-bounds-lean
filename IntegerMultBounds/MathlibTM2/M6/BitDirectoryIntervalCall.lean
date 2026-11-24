@@ -23,7 +23,7 @@ theorem RecordChildCall.onLane {A U : Type} {N T Q H : ℕ} {c : CutoffNodeInput
     HelperFan ((live.trans caller).trans place) (fun r => data r ∘ position.symm) S →
     (∀ i : Fin 6, S.R (place (caller (record (i.castAdd 28)))) = (Routines.hdr c.node i).map bitSymbol) →
     S.R (place (caller (record 6))) = binSyms c.root.width.size c.cutoff →
-    (S.R (place (caller (record 7)))).length = c.cells →
+    LengthControl (S.R (place (caller (record 7)))) c.cells →
     (∀ i : Fin 34, 8 ≤ i.val → S.R (place (caller (record i))) = []) →
     (∀ i : Fin 142082, let j := (i.castAdd T).castAdd N; S.L (place j) = [] ∧ S.R (place j) = []) →
     (∀ i : Fin N, let j := i.natAdd (142082+T); S.L (place j) = [] ∧ S.R (place j) = []) →
@@ -106,7 +106,6 @@ def DirectoryIntervalRun {A U : Type} {T N Q lo hi axes : ℕ}
       (∀ r k, k ≠ small 24 → S.L (ports r k) = [] ∧ S.R (ports r k) = []) →
       (∀ i : Fin 6, S.R (extend (caller (record (i.castAdd 28)))) = (Routines.hdr c.node i).map bitSymbol) →
       S.R (extend (caller (record 6))) = binSyms c.root.width.size c.cutoff →
-      (S.R (extend (caller (record 7)))).length = c.cells →
       (∀ i : Fin 34, 8 ≤ i.val → S.R (extend (caller (record i))) = []) →
       (∀ i : Fin 142082, let j := extend ((i.castAdd T).castAdd N); S.L j = [] ∧ S.R j = []) →
       (∀ i : Fin N, let j := extend (i.natAdd (142082+T)); S.L j = [] ∧ S.R j = []) →
@@ -127,6 +126,7 @@ theorem directoryIntervalPasses {A U : Type} {T N Q lo hi axes : ℕ}
     (apart : ∀ r : Fin 142080, ∀ i, live (r.castAdd 2) ≠ headers i)
     (widthFree : ∀ r : Fin 142080, live (r.castAdd 2) ≠ width)
     (recordFree : ∀ r : Fin 142080, ∀ i, live (r.castAdd 2) ≠ record i)
+    (lengthPort : record 7 = live ((1 : Fin 2).natAdd 142080))
     (outer : A → Pr A (intervalHostSize T N) Q prime U) (entry : A) :
     ∃ (program : Pr A (intervalHostSize T N) Q prime U) (rate : ℕ),
     ∀ w W, 0 < W → ∀ (c : CutoffNodeInput) budget,
@@ -144,7 +144,7 @@ theorem directoryIntervalPasses {A U : Type} {T N Q lo hi axes : ℕ}
   refine ⟨(enter.seq (.call entry)).seq leave,rate,?_⟩
   intro w W positive c budget lane widthAt volumeAt call
   unfold DirectoryIntervalRun
-  intro _ _ _ _ small ports _ size input u S dimensions fan free digits cut length scratch bridge vacant
+  intro _ _ _ _ small ports _ size input u S dimensions fan free digits cut scratch bridge vacant
   let output := fun r => Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (input r)
   let safe := fun j => (∀ i, live i ≠ j) ∧ (∀ i : Fin 34, 8 ≤ i.val → record i ≠ j)
   obtain ⟨z,F,n,ran,paid,user,rows,frame⟩ := passes w W positive input output (.call entry) budget
@@ -158,7 +158,10 @@ theorem directoryIntervalPasses {A U : Type} {T N Q lo hi axes : ℕ}
       obtain ⟨q,G,m,exec,same,charge,owners,callerFrame,outside⟩ :=
         call.onLane lane widthAt volumeAt size input v D packed
           (fun i => (recFrame _).2.trans (digits i)) ((recFrame _).2.trans cut)
-          ((congrArg List.length (recFrame _).2).trans length) (fun i h => (recFrame _).2.trans (scratch i h))
+          (by
+            have word := helperFan_lengthWord packed
+            rw [← volumeAt, size]
+            simpa only [lengthPort,caller,Function.Embedding.trans_apply] using word) (fun i h => (recFrame _).2.trans (scratch i h))
           (fun i => by
             have h := unchanged ((i.castAdd T).castAdd N)
               (fun r => (Fin.castAddEmb N).injective.ne (suffixApart (live (r.castAdd 2)) i))
@@ -236,6 +239,7 @@ theorem directoryIdlePasses {A U : Type} {T N Q : ℕ} (capacity : rowSwapBlock.
     (apart : ∀ r : Fin 142080, ∀ k, live (r.castAdd 2) ≠ headers k)
     (widthFree : ∀ r : Fin 142080, live (r.castAdd 2) ≠ width)
     (recordFree : ∀ r : Fin 142080, ∀ k, live (r.castAdd 2) ≠ record k)
+    (lengthPort : record 7 = live ((1 : Fin 2).natAdd 142080))
     (outer : A → Pr A (intervalHostSize T N) Q prime U) (entry : A) :
     let bounds := idleBounds i idleCopies[j.val].2
     ∃ (program : Pr A (intervalHostSize T N) Q prime U) (rate : ℕ),
@@ -246,7 +250,7 @@ theorem directoryIdlePasses {A U : Type} {T N Q : ℕ} (capacity : rowSwapBlock.
         live headers width record dst bank outer program parent.w parent.idleWidth child rate budget := by
   intro bounds
   obtain ⟨program,rate,run⟩ := directoryIntervalPasses capacity (Nat.succ_le_succ bounds.1)
-    (Nat.succ_le_succ bounds.2) live headers width record dst bank bankFrame apart widthFree recordFree outer entry
+    (Nat.succ_le_succ bounds.2) live headers width record dst bank bankFrame apart widthFree recordFree lengthPort outer entry
   refine ⟨program,rate,?_⟩
   intro parent child scheduled budget
   have shape := scheduledLaneShape parent child i j scheduled
@@ -268,7 +272,8 @@ theorem compiledIdleInterval [M8.Machine.Net] {P U Config : Type} {T N Q : ℕ}
     (record : Fin 34 ↪ Fin T) (scratchOff : ∀ r k, 8 ≤ k.val → record k ≠ live r)
     (apart : ∀ r : Fin 142080, ∀ k, live (r.castAdd 2) ≠ headers k)
     (widthFree : ∀ r : Fin 142080, live (r.castAdd 2) ≠ width)
-    (recordFree : ∀ r : Fin 142080, ∀ k, live (r.castAdd 2) ≠ record k) :
+    (recordFree : ∀ r : Fin 142080, ∀ k, live (r.castAdd 2) ≠ record k)
+    (lengthPort : record 7 = live ((1 : Fin 2).natAdd 142080)) :
     let bounds := idleBounds i idleCopies[j.val].2
     ∃ minimum : ℝ, 0 ≤ minimum ∧ ∀ D : ℝ, minimum ≤ D →
       ∃ (bank : Fin N ↪ Fin (142082+T+N)) (table : Option (Empty ⊕ P) → Pr (Option (Empty ⊕ P)) (intervalHostSize T N) Q prime U)
@@ -290,7 +295,7 @@ theorem compiledIdleInterval [M8.Machine.Net] {P U Config : Type} {T N Q : ℕ}
   obtain ⟨bank,host,childCode,_,frame,exec⟩ := build D enough live record scratchOff
   let table := intervalEntryTable (intervalExtend T N) host childCode
   obtain ⟨program,rate,run⟩ := directoryIdlePasses capacity i j live headers width record dst bank
-    frame apart widthFree recordFree table none
+    frame apart widthFree recordFree lengthPort table none
   refine ⟨bank,table,program,rate,frame,?_⟩
   intro parent x c scheduled active children
   apply run parent c scheduled _

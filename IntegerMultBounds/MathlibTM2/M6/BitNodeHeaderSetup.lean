@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitNodeSeedWords
+public import IntegerMultBounds.MathlibTM2.M6.BitFanLengthWord
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
@@ -15,7 +16,7 @@ def nodeHeaderSources {T : ℕ} (fields : Fin 6 → Fin T) (clock : Fin 7 ↪ Fi
 def nodeHeaderSetupRate : ℕ := 2000366
 
 /-- Derive both unary clocks, the modulus, and the unit from the descriptor width.
-Measure a payload lane to obtain the idle width. Only the cutoff and descriptor fields enter on header tapes. -/
+Read the fan length control to obtain the idle width. Only the cutoff and descriptor fields enter on header tapes. -/
 theorem nodeHeaderSetup {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
     (fields : Fin 6 → Fin T) (clock : Fin 7 ↪ Fin T) (power : Fin 10 ↪ Fin T)
     (cut row : Fin T) (division : Fin 11 ↪ Fin T) (width : clock 0 = fields 3) (long : power 0 = clock 1)
@@ -28,7 +29,7 @@ theorem nodeHeaderSetup {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
     let source := nodeHeaderSources fields clock power cut (division 2)
     ∃ code, ∀ (c : CutoffNodeInput) u (S : Stacks T prime),
       (∀ i, S.R (fields i) = (Routines.hdr c.node i).map bitSymbol) →
-      S.R cut = binSyms c.root.width.size c.cutoff → (S.R row).length = c.cells →
+      S.R cut = binSyms c.root.width.size c.cutoff → LengthControl (S.R row) c.cells →
       (∀ j : Fin 7, j ≠ 0 → S.R (clock j) = []) → (∀ j : Fin 10, j ≠ 0 → S.R (power j) = []) →
       (∀ i, S.R (division i) = []) →
       ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
@@ -36,14 +37,14 @@ theorem nodeHeaderSetup {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
         ∀ j, outsideArchiveOutputs clock power j → j ≠ division 2 → F.L j = S.L j ∧ F.R j = S.R j := by
   intro source
   obtain ⟨code,run⟩ := descriptorArchiveWords body fields clock power width long short frame
-  obtain ⟨measure,divide⟩ := spectatorFromLane body division row (power 3) rowOff (fun i => (divFrame i).2.2.2) false
+  obtain ⟨measure,divide⟩ := spectatorFromControl body division row (power 3) rowOff (fun i => (divFrame i).2.2.2) false
   refine ⟨code.seq measure,?_⟩
   intro c u S digits cutoff length clocks powers vacant
   obtain ⟨z,F,t,exec,user,paid,ticks,archive,off⟩ := run c.node c.w c.width u S digits clocks powers
   have kept j (h : outsideArchiveOutputs clock power j) := off j h.1 h.2.1 h.2.2.1 h.2.2.2
   have radix := archive (6 : Fin 9)
   change F.R (power 3) = binSyms (prime^(c.w+1)).size (prime^(c.w+1)) at radix
-  obtain ⟨v,m,scan,same,charge⟩ := divide c z F ((congrArg List.length (kept _ rowFrame).2).trans length)
+  obtain ⟨v,m,scan,same,charge⟩ := divide c z F ((kept _ rowFrame).2.symm ▸ length)
     radix (fun i => (kept _ (divFrame i)).2.trans (vacant i))
   refine ⟨v,_,_,exec.seq scan,same.trans user,?_,?_,?_⟩
   · intro js nd
@@ -80,7 +81,7 @@ theorem nodeHeaderSetup {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
     exact ⟨(kept j outside).1,(Function.update_of_ne offDiv ..).trans (kept j outside).2⟩
 
 /-- Initialize a private node bank from the six descriptor fields, cutoff, and
-one live lane. The payload row is preserved. -/
+the fan length control. The control is preserved. -/
 def LoadsNodeSeedFromRecord {Config : Type} {N : ℕ} (input : Config → CutoffNodeInput)
     (seed : Config → Stacks N prime) : Prop :=
   ∃ rate : ℕ, ∀ {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) (bank : Fin N ↪ Fin T)
@@ -94,7 +95,7 @@ def LoadsNodeSeedFromRecord {Config : Type} {N : ℕ} (input : Config → Cutoff
     (∀ i, bank i ≠ row) →
     ∃ code, ∀ x u (S : Stacks T prime), let c := input x
       (∀ i, S.R (fields i) = (Routines.hdr c.node i).map bitSymbol) →
-      S.R cut = binSyms c.root.width.size c.cutoff → (S.R row).length = c.cells →
+      S.R cut = binSyms c.root.width.size c.cutoff → LengthControl (S.R row) c.cells →
       (∀ j : Fin 7, j ≠ 0 → S.R (clock j) = []) → (∀ j : Fin 10, j ≠ 0 → S.R (power j) = []) →
       (∀ i, S.R (div i) = []) → (∀ i, S.L (bank i) = [] ∧ S.R (bank i) = []) →
       ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧

@@ -14,14 +14,14 @@ private instance (j : Fin 34) : Decidable (outsideArchiveOutputs clockSlots powe
   inferInstanceAs (Decidable (_ ≠ _ ∧ _ ≠ _ ∧ _ ≠ _ ∧ _ ≠ _))
 
 /-- The first six caller tapes hold the descriptor, followed by the cutoff and
-payload lane. The remaining 26 tapes suffice for all header arithmetic. -/
+fan length control. The remaining 26 tapes suffice for all header arithmetic. -/
 theorem LoadsNodeSeedFromRecord.onLayout {Config : Type} {N : ℕ} {input : Config → CutoffNodeInput}
     {seed : Config → Stacks N prime} (loader : LoadsNodeSeedFromRecord input seed) :
     ∃ rate : ℕ, ∀ {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
       (bank : Fin N ↪ Fin T) (record : Fin 34 ↪ Fin T), (∀ i j, bank i ≠ record j) →
       ∃ code, ∀ x u (S : Stacks T prime), let c := input x
         (∀ i : Fin 6, S.R (record (i.castAdd 28)) = (Routines.hdr c.node i).map bitSymbol) →
-        S.R (record 6) = binSyms c.root.width.size c.cutoff → (S.R (record 7)).length = c.cells →
+        S.R (record 6) = binSyms c.root.width.size c.cutoff → LengthControl (S.R (record 7)) c.cells →
         (∀ i : Fin 34, 8 ≤ i.val → S.R (record i) = []) →
         (∀ i, S.L (bank i) = [] ∧ S.R (bank i) = []) →
         ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧

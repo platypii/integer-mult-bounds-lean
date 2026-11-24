@@ -17,7 +17,7 @@ def RecordChildCall {A U : Type} {N T Q H : ℕ} (c : CutoffNodeInput)
     HelperFan ((live.trans caller).trans place) data S →
     (∀ i : Fin 6, S.R (place (caller (record (i.castAdd 28)))) = (Routines.hdr c.node i).map bitSymbol) →
     S.R (place (caller (record 6))) = binSyms c.root.width.size c.cutoff →
-    (S.R (place (caller (record 7)))).length = c.cells →
+    LengthControl (S.R (place (caller (record 7)))) c.cells →
     (∀ i : Fin 34, 8 ≤ i.val → S.R (place (caller (record i))) = []) →
     (∀ i : Fin 142082, let j := (i.castAdd T).castAdd N; S.L (place j) = [] ∧ S.R (place j) = []) →
     (∀ i : Fin N, let j := i.natAdd (142082+T); S.L (place j) = [] ∧ S.R (place j) = []) →

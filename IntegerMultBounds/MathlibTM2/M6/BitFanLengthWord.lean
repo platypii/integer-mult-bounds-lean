@@ -31,12 +31,16 @@ private theorem bitPrefix (bs : List Bool) (p : ℤ) (positive : 0 < p)
           Function.update_of_ne (show p+(m+1 : ℤ) ≠ p by omega),add_left_comm,add_comm,add_assoc] using h)
       exact ⟨rest,by simp [first,tail],stop⟩
 
+/-- A logical binary length followed by a blank delimiter or the end of the stack. -/
+def LengthControl (word : List (Fin (prime+4))) (V : ℕ) : Prop :=
+  ∃ rest, word = binSyms V.size V ++ rest ∧ rest.head?.getD blank = blank
+
 /-- The shared control tape contains the binary length at the head, including
 when the physical right stack has trailing blank symbols. -/
 theorem helperFan_lengthWord {k T V : ℕ} {fan : Fin (k+2) ↪ Fin T} {x : Fin k → Fin V → ZMod 2}
     {S : Stacks T prime} (live : HelperFan fan x S) :
-    ∃ rest, S.R (fan ((1 : Fin 2).natAdd k)) = binSyms V.size V ++ rest ∧
-      rest.head?.getD blank = blank := by
+    LengthControl (S.R (fan ((1 : Fin 2).natAdd k))) V := by
+  unfold LengthControl
   rw [← canonicalBits_symbols]
   apply bitPrefix _ 1 (by decide)
   intro m
@@ -44,23 +48,20 @@ theorem helperFan_lengthWord {k T V : ℕ} {fan : Fin (k+2) ↪ Fin T} {x : Fin 
   simpa [PointwiseRoleGate.bank,Tapes.append,CountedLoopReuseAlphabet.controls,
     CountedLoopReuseAlphabet.binary,embStk,readAt] using h.symm
 
-/-- Copy the logical lane length while preserving the control tape exactly,
-including its physical padding. -/
-theorem copyFanLength {P U : Type} {k T Q : ℕ} (body : P → Pr P T Q prime U)
-    (fan : Fin (k+2) ↪ Fin T) (dst tmp saved : Fin T)
-    (ports : [fan ((1 : Fin 2).natAdd k),dst,tmp,saved].Nodup) :
-    ∃ code, ∀ {V : ℕ} (x : Fin k → Fin V → ZMod 2) u (S : Stacks T prime),
-      HelperFan fan x S → S.R dst = [] → S.R tmp = [] → S.R saved = [] →
+/-- Read a canonical length up to its first blank and restore the entire source stack. -/
+theorem copyLengthPrefix {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (src dst tmp saved : Fin T) (ports : [src,dst,tmp,saved].Nodup) :
+    ∃ code, ∀ (V : ℕ) u (S : Stacks T prime),
+      LengthControl (S.R src) V →
+      S.R dst = [] → S.R tmp = [] → S.R saved = [] →
       let F := {S with R := Function.update S.R dst (binSyms V.size V)}
       ∃ v, Exec body code (mk u S) (6*V.size+6) (mk v F) ∧ v.user = u.user := by
-  let src := fan ((1 : Fin 2).natAdd k)
-  change [src,dst,tmp,saved].Nodup at ports
   regs_ne ports
   refine ⟨(Routing.configurationScan src tmp saved WordCmd.isBit).seq
     ((moveR tmp dst id).seq (moveR saved src id)),?_⟩
-  intro V x u S live hd ht hs F
+  intro V u S lengthWord hd ht hs F
   let word := binSyms (A := prime) V.size V
-  obtain ⟨rest,source,stop⟩ := helperFan_lengthWord live
+  obtain ⟨rest,source,stop⟩ := lengthWord
   change S.R src = word ++ rest at source
   have bits : ∀ e ∈ word, WordCmd.isBit e = true := by
     dsimp only [word]
@@ -93,6 +94,26 @@ theorem copyFanLength {P U : Type} {k T Q : ℕ} (body : P → Pr P T Q prime U)
   simp [ht',hs',word,length_binSyms]
   omega
 
+/-- The node initializer can derive either spectator width from the logical length
+on the fan control even if the right stack contains padding. -/
+theorem spectatorFromControl {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (division : Fin 11 ↪ Fin T) (control base : Fin T) (outside : ∀ i, control ≠ division i)
+    (baseOff : ∀ i, division i ≠ base) (stage : Bool) :
+    ∃ code, ∀ (c : CutoffNodeInput) u (S : Stacks T prime),
+      LengthControl (S.R control) c.cells →
+      S.R base = binSyms (prime^(c.w+1)).size (prime^(c.w+1)) →
+      (∀ i, S.R (division i) = []) →
+      let W := c.spectatorWidth stage
+      let F := {S with R := Function.update S.R (division 2) (binSyms W.size W)}
+      ∃ z t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧ CleanupBound S F t (2000255*c.cells) := by
+  obtain ⟨read,run⟩ := copyLengthPrefix body control (division 0) (division 3) (division 4)
+    (by simp [outside,division.injective.eq_iff])
+  refine spectatorFromLengthReader body division base baseOff stage (fun V S => LengthControl (S.R control) V) read ?_
+  intro V u S lengthWord free
+  obtain ⟨v,exec,user⟩ := run V u S lengthWord (free 0) (free 3) (free 4)
+  have size : V.size ≤ V := Nat.size_le.mpr Nat.lt_two_pow_self
+  exact ⟨v,_,user,by omega,exec⟩
+
 /-- Obtain the stage spectator width from the represented fan, independently
 of the amount of physical blank padding on its payload lanes. -/
 theorem spectatorFromFan {P U : Type} {k T Q : ℕ} (body : P → Pr P T Q prime U)
@@ -104,15 +125,7 @@ theorem spectatorFromFan {P U : Type} {k T Q : ℕ} (body : P → Pr P T Q prime
       (∀ i, S.R (division i) = []) →
       let F := {S with R := Function.update S.R (division 2) (binSyms c.stageWidth.size c.stageWidth)}
       ∃ z t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧ CleanupBound S F t (2000255*c.cells) := by
-  obtain ⟨read,run⟩ := copyFanLength body fan (division 0) (division 3) (division 4)
-    (by simp [controlOff,division.injective.eq_iff])
-  let ready := fun V S => ∃ x : Fin k → Fin V → ZMod 2, HelperFan fan x S
-  obtain ⟨code,divide⟩ := spectatorFromLengthReader body division base baseOff true ready read (by
-    intro V u S live free
-    obtain ⟨x,h⟩ := live
-    obtain ⟨v,exec,user⟩ := run x u S h (free 0) (free 3) (free 4)
-    have size : V.size ≤ V := Nat.size_le.mpr Nat.lt_two_pow_self
-    exact ⟨v,_,user,by omega,exec⟩)
-  exact ⟨code,fun c x u S live => divide c u S ⟨x,live⟩⟩
+  obtain ⟨code,run⟩ := spectatorFromControl body division _ base controlOff baseOff true
+  exact ⟨code,fun c x u S fan => run c u S (helperFan_lengthWord fan)⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

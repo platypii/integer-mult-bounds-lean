@@ -31,7 +31,7 @@ def SplitRecordChildExec {P U : Type} {N T Q : ℕ} (c : CutoffNodeInput)
     HelperFan (live.trans caller) data S →
     (∀ i : Fin 6, S.R (caller (record (i.castAdd 28))) = (Routines.hdr c.node i).map bitSymbol) →
     S.R (caller (record 6)) = binSyms c.root.width.size c.cutoff →
-    (S.R (caller (record 7))).length = c.cells →
+    LengthControl (S.R (caller (record 7))) c.cells →
     (∀ i : Fin 34, 8 ≤ i.val → S.R (caller (record i)) = []) →
     (∀ i : Fin 142082, let j := (i.castAdd T).castAdd N; S.L j = [] ∧ S.R j = []) →
     (∀ i : Fin N, let j := i.natAdd (142082+T); S.L j = [] ∧ S.R j = []) →
