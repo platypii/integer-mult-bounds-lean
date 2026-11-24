@@ -282,7 +282,7 @@ theorem scheduledIntervalCall_exec {T Q : ℕ} {P U : Type} (charged : Bool) (bo
     (checked : Geometry.Moves.CheckedPair p) (paid : 0 < Geometry.moveRank p.1 p.2)
     (w B rows : ℕ) (rank : nodeChildren5[i.val] = Geometry.moveRank p.1 p.2)
     (width : node.width = 64*(w+1)) (split : node.rows = 142080*rows)
-    (label : node.beforeH = B*prime^(64*((w+1)*64))) :
+    (label : node.beforeH = B*prime^(64*((w+1)*64))) (stock : Stacks T prime → ℕ := fun _ => 0) :
     let M := prime^(w+1)
     let W := B*prime^(64*((w+1)*64))*(M^112*(node.beforeRows*rows*node.between*node.afterD))
     let a := Geometry.Dimensions.value p.1
@@ -296,9 +296,9 @@ theorem scheduledIntervalCall_exec {T Q : ℕ} {P U : Type} (charged : Bool) (bo
       ∀ (stored : (Fin (M^16*W) → ZMod 2) → Stacks T prime → Prop)
         (u : HS T Q prime U) S (word : Fin (M^16*W) → ZMod 2) budget,
       (child.width < node.width → ∃ z F n changed, Exec body (body f) (mk u S) n (mk z F) ∧
-        workerCost charged S F n budget ∧ z.user = u.user ∧ stored changed F ∧ ∀ k, changed (position k) =
+        workerCost charged S F (n+stock F) (budget+stock S) ∧ z.user = u.user ∧ stored changed F ∧ ∀ k, changed (position k) =
           Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) k) →
-      ∃ z F n, Exec body (.call f) (mk u S) n (mk z F) ∧ workerCost charged S F n (budget+2) ∧ z.user = u.user ∧
+      ∃ z F n, Exec body (.call f) (mk u S) n (mk z F) ∧ workerCost charged S F (n+stock F) (budget+2+stock S) ∧ z.user = u.user ∧
         stored (fun k => Shared50RecursiveNodeRows.transpose (v := interval) (one_dvd _)
           (fun j => word (j.cast size)) (k.cast size.symm)) F := by
   intro M W a b interval child size
@@ -315,7 +315,7 @@ theorem scheduledIntervalCall_exec {T Q : ℕ} {P U : Type} (charged : Bool) (bo
   obtain ⟨z,F,n,changed,exec,time,user,ready,swap⟩ := run smaller
   refine ⟨z,F,_,Exec.call exec,?_,user,?_⟩
   · cases charged
-    · change n ≤ budget at time
+    · change n+stock F ≤ budget+stock S at time
       change _ ≤ _
       omega
     · intro js unique
@@ -538,7 +538,8 @@ open Cover.Fallback IntegerMultBounds.Networks.Certificates.PR589 RecursiveInter
 private theorem phaseLayoutCall_exec [M8.Machine.Net] {P U : Type} {T Q : ℕ} (inherited charged : Bool) (capacity : rowSwapBlock.states ≤ Q)
     (p : ℕ × ℕ) (checked : Geometry.Moves.CheckedPair p) (paid : 0 < Geometry.moveRank p.1 p.2)
     (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
-    (body : P → Pr P T Q prime U) (f : P) :
+    (body : P → Pr P T Q prime U) (f : P) (stock : Stacks T prime → ℕ := fun _ => 0)
+    (packed : inherited = false → stock = fun _ => 0 := by intros; rfl) :
     let lo := min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
     let hi := max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
     ∃ setup swaps : ℕ, ∀ (node : Descriptor) (i : Fin nodeChildren5.length) (w B rows : ℕ),
@@ -561,7 +562,7 @@ private theorem phaseLayoutCall_exec [M8.Machine.Net] {P U : Type} {T Q : ℕ} (
     let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank M.size W.size record
       SparseRoleCircuit.encode (fun _ => blank) dest 0 q
     (desc.width < node.width → ∀ (u : HS T Q prime U) D word, stored word D → clean D →
-      ∃ z F n changed, Exec body (body f) (mk u D) n (mk z F) ∧ workerCost charged D F n budget ∧ z.user = u.user ∧
+      ∃ z F n changed, Exec body (body f) (mk u D) n (mk z F) ∧ workerCost charged D F (n+stock F) (budget+stock D) ∧ z.user = u.user ∧
         stored changed F ∧ clean F ∧ (∀ j, (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) ∧
         ∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (word ∘ position) k) →
     let size := phaseIntervalChild_volume (phaseInterval_bounds checked paid).1.le
@@ -569,16 +570,18 @@ private theorem phaseLayoutCall_exec [M8.Machine.Net] {P U : Type} {T Q : ℕ} (
     let after := fun k => Shared50RecursiveNodeRows.transpose (v := phaseIntervalChild lo hi (w+1) W)
       (one_dvd _) (fun j => before (j.cast size)) (Fin.cast size.symm k)
     stored before S → clean S → ∃ z F n, z.user = v.user ∧
-      workerCost charged S F n (budget+4+(if inherited then 0 else setup+swaps*swapVolumeRate w)*(M^16*W)) ∧
+      workerCost charged S F (n+stock F) (budget+4+(if inherited then 0 else setup+swaps*swapVolumeRate w)*(M^16*W)+stock S) ∧
       Exec body (if inherited then Prog.call f else (pack is).seq ((Prog.call f).seq (pack is.reverse))) (mk v S) n (mk z F) ∧
       stored after F ∧ clean F ∧ ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   cases inherited with
-  | false => exact phasePackedCall_exec charged capacity p checked paid ports body f
+  | false =>
+    rw [packed rfl]
+    exact phasePackedCall_exec charged capacity p checked paid ports body f
   | true =>
     intro lo hi
     refine ⟨0,0,?_⟩
     intro node i w B rows rank width split label M K W pos desc
-    obtain ⟨position,coords,run⟩ := scheduledIntervalCall_exec charged body f node i p checked paid w B rows rank width split label
+    obtain ⟨position,coords,run⟩ := scheduledIntervalCall_exec charged body f node i p checked paid w B rows rank width split label stock
     refine ⟨position,coords,?_⟩
     intro is bank clean pack u S record dest q before budget stored child size after ready free
     let result := fun word F => stored word F ∧ clean F ∧ ∀ j, (∀ i, ports i ≠ j) →
@@ -586,7 +589,7 @@ private theorem phaseLayoutCall_exec [M8.Machine.Net] {P U : Type} {T Q : ℕ} (
     obtain ⟨z,F,n,exec,time,user,out,clear,off⟩ := run result u S before budget (fun smaller => by
       obtain ⟨z,F,n,y,exec,time,user,out,clear,off,swap⟩ := child smaller u S before ready free
       exact ⟨z,F,n,y,exec,time,user,⟨out,clear,off⟩,swap⟩)
-    exact ⟨z,F,n,user,by simpa using workerCost.weaken time (Nat.add_le_add_left (by decide : 2 ≤ 4) budget),exec,out,clear,off⟩
+    exact ⟨z,F,n,user,by simpa using workerCost.weaken time (Nat.add_le_add_right (Nat.add_le_add_left (by decide : 2 ≤ 4) budget) _),exec,out,clear,off⟩
 
 open Cover.Fallback in
 private theorem owners_of_returned_record {T k w d W H J : ℕ}
@@ -1131,7 +1134,7 @@ private theorem word_of_involutive_scatter {I A J R : Type*} (addr : I ≃ A × 
 open IntegerMultBounds.Networks.Certificates.PR589 in
 /-- Copy the retained source onto the temporary, run the host conversion once, add the
 converted word to the scheduled targets, and clear the temporary for the next window. -/
-theorem copyFanout_host (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : Copy.Lifecycle)
+theorem copyFanoutWithFrame (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : Copy.Lifecycle)
     (scheduled : life ∈ Copy.lifecycles) :
     let src := ownerTape n r d ⟨life.source,(Copy.source_bounds life scheduled).2⟩
     let tmp := Fin.last 142080
@@ -1139,10 +1142,11 @@ theorem copyFanout_host (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : Copy.Lifecy
       (⟨j.val,((Copy.target_bounds life scheduled _ j.property).2.trans (by decide : 222 < 661))⟩ : Fin 661)
     let targets := regs.map (ownerTape n r d)
     ∃ (q s : ℕ) (load : Program (142081+2) q prime) (finish : Program (142081+2) s prime),
-    ∀ {T Q w W : ℕ} {P U : Type} (ports : Fin (142081+2) ↪ Fin T) (fitsLoad : q ≤ Q) (fitsFinish : s ≤ Q)
+    ∀ {T Q w W : ℕ} {P U : Type} (ports : Fin (142081+2) ↪ Fin T) (saved : List (Fin T)) (distinct : saved.Nodup) (fitsLoad : q ≤ Q) (fitsFinish : s ≤ Q)
       (body : P → Pr P T Q prime U) (convert : Pr P T Q prime U) (budget : ℕ) (charged : Bool) (keep : Fin T → Prop)
       (data : Fin 142081 → Fin ((prime^(w+1))^16*W) → ZMod 2) (hW : 0 < W)
       (u : HS T Q prime U) (S : Stacks T prime),
+    let stock := fun S : Stacks T prime => tapeCharge (fun l r => 4*l.length+2*r.length+4) saved S
     let V := (prime^(w+1))^16*W
     let addr := copyAddress (Q := prime^(w+1)) (W := W)
     let move := AffineFieldProgram.run (selectedWord (w+1) (life.sourceFrame,0))
@@ -1154,15 +1158,15 @@ theorem copyFanout_host (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : Copy.Lifecy
     let output := Function.update (fun j i => if j ∈ targets then data j i + common i else data j i) tmp 0
     ready data S →
     (∀ v D, ready (Function.update data tmp (data src)) D → outside S D →
-      ∃ z F t y, Exec body convert (mk v D) t (mk z F) ∧ (if charged then CleanupBound D F t budget else t ≤ budget) ∧ z.user = v.user ∧
+      ∃ z F t y, Exec body convert (mk v D) t (mk z F) ∧ workerCost charged D F (t+stock F) (budget+stock D) ∧ z.user = v.user ∧
         ready (Function.update data tmp y) F ∧
         (∀ s j, y (addr.symm (move s,j)) = data src (addr.symm (s,j))) ∧
         ∀ j, keep j → (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) →
     ∃ z F t, Exec body ((embProg ports (Empty.elim : Empty → P) (foreign (liftQ load fitsLoad))).seq
         (convert.seq (embProg ports (Empty.elim : Empty → P) (foreign (liftQ finish fitsFinish)))))
       (mk u S) t (mk z F) ∧
-      (if charged then CleanupBound S F t (budget+13*(76*(life.targets.length+2)*V*142088+12))
-       else t ≤ budget+76*(life.targets.length+2)*V*142088+12) ∧
+      workerCost charged S F (t+stock F) (budget+nativePrice charged (76*(life.targets.length+2)*V*142088+12)+
+        (if saved.isEmpty then 0 else 13*(76*(life.targets.length+2)*V*142088+12))+stock S) ∧
       z.user = u.user ∧ ready output F ∧
       ∀ j, keep j → (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro src tmp regs targets
@@ -1171,7 +1175,7 @@ theorem copyFanout_host (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : Copy.Lifecy
   let erase := fun (_ _ : Fin (prime+4)) => SparseRoleCircuit.encode (a := prime) 0
   obtain ⟨_,adds,addRun⟩ := copyAdds_hoare (a := prime) n r d life scheduled
   refine ⟨_,_,PointwiseRoleGate.program gate copy,seq adds (PointwiseRoleGate.program gate erase),?_⟩
-  intro T Q w W P U ports fitsLoad fitsFinish body convert budget charged keep data hW u S V addr move common bank ready outside output start mid
+  intro T Q w W P U ports saved distinct fitsLoad fitsFinish body convert budget charged keep data hW u S stock V addr move common bank ready outside output start mid
   have hV : 0 < V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW
   let bs := FlatCoordinateSchedule.bits V
   have count := FlatCoordinateSchedule.bits_value V
@@ -1212,21 +1216,85 @@ theorem copyFanout_host (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : Copy.Lifecy
     have localTime : t+l ≤ 76*(life.targets.length+2)*V*142088+12 := by
       simp only [V,Nat.add_mul,Nat.mul_add] at bound timeA timeB ⊢
       omega
-    cases charged
-    · change m ≤ budget at time
-      change t+(m+l) ≤ _
+    let localBill := 76*(life.targets.length+2)*V*142088+12
+    have first := foreignCleanupBound enter
+    have last := foreignCleanupBound leave
+    have preStock := first saved distinct
+    have postStock := last saved distinct
+    change t+stock D ≤ stock S+13*t at preStock
+    change l+stock F ≤ stock G+13*l at postStock
+    have extra : stock D+stock F ≤ stock S+stock G+(if saved.isEmpty then 0 else 13*localBill) := by
+      cases saved with
+      | nil => simp [stock,tapeCharge]
+      | cons j js =>
+        change _ ≤ _+13*localBill
+        change t+l ≤ localBill at localTime
+        omega
+    cases charged with
+    | false =>
+      change m+stock G ≤ budget+stock D at time
+      change t+(m+l)+stock F ≤ budget+localBill+(if saved.isEmpty then 0 else 13*localBill)+stock S
+      change t+l ≤ localBill at localTime
       omega
-    · change CleanupBound D G m budget at time
-      have first := foreignCleanupBound enter
-      have last := foreignCleanupBound leave
-      have total := first.seq (time.seq last)
-      intro js unique
-      exact (total js unique).trans (by omega)
+    | true =>
+      intro js nd
+      have pre := first js nd
+      have post := last js nd
+      have core := time js nd
+      change t+l ≤ localBill at localTime
+      change t+(m+l)+stock F+_ ≤ _+(budget+13*localBill+(if saved.isEmpty then 0 else 13*localBill)+stock S)
+      omega
   · intro j kept hj
     obtain ⟨l,r⟩ := off j hj
     obtain ⟨lm,rm⟩ := offM j kept hj
     obtain ⟨lb,rb⟩ := offB j hj
     exact ⟨lb.trans (lm.trans l),rb.trans (rm.trans r)⟩
+
+open IntegerMultBounds.Networks.Certificates.PR589 in
+theorem copyFanout_host (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : Copy.Lifecycle)
+    (scheduled : life ∈ Copy.lifecycles) :
+    let src := ownerTape n r d ⟨life.source,(Copy.source_bounds life scheduled).2⟩
+    let tmp := Fin.last 142080
+    let regs := life.targets.attach.map fun j =>
+      (⟨j.val,((Copy.target_bounds life scheduled _ j.property).2.trans (by decide : 222 < 661))⟩ : Fin 661)
+    let targets := regs.map (ownerTape n r d)
+    ∃ (q s : ℕ) (load : Program (142081+2) q prime) (finish : Program (142081+2) s prime),
+    ∀ {T Q w W : ℕ} {P U : Type} (ports : Fin (142081+2) ↪ Fin T) (fitsLoad : q ≤ Q) (fitsFinish : s ≤ Q)
+      (body : P → Pr P T Q prime U) (convert : Pr P T Q prime U) (budget : ℕ) (charged : Bool) (keep : Fin T → Prop)
+      (data : Fin 142081 → Fin ((prime^(w+1))^16*W) → ZMod 2) (hW : 0 < W)
+      (u : HS T Q prime U) (S : Stacks T prime),
+    let V := (prime^(w+1))^16*W
+    let addr := copyAddress (Q := prime^(w+1)) (W := W)
+    let move := AffineFieldProgram.run (selectedWord (w+1) (life.sourceFrame,0))
+    let common := fun i => data src (addr.symm (move (addr i).1,(addr i).2))
+    let bank := fun X => PointwiseRoleGate.bank (a := prime) (fun _ _ => blank) (fun _ => 0)
+      (SparseRoleCircuit.encoded X) (FlatCoordinateSchedule.bits V)
+    let ready := fun X (D : Stacks T prime) => RepT (bank X) (embStk ports D).L (embStk ports D).R
+    let outside := fun (D F : Stacks T prime) => ∀ j, (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j
+    let output := Function.update (fun j i => if j ∈ targets then data j i + common i else data j i) tmp 0
+    ready data S →
+    (∀ v D, ready (Function.update data tmp (data src)) D → outside S D →
+      ∃ z F t y, Exec body convert (mk v D) t (mk z F) ∧ (if charged then CleanupBound D F t budget else t ≤ budget) ∧ z.user = v.user ∧
+        ready (Function.update data tmp y) F ∧
+        (∀ s j, y (addr.symm (move s,j)) = data src (addr.symm (s,j))) ∧
+        ∀ j, keep j → (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) →
+    ∃ z F t, Exec body ((embProg ports (Empty.elim : Empty → P) (foreign (liftQ load fitsLoad))).seq
+        (convert.seq (embProg ports (Empty.elim : Empty → P) (foreign (liftQ finish fitsFinish)))))
+      (mk u S) t (mk z F) ∧
+      (if charged then CleanupBound S F t (budget+13*(76*(life.targets.length+2)*V*142088+12))
+       else t ≤ budget+76*(life.targets.length+2)*V*142088+12) ∧
+      z.user = u.user ∧ ready output F ∧
+      ∀ j, keep j → (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro src tmp regs targets
+  obtain ⟨q,s,load,finish,run⟩ := copyFanoutWithFrame n r d life scheduled
+  refine ⟨q,s,load,finish,?_⟩
+  intro T Q w W P U ports fitsLoad fitsFinish body convert budget charged keep data hW u S
+  cases charged with
+  | false =>
+    simpa only [workerCost,nativePrice,Bool.false_eq_true,ite_false,ite_true,List.isEmpty_nil,tapeCharge,
+      List.map_nil,List.sum_nil,Nat.add_zero,Nat.add_assoc] using
+      run ports [] (by simp) fitsLoad fitsFinish body convert budget false keep data hW u S
+  | true => exact run ports [] (by simp) fitsLoad fitsFinish body convert budget true keep data hW u S
 
 open Cover.Fallback in
 /-- Allocate the two basis workspaces after the parent bank. The only tape
@@ -1380,7 +1448,10 @@ theorem scheduledPhaseBasis_host (inherited charged : Bool) [M8.Machine.Net]
     let hi := max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
     ∃ (C : Matrix (Fin 8) (Fin 8) ℚ) (rev : CopyBasisPass C.adjugate) (fwd : CopyBasisPass C),
     ∀ {P U : Type} {T Q k : ℕ} (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
-      (body : P → Pr P T Q prime U) (f : P) (capacity : rowSwapBlock.states ≤ Q),
+      (body : P → Pr P T Q prime U) (f : P) (capacity : rowSwapBlock.states ≤ Q)
+      (saved : List (Fin T) := []) (unique : saved.Nodup := by simp)
+      (packedOff : inherited = false → saved = [] := by intros; rfl),
+    let reserve := fun S : Stacks T prime => tapeCharge (fun l r => 4*l.length+2*r.length+4) saved S
     ∃ setup swaps : ℕ, ∀ (node : Descriptor) (i : Fin nodeChildren5.length) (w B rows : ℕ),
     nodeChildren5[i.val] = Geometry.moveRank p.1 p.2 → node.width = 64*(w+1) →
     node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
@@ -1431,14 +1502,14 @@ theorem scheduledPhaseBasis_host (inherited charged : Bool) [M8.Machine.Net]
       RepT (input A old) (embStk a prepared).L (embStk a prepared).R ∧
       RepT (input B old) (embStk b prepared).L (embStk b prepared).R ∧ stored old prepared ∧ clean prepared)
     (desc.width < node.width → ∀ (u : HS T Q prime U) D word, stored word D → clean D →
-      ∃ z F n changed, Exec body (body f) (mk u D) n (mk z F) ∧ workerCost charged D F n budget ∧ z.user = u.user ∧
+      ∃ z F n changed, Exec body (body f) (mk u D) n (mk z F) ∧ workerCost charged D F (n+reserve F) (budget+reserve D) ∧ z.user = u.user ∧
         stored changed F ∧ clean F ∧ (∀ j, (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) ∧
         ∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (word ∘ position) k) →
     ∀ (data : Fin k → Fin V → ZMod 2) (u : HS T Q prime U) (S : Stacks T prime), live data S → stock S →
     ∃ y z G n, Exec body
         ((embProg a (Empty.elim : Empty → P) (foreign (liftQ (machine A) fitsA))).seq
           (middle.seq (embProg b (Empty.elim : Empty → P) (foreign (liftQ (machine B) fitsB)))))
-        (mk u S) n (mk z G) ∧ workerCost charged S G n (budget+nativePrice charged ((basisRate A+basisRate B+(if inherited then 0 else setup)+16+(if inherited then 0 else swaps)*swapVolumeRate w)*V)) ∧
+        (mk u S) n (mk z G) ∧ workerCost charged S G (n+reserve G) (budget+nativePrice charged ((basisRate A+basisRate B+(if inherited then 0 else setup)+16+(if inherited then 0 else swaps)*swapVolumeRate w)*V)+(if saved.isEmpty then 0 else 13*((basisRate A+basisRate B+(if inherited then 0 else setup)+16+(if inherited then 0 else swaps)*swapVolumeRate w)*V))+reserve S) ∧
       z.user = u.user ∧ live (Function.update data src y) G ∧ stock G ∧
       (∀ j, (∀ k, a k ≠ j) → (∀ k, ports k ≠ j) → (∀ k, b k ≠ j) → G.L j = S.L j ∧ G.R j = S.R j) ∧
       ∀ s j, y (index (AffineFieldCoordinates.embed (AffineFieldProgram.run (selectedWord (w+1) p) s)) j) =
@@ -1446,8 +1517,8 @@ theorem scheduledPhaseBasis_host (inherited charged : Bool) [M8.Machine.Net]
   intro lo hi
   obtain ⟨C,shape,rev,fwd⟩ := modular_move_profile.choose_spec.1 p checked
   refine ⟨C,rev,fwd,?_⟩
-  intro P U T Q k ports body f capacity
-  obtain ⟨setup,swaps,prepare⟩ := phaseLayoutCall_exec inherited charged capacity p checked paid ports body f
+  intro P U T Q k ports body f capacity saved unique packedOff reserve
+  obtain ⟨setup,swaps,prepare⟩ := phaseLayoutCall_exec inherited charged capacity p checked paid ports body f reserve (by intro h; funext S; simp [reserve,packedOff h,tapeCharge])
   refine ⟨setup,swaps,?_⟩
   intro node i w B rows rank width split label M K W hW desc
   obtain ⟨position,offset,route⟩ := prepare node i w B rows rank width split label hW
@@ -1632,7 +1703,6 @@ theorem scheduledPhaseBasis_host (inherited charged : Bool) [M8.Machine.Net]
     change n ≤ FlatCoordinateCleanSchedule.constant B'*V*(1+FlatCoordinateCleanSchedule.tapeCount B'+5)+6 at timeB
     have pos : 0 < V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW
     rw [Nat.mul_right_comm] at timeA timeB
-    apply workerCost.weaken ((foreignWorkerCost _ runA).seq (workerCost.seq timeM (foreignWorkerCost _ runB)))
     have bill (inherit charge : Bool) (a b setup swap V t n budget : ℕ)
         (left : t ≤ a*V+6) (right : n ≤ b*V+6) (pos : 0 < V) :
         nativePrice charge t + (budget+4+(if inherit then 0 else setup+swap)*V +
@@ -1641,7 +1711,47 @@ theorem scheduledPhaseBasis_host (inherited charged : Bool) [M8.Machine.Net]
       cases inherit <;> cases charge <;>
         simp only [Bool.false_and,Bool.true_and,Bool.false_eq_true,if_false,if_true,nativePrice,Nat.zero_mul,Nat.add_mul] <;> omega
     have cost := bill inherited charged (basisRate A) (basisRate B') setup (swaps*swapVolumeRate w) V t n budget timeA timeB pos
-    cases inherited <;> simpa only [Bool.false_and,Bool.true_and,Bool.false_eq_true,if_false,if_true,Nat.zero_mul] using cost
+    let overhead := (basisRate A+basisRate B'+(if inherited then 0 else setup)+16+
+      (if inherited then 0 else swaps)*swapVolumeRate w)*V
+    change t ≤ basisRate A*V+6 at timeA
+    change n ≤ basisRate B'*V+6 at timeB
+    have scaled : t+n ≤ overhead := by
+      dsimp [overhead]
+      simp only [Nat.add_mul]
+      omega
+    have pre := foreignWorkerCost charged runA
+    have post := foreignWorkerCost charged runB
+    have first := foreignCleanupBound runA saved unique
+    have last := foreignCleanupBound runB saved unique
+    change t+reserve F ≤ reserve S+13*t at first
+    change n+reserve G ≤ reserve D+13*n at last
+    have extra : reserve F+reserve G ≤ reserve S+reserve D+(if saved.isEmpty then 0 else 13*overhead) := by
+      cases saved with
+      | nil => simp [reserve,tapeCharge]
+      | cons j js =>
+        change _ ≤ _+13*overhead
+        omega
+    have prices : nativePrice charged t+
+        (budget+4+(if inherited then 0 else setup+swaps*swapVolumeRate w)*V+nativePrice charged n) ≤
+        budget+nativePrice charged overhead := by
+      cases inherited <;> simpa only [overhead,Bool.false_eq_true,ite_false,ite_true,Nat.zero_mul] using cost
+    change workerCost charged S G (t+(m+n)+reserve G)
+      (budget+nativePrice charged overhead+(if saved.isEmpty then 0 else 13*overhead)+reserve S)
+    change workerCost charged F D (m+reserve D)
+      (budget+4+(if inherited then 0 else setup+swaps*swapVolumeRate w)*V+reserve F) at timeM
+    cases charged with
+    | false =>
+      change t ≤ _ at pre
+      change n ≤ _ at post
+      change m+reserve D ≤ _ at timeM
+      change _ ≤ _
+      omega
+    | true =>
+      intro js nd
+      have x := pre js nd
+      have y := timeM js nd
+      have z := post js nd
+      omega
   · intro k hk
     have ne : ports k ≠ bank 24 := ports.injective.ne (fun eq => by have := congrArg Fin.val eq; change k.val = 24 at this; omega)
     obtain ⟨l,r⟩ := backOff k ne
@@ -2483,7 +2593,7 @@ open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord) in
 open Cover.Fallback IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
 /-- Execute one common-coordinate COPY window on its assigned tapes and charge its distinct rank-seven child. -/
 theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
-    (stage : Fin 9) (r : Fin 32) (d : Fin 5) (window : Fin Copy.lifecycles.length) :
+    (stage : Fin 9) (r : Fin 32) (d : Fin 5) (window : Fin Copy.lifecycles.length) (framed : Bool := false) :
     let life := Copy.lifecycles[window.val]
     ∃ (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
     ∃ layout : WorkerBasisLayout ports,
@@ -2502,6 +2612,9 @@ theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
     (if inherited then InheritedIntervalPositions desc (phaseIntervalChild 0 7 (w+1) W)
         (phaseIntervalChild_volume (by decide : 0 ≤ 7) (by decide : 7 ≤ 8) _ _) position
       else ∀ k, (position k).val = (CopyChildLayout.packActive desc k).val) ∧
+    let tracked := framed && inherited && charged
+    let slots := if tracked then frameSlots fan else []
+    let reserve := fun S : Stacks T prime => tapeCharge (fun l r => 4*l.length+2*r.length+4) slots S
     let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
     let clean := fun D : Stacks T prime => ∀ k : Fin (rowSwapBlock.tapes+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
     let V := M^16*W
@@ -2513,7 +2626,7 @@ theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
     let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank M.size W.size record
       SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
     (desc.width < node.width → ∀ (u : HS T Q prime U) D word, stored word D → clean D →
-      ∃ z F n changed, Exec body (body f) (mk u D) n (mk z F) ∧ workerCost charged D F n budget ∧ z.user = u.user ∧
+      ∃ z F n changed, Exec body (body f) (mk u D) n (mk z F) ∧ workerCost charged D F (n+reserve F) (budget+reserve D) ∧ z.user = u.user ∧
         stored changed F ∧ clean F ∧ (∀ j, (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) ∧
         ∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (word ∘ position) k) →
     ∀ (data : Fin 142081 → Fin V → ZMod 2) (u : HS T Q prime U) (S : Stacks T prime),
@@ -2521,7 +2634,7 @@ theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
     (∀ j, (∀ h, fan h ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
     ∃ z F t out, Exec body code
       (mk u S) t (mk z F) ∧
-      workerCost charged S F t (nativePrice charged ((base+(if inherited then 0 else swaps)*swapVolumeRate w)*V + 12) + budget) ∧
+      workerCost charged S F (t+reserve F) (nativePrice charged ((base+(if inherited then 0 else swaps)*swapVolumeRate w)*V + 12) + (if tracked then 13*((base+(if inherited then 0 else swaps)*swapVolumeRate w)*V+12) else 0) + budget+reserve S) ∧
       z.user = u.user ∧ fanReady out F ∧ CopyFanoutEffect stage r d life (List.getElem_mem ..) (w+1) B K data out := by
   intro life
   have scheduled : life ∈ Copy.lifecycles := List.getElem_mem ..
@@ -2540,7 +2653,7 @@ theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
     rw [retainedCopy_checked.2] at h
     exact (List.mem_replicate.mp h).2
   have paid : 0 < Geometry.moveRank p.1 p.2 := by omega
-  obtain ⟨q,s,load,finish,fanout⟩ := copyFanout_host stage r d life scheduled
+  obtain ⟨q,s,load,finish,fanout⟩ := copyFanoutWithFrame stage r d life scheduled
   obtain ⟨C,rev,fwd,packed⟩ := scheduledPhaseBasis_host inherited charged p checked paid
   let A := description _ rev.good
   let B' := description _ fwd.good
@@ -2590,7 +2703,22 @@ theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
       | right h => exact ((controlsOff h).2.2 _).symm
   intro P U Q fits body f
   have capacity : rowSwapBlock.states ≤ Q := by omega
-  obtain ⟨setup,swaps,run⟩ := packed (k := 142081) ports body f capacity
+  let tracked := framed && inherited && charged
+  let observed : List (Fin T) := if tracked then frameSlots fan else []
+  have unique : observed.Nodup := by
+    unfold observed
+    split
+    · exact frameSlots_nodup fan
+    · simp
+  have isEmpty : observed.isEmpty = !tracked := by
+    have nonempty : frameSlots fan ≠ [] := by
+      intro eq
+      have len := frameSlots_length fan
+      rw [eq] at len
+      contradiction
+    cases h : tracked <;> simp [observed,h,nonempty]
+  obtain ⟨setup,swaps,run⟩ := packed (k := 142081) ports body f capacity observed unique
+    (by intro h; simp [observed,tracked,h])
   let basisRate := fun (stages : List (FlatCoordinateSchedule.Op 16)) =>
     FlatCoordinateCleanSchedule.constant stages*(1+FlatCoordinateCleanSchedule.tapeCount stages+5)
   let base := basisRate A+basisRate B'+(if inherited then 0 else setup)+16+76*(life.targets.length+2)*142088
@@ -2623,7 +2751,7 @@ theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
   · cases inherited
     · exact offset
     · simpa only [dims,show Geometry.Dimensions.value p.2 = 0 from rfl,Nat.min_zero,Nat.max_zero] using offset
-  intro bank clean V
+  intro windowTracked windowSlots reserve bank clean V
   let view := phaseIntervalChild (min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2))
     (max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)) (w+1) W
   let size : volume prime view = V := phaseIntervalChild_volume (phaseInterval_bounds checked paid).1.le
@@ -2641,8 +2769,8 @@ theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
   intro budget fanReady stored recurse
   intro data u S ready saved
   let x := data src
-  obtain ⟨z,F,t,exec,time,user,done,_⟩ := fanout fan loadFits finishFits body convert
-    (budget+nativePrice charged ((basisRate A+basisRate B'+(if inherited then 0 else setup)+16+(if inherited then 0 else swaps)*swapVolumeRate w)*V)) charged privatePort data hW u S ready (by
+  obtain ⟨z,F,t,exec,time,user,done,_⟩ := fanout fan observed unique loadFits finishFits body convert
+    (budget+nativePrice charged ((basisRate A+basisRate B'+(if inherited then 0 else setup)+16+(if inherited then 0 else swaps)*swapVolumeRate w)*V)+(if observed.isEmpty then 0 else 13*((basisRate A+basisRate B'+(if inherited then 0 else setup)+16+(if inherited then 0 else swaps)*swapVolumeRate w)*V))) charged privatePort data hW u S ready (by
         intro v D loaded outside
         let X := Function.update data tmp x
         have kept (j) (separate : j ≠ bank 24) (used : ¬ privatePort j) : D.L j = core.L j ∧ D.R j = core.R j := by
@@ -2661,13 +2789,18 @@ theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
         obtain ⟨y,z,G,m,exec,time,user,owners,_,off,action⟩ :=
           step a b fitsA fitsB srcA srcB apart priv fan tmp shared ownersOff controlsOff record dest q' budget recurse
             X v D loaded ⟨core,⟨0,initialA,initialB,initialRecord,initialClean⟩,fun j h => kept j h.1 h.2⟩
-        refine ⟨z,G,m,y,exec,time,user,?_,?_,fun j h _ => off j h.1 h.2.1 h.2.2⟩
+        refine ⟨z,G,m,y,exec,?_,user,?_,?_,fun j h _ => off j h.1 h.2.1 h.2.2⟩
+        · exact time
         · simpa only [X,Function.update_idem] using owners
         · simpa only [copyAddress_index,X,Function.update_self] using action)
   refine ⟨z,F,t,_,exec,?_,user,done,copyFanout_effect stage r d life scheduled (w+1) B K data⟩
-  cases inherited <;> cases charged <;>
-    simp only [Bool.false_and,Bool.true_and,Bool.false_eq_true,if_false,if_true,nativePrice,workerCost] at time ⊢
-  all_goals convert time using 1 <;> simp only [base,Bool.false_eq_true,if_false,if_true] <;> ring
+  apply workerCost.weaken time
+  apply Nat.add_le_add_right
+  rw [isEmpty]
+  dsimp only [windowTracked,tracked]
+  cases framed <;> cases inherited <;> cases charged <;>
+    simp only [base,Bool.true_and,Bool.false_and,Bool.not_false,Bool.not_true,Bool.false_eq_true,
+      ite_false,ite_true,nativePrice,V] <;> exact le_of_eq (by ring)
 
 open M8.Machine.Segments SharedPlacementAlphabet in
 open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord) in

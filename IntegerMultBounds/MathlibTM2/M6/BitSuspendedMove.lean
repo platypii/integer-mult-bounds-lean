@@ -73,12 +73,6 @@ theorem suspendedMove_run {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime 
     · simp [replaceBank,mem]
     · simpa [replaceBank,G,clearSlots,mem] using frame j (h.resolve_left mem) mem
 
-@[irreducible] def frameSlots {k H : ℕ} (ports : Fin k ↪ Fin H) :=
-  ((List.finRange k).map ports).reverse
-
-theorem mem_frameSlots {k H : ℕ} (ports : Fin k ↪ Fin H) (j : Fin H) :
-    j ∈ frameSlots ports ↔ ∃ i, ports i = j := by simp [frameSlots]
-
 /-- Install the save and restore procedures alongside the original worker labels. -/
 theorem installedSuspendedMove {R U : Type} {H Q k : ℕ} (ports : Fin k ↪ Fin H)
     (host : R → Pr R H Q prime U) (move : Pr R H Q prime U) :

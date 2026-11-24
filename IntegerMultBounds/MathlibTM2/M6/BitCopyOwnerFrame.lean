@@ -51,7 +51,8 @@ theorem compactScheduledCopy [M8.Machine.Net] {P U : Type} {T k Q : ℕ}
     (fan : Fin k ↪ Fin T) (owners : layout.OwnerTapes fan)
     (body : P → Pr P T Q prime U) (f : P) :
     let bank := scheduledRecordPorts ports
-    ∃ code : Pr P T Q prime U, ∀ (node child : Descriptor) (w W : ℕ) record position price,
+    let code := (body f).seq (compactOwner (bank 24) (bank 0) (bank 1))
+    ∀ (node child : Descriptor) (w W : ℕ) record position price,
       ScheduledChildExec node child w W ports record position body f price true → child.width < node.width →
       let V := (prime^(w+1))^16*W
       let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size
@@ -68,17 +69,15 @@ theorem compactScheduledCopy [M8.Machine.Net] {P U : Type} {T k Q : ℕ}
         (∀ j, j ≠ bank 24 → (∀ i, ports i ≠ j) ∨ (∃ h, fan h = j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
         tapeCharge cleanupWeight (frameSlots fan) F ≤ tapeCharge cleanupWeight (frameSlots fan) S+2*V+4 ∧
         ∀ i, y (position i) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x ∘ position) i := by
-  intro bank
-  obtain ⟨pack,compact⟩ := materializeOwnerInPlace body (bank 24) (bank 0) (bank 1)
-    (by simp [List.nodup_cons,bank.injective.eq_iff])
-  refine ⟨(body f).seq pack,?_⟩
+  intro bank code
   intro node child w W record position price run smaller V stored clean u S x ready free
   obtain ⟨v,D,t,y,exec,paid,user,out,cleared,frame,action⟩ := run smaller u S x ready free
   have word : WordAtZero y (D.L (bank 24)) (D.R (bank 24)) := by
     intro j
     rw [← encodedOwnerCell]
     simpa only [sub_zero,List.map_ofFn] using out.src j
-  obtain ⟨z,last,finish⟩ := compact y v D word (out.scratch 0 (by decide)).1 (out.scratch 0 (by decide)).2
+  obtain ⟨z,last,finish⟩ := compactOwner_exec body (bank 24) (bank 0) (bank 1)
+    (by simp [List.nodup_cons,bank.injective.eq_iff]) y v D word (out.scratch 0 (by decide)).1 (out.scratch 0 (by decide)).2
     (out.scratch 1 (by decide)).2
   let xs := List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (y i)
   let F := {D with L := Function.update D.L (bank 24) [], R := Function.update D.R (bank 24) xs}
@@ -143,7 +142,9 @@ theorem compactCutoffCopy [M8.Machine.Net] :
       let cmp := cutoffColumnSlots.trans (scheduledRecordPorts ports)
       body entry = (ordinaryCutoffTest cmp 7).seq
         (.cond (fun z => symBit (z.scan (cmp 7))) (body large) (body leaf)) →
-      ∃ code : Pr P T Q prime U, ∀ (node : Descriptor) (n : Fin 9) (p : Fin 32 × Fin 5) (j : Fin Copy.lifecycles.length)
+      let bank := scheduledRecordPorts ports
+      let code := (body entry).seq (compactOwner (bank 24) (bank 0) (bank 1))
+      ∀ (node : Descriptor) (n : Fin 9) (p : Fin 32 × Fin 5) (j : Fin Copy.lifecycles.length)
         (w W rows L cutoff : ℕ), node.width = 64*(w+1) → node.rows = 142080*rows →
       let child := scheduledChild prime node (copyChildPosition (n,p,j))
       cutoff < 2^L → child.width.size ≤ L →
@@ -173,8 +174,8 @@ theorem compactCutoffCopy [M8.Machine.Net] :
   obtain ⟨C,dispatch⟩ := cutoffCopyProgram true
   refine ⟨C,?_⟩
   intro P U T Q ports layout k fan owners fits body entry large leaf leafEq cmp entryEq
-  obtain ⟨code,pack⟩ := compactScheduledCopy ports layout fan owners body entry
-  refine ⟨code,?_⟩
+  intro recordBank code
+  have pack := compactScheduledCopy ports layout fan owners body entry
   intro node n p j w W rows L cutoff width split child cutFits room position coords pos rate time enough
     worker price active smaller bank V stored clean u S x ready free
   have run := dispatch ports fits body entry large leaf leafEq entryEq node n p j w W rows L cutoff width split
@@ -183,5 +184,75 @@ theorem compactCutoffCopy [M8.Machine.Net] :
     pack node child w W _ position _ run smaller u S x ready free
   exact ⟨z,F,t,y,exec,user,paid,out,empty,left,right,
     fun i off => frame i (fun eq => off _ eq.symm) (.inl off),action⟩
+
+open Certificates.PR589 in
+/-- The inherited COPY window calls the compact cutoff worker between its two
+basis passes. The recursive price occurs once in the joint time and owner bill. -/
+theorem compactCopyWindow [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (j : Fin Copy.lifecycles.length) :
+    ∃ (C : ℝ) (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
+      (fan : Fin (142081+2) ↪ Fin T) (layout : WorkerBasisLayout ports),
+    layout.OwnerTapes fan ∧ ∀ {P U : Type} {Q : ℕ}, states ≤ Q →
+    ∀ (body : P → Pr P T Q prime U) (call entry large leaf : P) (fits : stoppedCopyMachine.1 ≤ Q),
+    let bank := scheduledRecordPorts ports
+    let cmp := cutoffColumnSlots.trans bank
+    body call = (body entry).seq (compactOwner (bank 24) (bank 0) (bank 1)) →
+    body leaf = stoppedCopyProgram ports fits →
+    body entry = (ordinaryCutoffTest cmp 7).seq
+      (.cond (fun z => symBit (z.scan (cmp 7))) (body large) (body leaf)) →
+    ∃ (code : Pr P T Q prime U) (localRate : ℕ), ∀ (node : Descriptor) w B rows L cutoff,
+      node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
+      let M := prime^(w+1)
+      let K := node.beforeRows*rows*node.between*node.afterD
+      let blocks := M^112*B
+      let W := blocks*prime^(64*((w+1)*64))*K
+      let V := M^16*W
+      let child := scheduledChild prime node (copyChildPosition (n,p,j))
+      0 < W → cutoff < 2^L → child.width.size ≤ L →
+      ∃ position : Fin (volume prime child) ≃ Fin V, CopyIntervalPositions child (w+1) W position ∧
+      ∀ (rate : ℝ) (recursiveTime : ℕ), C ≤ rate →
+      let record := binSyms (A := prime) L cutoff
+      let price := if cutoff < child.width then recursiveTime else
+        ⌊(rate*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime child⌋₊
+      (cutoff < child.width → ScheduledChildExec node child w W ports record position body large recursiveTime true) →
+      ∀ data u S, HelperFan fan data S →
+      (∀ k, (∀ h, fan h ≠ k) → S.L k = (layout.seed w W record).L k ∧ S.R k = (layout.seed w W record).R k) →
+      ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        CleanupBound S F (t+tapeCharge cleanupWeight (frameSlots fan) F)
+          (price+localRate*V+4*w+23*child.width+22*L+386+tapeCharge cleanupWeight (frameSlots fan) S) ∧
+        HelperFan fan out F ∧
+        CopyFanoutEffect n p.1 p.2 Copy.lifecycles[j.val] (List.getElem_mem ..) (w+1) blocks K data out := by
+  obtain ⟨C,dispatch⟩ := compactCutoffCopy
+  obtain ⟨T,states,ports,fan,layout,owners,window⟩ := commonCopyWindow_layout true true n p.1 p.2 j true
+  refine ⟨C,T,states,ports,fan,layout,owners,?_⟩
+  intro P U Q capacity body call entry large leaf fits bank cmp installed stopped branch
+  obtain ⟨base,swaps,code,run⟩ := window capacity body call
+  refine ⟨code,26*base+16,?_⟩
+  intro node w B rows L cutoff width split label M K blocks W V child pos cutFits room
+  obtain ⟨position,coords,work⟩ := run node w B rows blocks K width split label (by dsimp [blocks,K,M]; ring) pos
+  refine ⟨position,coords,?_⟩
+  intro rate recursiveTime enough record price active data u S ready seed
+  let clock := 4*w+23*child.width+22*L+51+price+16*V+23
+  obtain ⟨_,sweep⟩ := work record
+  obtain ⟨z,F,t,out,exec,paid,user,result,effect⟩ := sweep clock (by
+    intro smaller v D x stored free
+    obtain ⟨z,F,t,y,exec,user,bound,out,empty,_,_,frame,action⟩ :=
+      dispatch ports layout fan owners fits body entry large leaf stopped branch node n p j w W rows L cutoff
+        width split cutFits room position coords pos rate recursiveTime enough active smaller v D x stored free
+    refine ⟨z,F,t,y,by rw [installed]; exact exec,?_,user,out,empty,frame,action⟩
+    intro js nd
+    have h := bound js nd
+    change t+tapeCharge cleanupWeight (frameSlots fan) F+tapeCharge cleanupWeight js F ≤
+      tapeCharge cleanupWeight js D+(clock+tapeCharge cleanupWeight (frameSlots fan) D)
+    change t+tapeCharge cleanupWeight js F+tapeCharge cleanupWeight (frameSlots fan) F ≤
+      tapeCharge cleanupWeight js D+tapeCharge cleanupWeight (frameSlots fan) D+
+      (4*w+23*child.width+22*L+51+price)+16*V+23 at h
+    dsimp only [clock]
+    omega) data u S ready seed
+  refine ⟨z,F,t,out,exec,user,?_,result,effect⟩
+  apply workerCost.weaken (charged := true) paid
+  apply Nat.add_le_add_right
+  change 13*((base+0*swapVolumeRate w)*V+12)+13*((base+0*swapVolumeRate w)*V+12)+clock ≤ _
+  simp only [Nat.zero_mul,Nat.add_zero,clock]
+  exact le_of_eq (by ring)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

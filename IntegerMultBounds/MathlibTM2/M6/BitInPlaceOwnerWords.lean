@@ -11,17 +11,19 @@ namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.Machine Stack Host Cover.Fallback
 open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 
+noncomputable def compactOwner {P U : Type} {T Q : ℕ} (src tmp buf : Fin T) : Pr P T Q prime U :=
+  (loadCompactWord src tmp buf).seq ((clearWorkTapes [src]).seq (moveRightOrdered buf tmp src))
+
 /-- Two temporary tapes can be shared by every owner. The clearing term is
 exactly the charge for the two physical stacks of this owner. -/
-theorem materializeOwnerInPlace {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+theorem compactOwner_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
     (src tmp buf : Fin T) (regs : [src,tmp,buf].Nodup) :
-    ∃ code : Pr P T Q prime U, ∀ {V : ℕ} (x : Fin V → ZMod 2) u (S : Stacks T prime),
+    ∀ {V : ℕ} (x : Fin V → ZMod 2) u (S : Stacks T prime),
       WordAtZero x (S.L src) (S.R src) → S.L tmp = [] → S.R tmp = [] → S.R buf = [] →
-      ∃ z, z.user = u.user ∧ Exec body code (mk u S)
+      ∃ z, z.user = u.user ∧ Exec body (compactOwner src tmp buf) (mk u S)
         (12*V+19+4*(S.L src).length+2*(S.R src).length)
         (mk z {S with L := Function.update S.L src [],
                       R := Function.update S.R src (List.ofFn fun i => SparseRoleCircuit.encode (x i))}) := by
-  refine ⟨(loadCompactWord src tmp buf).seq ((clearWorkTapes [src]).seq (moveRightOrdered buf tmp src)),?_⟩
   intro V x u S word tl tr br
   obtain ⟨v,user,copy⟩ := loadCompactWord_exec body src tmp buf regs x u S word tl tr
   rw [br,List.append_nil] at copy
@@ -49,6 +51,16 @@ theorem materializeOwnerInPlace {P U : Type} {T Q : ℕ} (body : P → Pr P T Q 
       · by_cases b : j = buf
         · subst j; simp [D,B,a,br]
         · simp [D,B,a,b]
+
+theorem materializeOwnerInPlace {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (src tmp buf : Fin T) (regs : [src,tmp,buf].Nodup) :
+    ∃ code : Pr P T Q prime U, ∀ {V : ℕ} (x : Fin V → ZMod 2) u (S : Stacks T prime),
+      WordAtZero x (S.L src) (S.R src) → S.L tmp = [] → S.R tmp = [] → S.R buf = [] →
+      ∃ z, z.user = u.user ∧ Exec body code (mk u S)
+        (12*V+19+4*(S.L src).length+2*(S.R src).length)
+        (mk z {S with L := Function.update S.L src [],
+                      R := Function.update S.R src (List.ofFn fun i => SparseRoleCircuit.encode (x i))}) :=
+  ⟨_,compactOwner_exec body src tmp buf regs⟩
 
 /-- Materialize a whole fan in place, charging each owner once. Both buffers
 are restored between owners and the control tapes are untouched. -/

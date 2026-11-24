@@ -254,7 +254,7 @@ theorem borrowedWindow_layout [M8.Machine.Net] (charged : Bool) (n : Fin 9) (p :
   have execute := build budget child
   intro data u S live saved
   obtain ⟨z,F,t,out,exec,paid,user,done,act⟩ := execute data u S live saved
-  exact ⟨z,F,t,out,exec,by simpa only [Bool.true_and,ite_true,Nat.zero_mul,Nat.add_zero] using paid,user,done,act⟩
+  exact ⟨z,F,t,out,exec,by simpa only [Bool.true_and,Bool.false_and,Bool.false_eq_true,ite_true,ite_false,tapeCharge,List.map_nil,List.sum_nil,Nat.zero_mul,Nat.add_zero] using paid,user,done,act⟩
 
 open Cover.Fallback RecursiveInterchangeLayout Certificates.PR589 in
 theorem borrowedWindow_host [M8.Machine.Net] (charged : Bool) (n : Fin 9) (p : Fin 32 × Fin 5) (j : Fin Copy.lifecycles.length) :

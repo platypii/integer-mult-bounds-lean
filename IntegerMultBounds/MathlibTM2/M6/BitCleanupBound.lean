@@ -13,6 +13,18 @@ namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover.Fallback Fast.Main
 open Shared50ModularControl (prime)
 
+@[irreducible] def frameSlots {k H : ℕ} (ports : Fin k ↪ Fin H) :=
+  ((List.finRange k).map ports).reverse
+
+theorem mem_frameSlots {k H : ℕ} (ports : Fin k ↪ Fin H) (j : Fin H) :
+    j ∈ frameSlots ports ↔ ∃ i, ports i = j := by simp [frameSlots]
+
+theorem frameSlots_nodup {k H : ℕ} (ports : Fin k ↪ Fin H) : (frameSlots ports).Nodup := by
+  simpa [frameSlots] using (List.nodup_finRange _).map ports.injective
+
+theorem frameSlots_length {k H : ℕ} (ports : Fin k ↪ Fin H) : (frameSlots ports).length = k := by
+  simp [frameSlots]
+
 /-- Elapsed steps plus the change in cleanup cost on any set of tapes. -/
 def CleanupBound {T : ℕ} (S F : Stacks T prime) (steps budget : ℕ) : Prop :=
   ∀ js : List (Fin T), js.Nodup →
