@@ -105,6 +105,52 @@ private theorem compactRestoredStage [M8.Machine.Net] (n : Fin 9) (count : Fin 3
   have h := paid js nd
   simpa only [slots,List.sum_map_mul_right,max_eq_right (show 1 ≤ w+1 by omega),weightEq,V,W,w,owner,scratch,CutoffNodeInput.stageWidth] using h
 
+/-- Express the nine packing charges in parent coordinates, retaining the exact
+role-volume share and the factor of 64 in active width. -/
+theorem compactPackingSum (c : CutoffNodeInput) (rate : Fin 9 → ℝ) (τ : ℝ) :
+    (∑ n, rate n * ((c.cells : ℝ) * ((c.w+1 : ℕ) : ℝ)^τ)) =
+      ((∑ n, rate n) / (142080 * (64 : ℝ)^τ)) *
+        ((volume prime c.node : ℝ) * (c.node.width : ℝ)^τ) := by
+  rw [← Finset.sum_mul, ← c.cells_share, c.width]
+  push_cast
+  rw [Real.mul_rpow (by norm_num : (0 : ℝ) ≤ 64) (by positivity)]
+  field_simp
+
+/-- In the last nine reserved levels, even a path consisting entirely of
+rank-42 calls has a stage atom small enough for cutoff pricing. -/
+theorem compactAtom_fits (c : CutoffNodeInput) (k : ℕ)
+    (depth : c.depth = c.path.length+k) (remaining : k ≤ 9) : c.w+1 ≤ c.cutoff := by
+  have ratio : 64^k ≤ 64*42^k := by interval_cases k <;> decide
+  have bound := scheduledPath_width_le prime c.root c.path
+  change c.node.width * 64^c.path.length ≤ _ at bound
+  rw [c.width,c.rootWidth,depth,pow_add] at bound
+  have step : 64*(c.w+1) ≤ 64^k*(c.b*42^c.path.length) :=
+    Nat.le_of_mul_le_mul_right (bound.trans_eq (by ring)) (by positivity : 0 < 64^c.path.length)
+  have stop := c.stop
+  rw [depth,pow_add] at stop
+  have limit : 64*(c.w+1) ≤ 64*(42^c.path.length*42^k*c.b) := by
+    exact step.trans ((Nat.mul_le_mul_right (c.b*42^c.path.length) ratio).trans_eq (by ring))
+  omega
+
+/-- Once the stage atom fits below the cutoff, only the excess of the packing
+exponent over the selected exponent is charged at cutoff width. -/
+theorem compactPackingSum_cutoff (c : CutoffNodeInput) (rate : Fin 9 → ℝ)
+    (paid : 0 ≤ ∑ n, rate n) {σ τ : ℝ} (exponents : σ ≤ τ)
+    (fits : c.w+1 ≤ c.cutoff) :
+    (∑ n, rate n * ((c.cells : ℝ) * ((c.w+1 : ℕ) : ℝ)^τ)) ≤
+      (((∑ n, rate n) / (142080 * (64 : ℝ)^σ)) *
+        ((volume prime c.node : ℝ) * (c.node.width : ℝ)^σ)) *
+          (c.cutoff : ℝ)^(τ-σ) := by
+  rw [← compactPackingSum, ← Finset.sum_mul, ← Finset.sum_mul, mul_assoc]
+  apply mul_le_mul_of_nonneg_left _ paid
+  rw [mul_assoc]
+  apply mul_le_mul_of_nonneg_left _ (Nat.cast_nonneg _)
+  calc
+    _ = ((c.w+1 : ℕ) : ℝ)^σ * ((c.w+1 : ℕ) : ℝ)^(τ-σ) := by
+      rw [← Real.rpow_add (by positivity), add_sub_cancel ..]
+    _ ≤ _ := mul_le_mul_of_nonneg_left
+      (Real.rpow_le_rpow (by positivity) (Nat.cast_le.mpr fits) (sub_nonneg.mpr exponents)) (by positivity)
+
 /-- The physical stage runs every selected invocation and restores the helper coordinates. -/
 theorem compactSelectedStage [M8.Machine.Net] (n : Fin 9) :
     let l := (selectedPhaseSchedule false).1.length
