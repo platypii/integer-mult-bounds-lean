@@ -140,4 +140,90 @@ theorem compactScalarMove [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (af
     rw [← facts.1,← facts.2]
     exact result
 
+/-- Execute a selected scalar/MOVE block with its cutoff test and stopped worker installed. -/
+theorem cutoffScalarMove [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (afterCopy : Bool)
+    (j : Fin (selectedPhaseSchedule afterCopy).1.length) :
+    let i := selectedPhaseIndex afterCopy j
+    let edge := (Geometry.Moves.phaseEdges.filter positiveMove)[i.val]'i.isLt
+    let lo := min (Geometry.Dimensions.value edge.1) (Geometry.Dimensions.value edge.2)
+    let hi := max (Geometry.Dimensions.value edge.1) (Geometry.Dimensions.value edge.2)
+    ∃ (C : ℝ) (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
+      (fan : Fin (142081+2) ↪ Fin T) (basis : WorkerBasisLayout ports),
+    basis.OwnerTapes fan ∧ ∀ {P U : Type} {Q : ℕ}, states ≤ Q →
+    ∀ (fits : (stoppedIntervalMachine lo hi).1 ≤ Q)
+      (large : P → Pr (Option (WorkerLabel P)) T Q prime U) (f : P),
+    ∃ body : Option (WorkerLabel P) → Pr (Option (WorkerLabel P)) T Q prime U,
+      (∀ g, body (some (.active g)) = large g) ∧
+      ∃ (code : Pr (Option (WorkerLabel P)) T Q prime U) (rate : ℕ), ∀ c : CutoffNodeInput,
+      let record := binSyms c.root.width.size c.cutoff
+      let child := scheduledChild prime c.node (phaseChildPositions.choose (n,p,i))
+      let W := c.stageWidth
+      let V := (prime^(c.w+1))^16*W
+      let interval := phaseIntervalChild lo hi (c.w+1) W
+      ∃ (position : Fin (volume prime child) ≃ Fin V) (size : volume prime interval = V),
+        InheritedIntervalPositions child interval size position ∧ ∀ (leafRate : ℝ) (recursiveTime : ℕ), C ≤ leafRate →
+        let price := if c.cutoff < child.width then recursiveTime else
+          ⌊(leafRate*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime child⌋₊
+        (c.cutoff < child.width → ScheduledChildExec c.node child c.w W ports record position body (some (.active f)) recursiveTime true) →
+        ∀ (x : Fin 142081 → Fin V → ZMod 2) u S, HelperFan fan x S →
+        (∀ l, (∀ h, fan h ≠ l) → S.L l = (basis.seed c.w W record).L l ∧ S.R l = (basis.seed c.w W record).R l) →
+        ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+          CleanupBound S F (t+tapeCharge cleanupWeight (frameSlots fan) F)
+            (price+rate*c.cells+tapeCharge cleanupWeight (frameSlots fan) S) ∧
+          HelperFan fan (selectedMoveOutput (w := c.w+1) (W := W) n p afterCopy j x) F := by
+  intro i edge lo hi
+  have mem := List.mem_filter.mp (List.getElem_mem (l := Geometry.Moves.phaseEdges.filter positiveMove) i.isLt)
+  have checked := Geometry.Moves.phase_checked edge mem.1
+  have positive : 0 < Geometry.moveRank edge.1 edge.2 := Nat.pos_of_ne_zero (bne_iff_ne.mp mem.2)
+  obtain ⟨ordered,within⟩ := phaseInterval_bounds checked positive
+  obtain ⟨C,dispatch⟩ := cutoffIntervalProgram ordered within
+  obtain ⟨T,states,ports,fan,basis,owners,make⟩ := compactScalarMove n p afterCopy j
+  refine ⟨C,T,states,ports,fan,basis,owners,?_⟩
+  intro P U Q capacity fits large f
+  let bank := scheduledRecordPorts ports
+  let cmp := cutoffColumnSlots.trans bank
+  let leaf := stoppedIntervalProgram lo hi ports fits (P := Option (WorkerLabel P)) (U := U)
+  let entry := (ordinaryCutoffTest cmp (hi-lo)).seq
+    (.cond (fun z => symBit (z.scan (cmp 7))) (large f) leaf)
+  let body : Option (WorkerLabel P) → Pr (Option (WorkerLabel P)) T Q prime U
+    | none => entry.seq (compactOwner (bank 24) (bank 0) (bank 1))
+    | some .entry => entry
+    | some .leaf => leaf
+    | some (.active g) => large g
+  refine ⟨body,fun _ => rfl,?_⟩
+  obtain ⟨code,rate,run⟩ := make capacity body none (some .entry) rfl
+  refine ⟨code,rate+10000,?_⟩
+  intro c record child W V interval
+  obtain ⟨position,size,coords,step⟩ := run c record
+  refine ⟨position,size,coords,?_⟩
+  intro leafRate recursiveTime enough price active x u S ready fresh
+  let k := phaseChildPositions.choose (n,p,i)
+  have shape := (scheduledChild_measures prime c.node ⟨_,c.width⟩ ⟨_,c.rows⟩ k).1
+  rw [(phaseChildPositions.choose_spec n p i).1,c.width] at shape
+  have rank := phaseIntervalChild_width checked (c.w+1) W
+  change (hi-lo)*(c.w+1) = Geometry.moveRank edge.1 edge.2*(c.w+1) at rank
+  have width : child.width = (hi-lo)*(c.w+1) := by
+    change child.width*64 = Geometry.moveRank edge.1 edge.2*(64*(c.w+1)) at shape
+    rw [Nat.mul_left_comm, Nat.mul_comm 64] at shape
+    omega
+  have small (path : List (Fin nodeChildren5.length)) : (path.foldl (scheduledChild prime) c.root).width ≤ c.root.width := by
+    have := directoryDigits_bound prime c.root path
+    omega
+  have cutFits := (c.active.trans (small c.path)).trans_lt (Nat.lt_size_self _)
+  have room : child.width.size ≤ c.root.width.size := Nat.size_le_size (by
+    simpa only [List.foldl_append,List.foldl_cons,List.foldl_nil] using small (c.path++[k]))
+  have cellsPos : 0 < c.cells := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos (c.w+1)) 128)
+    (Nat.mul_pos c.idlePositive (by decide : 0 < 142080))
+  have pos : 0 < W := Nat.pos_of_mul_pos_left (c.stageCells.symm ▸ cellsPos)
+  have worker := dispatch ports fits body (some .entry) (some (.active f)) (some .leaf) rfl rfl c.node child c.w W _ c.cutoff
+    width cutFits room position coords pos leafRate recursiveTime enough active
+  obtain ⟨z,F,t,exec,user,paid,out⟩ := step _ worker x u S ready fresh
+  refine ⟨z,F,t,exec,user,workerCost.weaken (charged := true) paid ?_,out⟩
+  apply Nat.add_le_add_right
+  change 4*c.w+23*child.width+22*c.root.width.size+51+price+rate*c.cells ≤ _
+  have childBound : child.width ≤ 8*(c.w+1) := width ▸ Nat.mul_le_mul_right _ ((Nat.sub_le hi lo).trans within)
+  have load := c.remainderSetup_le 1
+  rw [Nat.add_mul]
+  omega
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
