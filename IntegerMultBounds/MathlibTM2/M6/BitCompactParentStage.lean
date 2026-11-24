@@ -33,7 +33,7 @@ theorem compactParentStage [M8.Machine.Net] (n : Fin 9) :
     let owner := (Fin.castAddEmb 273 (n := T)).trans scratch
     let stage := Fin.natAddEmb 80 (m := (T+273)+LeafCore.small)
     let H := 80+((T+273)+LeafCore.small)
-    ∃ (host : Label → Pr Label H Q prime U) (code : Pr Label H Q prime U) (localRate : ℕ) (packRate : ℝ),
+    ∃ (host : Label → Pr Label H Q prime U) (code : Pr Label H Q prime U) (localRate : ℕ) (packRate : ℝ) (workers : Pr Empty (T+7) Q prime U),
     ∀ c : CutoffNodeInput,
       let w := c.w
       let W := c.stageWidth
@@ -46,6 +46,7 @@ theorem compactParentStage [M8.Machine.Net] (n : Fin 9) :
       (∀ p j i, c.cutoff < (child p j i).width → ScheduledChildExec c.node (child p j i) w W (regs p j i)
         (binSyms c.root.width.size c.cutoff) (pos p j i) (body p j i) (some (.active (f p j i))) (time (slot p j i).val) true) →
       ∀ shared : Stacks (142081+2) prime, ∃ initial : Stacks T prime, embStk fan initial = shared ∧
+      PhaseSeedExec workers fan (160*(count 0+count 1+count 2)) c initial 960 ∧
       ∀ (x : Fin 142081 → Fin V → ZMod 2) u S, HelperFan ((fan.trans owner).trans stage) x S →
       ParentArchiveInput c.node w (embStk (archiveSetupPlacement 80 T LeafCore.small) S) →
       (∀ j : Fin LeafCore.small, S.L (stage (j.natAdd (T+273))) = [] ∧ S.R (stage (j.natAdd (T+273))) = []) →
@@ -62,7 +63,7 @@ theorem compactParentStage [M8.Machine.Net] (n : Fin 9) :
   let headerStates := (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080)
   refine ⟨C,tapes,regs,T,max states headerStates,fan,?_⟩
   intro P U Q capacity large f
-  obtain ⟨body,active,host,code,localRate,packRate,run⟩ := build ((le_max_left ..).trans capacity) large f
+  obtain ⟨body,active,host,code,localRate,packRate,workers,run⟩ := build ((le_max_left ..).trans capacity) large f
   refine ⟨body,active,?_⟩
   intro Label scratch owner stage H
   let table := fun g : Label => embProg stage id (host g)
@@ -70,13 +71,13 @@ theorem compactParentStage [M8.Machine.Net] (n : Fin 9) :
   let stock := fun S : Stacks H prime => reserve (embStk (owner.trans stage) S)
   obtain ⟨setupRate,loader⟩ := parentArchiveThenWithCharge (U := U) ((le_max_right states headerStates).trans capacity)
   obtain ⟨setup,prepare⟩ := loader table (fun G price => price-stock G)
-  refine ⟨table,setup.seq (embProg stage id code),setupRate+localRate,packRate,?_⟩
+  refine ⟨table,setup.seq (embProg stage id code),setupRate+localRate,packRate,workers,?_⟩
   intro c w W V child
   obtain ⟨pos,geom,entry⟩ := run c
   refine ⟨pos,geom,?_⟩
   intro rate time enough price recursive shared
-  obtain ⟨initial,view,execute⟩ := entry rate time enough recursive shared
-  refine ⟨initial,view,?_⟩
+  obtain ⟨initial,view,init,execute⟩ := entry rate time enough recursive shared
+  refine ⟨initial,view,init,?_⟩
   intro x u S live archive empty fresh
   let packing := ⌈packRate*((V : ℝ)*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)⌉₊
   let children := ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map price).sum

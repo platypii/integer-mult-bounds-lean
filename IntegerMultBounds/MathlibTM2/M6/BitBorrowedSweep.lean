@@ -278,6 +278,8 @@ theorem allocatedArchiveSweepWithCharge [M8.Machine.Net] (n : Fin 9)
     (observed : {js : List (Fin (142081+2)) // js.Nodup} := ⟨[],by simp⟩) :
     let J := Fin 32 × Fin 5
     ∃ (T : ℕ) (fan : Fin (142081+2) ↪ Fin T) (banks : ∀ p, Fin (tapes p) ↪ Fin T),
+    (∀ z, (∀ h, fan h ≠ z) → ∃ i l, (∀ h, ports i h ≠ l) ∧ banks i l = z) ∧
+    (∀ i l, (∀ h, ports i h ≠ l) → (∀ h, fan h ≠ banks i l) ∧ ∀ j, j ≠ i → ∀ m, banks j m ≠ banks i l) ∧
     ∀ {P : J → Type} {U : Type} {Q : ℕ}, columnCapacity ≤ Q →
     ∀ (body : ∀ p, P p → Pr (P p) (tapes p) Q prime U),
     let scratch := Fin.castAddEmb LeafCore.small (n := T+273)
@@ -290,16 +292,18 @@ theorem allocatedArchiveSweepWithCharge [M8.Machine.Net] (n : Fin 9)
     let V := (prime^w)^16*(blocks*prime^(64*(w*64))*K)
     let scale := (V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
     0 < V → ∀ (work : J → ℕ) (childTime : ℕ → ℕ),
-    (∀ p (shared : Stacks (142081+2) prime), ∃ seed : Stacks (tapes p) prime, embStk (ports p) seed = shared ∧
+    ∀ (shared : Stacks (142081+2) prime) (seed : ∀ p, Stacks (tapes p) prime),
+    (∀ p,
       ∀ a v D, HelperFan (ports p) a D →
-        (∀ j, (∀ h, ports p h ≠ j) → D.L j = seed.L j ∧ D.R j = seed.R j) →
+        (∀ j, (∀ h, ports p h ≠ j) → D.L j = (seed p).L j ∧ D.R j = (seed p).R j) →
         ∃ z F m b, Exec (body p) (call p) (mk v D) m (mk z F) ∧
           (∀ js : List (Fin (tapes p)), js.Nodup →
             m+tapeCharge (fun l r => 4*l.length+2*r.length+4) (observed.val.map (ports p)) F+tapeCharge (fun l r => 4*l.length+2*r.length+4) js F ≤
               tapeCharge (fun l r => 4*l.length+2*r.length+4) js D+(work p+
               ((List.range' (stageChildStart n+runChildStart p) Geometry.Moves.localPaid.length).map childTime).sum+tapeCharge (fun l r => 4*l.length+2*r.length+4) (observed.val.map (ports p)) D)) ∧
           z.user = v.user ∧ HelperFan (ports p) b F ∧ BorrowedStep n w blocks K p a b) →
-    ∀ shared : Stacks (142081+2) prime, ∃ initial : Stacks T prime, embStk fan initial = shared ∧
+    ∃ initial : Stacks T prime, embStk fan initial = shared ∧
+    (∀ p l, (∀ h, ports p h ≠ l) → initial.L (banks p l) = (seed p).L l ∧ initial.R (banks p l) = (seed p).R l) ∧
     ∀ x u S, HelperFan (fan.trans owner) x S →
       (∀ i j, S.R (scratch (borrowedHeaders T i j)) = (Routines.hdr (helperAdjacentView w 1 W i) j).map bitSymbol) →
       (∀ j : Fin LeafCore.small, S.L (j.natAdd (T+273)) = [] ∧ S.R (j.natAdd (T+273)) = []) →
@@ -311,8 +315,8 @@ theorem allocatedArchiveSweepWithCharge [M8.Machine.Net] (n : Fin 9)
           (((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map childTime).sum+ tapeCharge (fun l r => 4*l.length+2*r.length+4) (observed.val.map fan) (embStk owner S) : ℕ)) ∧
         z.user = u.user ∧ HelperFan (fan.trans owner) out F ∧ RestoredBorrowedStage n w B K x out := by
   intro J
-  obtain ⟨T,fan,banks,select,_,prepare,apart⟩ := copyWindowBanks tapes ports
-  refine ⟨T,fan,banks,?_⟩
+  obtain ⟨T,fan,banks,select,cover,prepare,apart⟩ := copyWindowBanks tapes ports
+  refine ⟨T,fan,banks,cover,apart,?_⟩
   intro P U Q cap body
   let host := fun f : (p : J) × P p => embProg (banks f.1) (Sigma.mk f.1) (body f.1 f.2)
   obtain ⟨rate,sweep⟩ := archivedSweepWithCharge n fan cap host ⟨observed.val.map fan,observed.property.map fan.injective⟩
@@ -321,14 +325,13 @@ theorem allocatedArchiveSweepWithCharge [M8.Machine.Net] (n : Fin 9)
   intro call
   obtain ⟨code,execute⟩ := sweep (fun p => embProg (banks p) (Sigma.mk p) (call p))
   refine ⟨code,?_⟩
-  intro w B K blocks W V scale pos work childTime supplied shared
-  choose seed _ runs using fun p => supplied p shared
+  intro w B K blocks W V scale pos work childTime shared seed runs
   obtain ⟨initial,owners,stored⟩ := prepare shared seed
   let saved (p : J) (S : Stacks T prime) := ∀ i, (∀ h, ports p h ≠ i) →
     S.L (banks p i) = (seed p).L i ∧ S.R (banks p i) = (seed p).R i
   have project p (S : Stacks T prime) : embStk (ports p) (embStk (banks p) S) = embStk fan S := by
     simp only [embStk,Function.comp_def,select]
-  refine ⟨initial,owners,?_⟩
+  refine ⟨initial,owners,stored,?_⟩
   have run := execute w B K pos saved
     (fun p => work p+
       ((List.range' (stageChildStart n+runChildStart p) Geometry.Moves.localPaid.length).map childTime).sum) (by
@@ -617,7 +620,7 @@ theorem parentArchiveSweepWithCharge [M8.Machine.Net] (n : Fin 9) :
           ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map childTime).sum : ℕ)) ∧
         z.user = u.user ∧ HelperFan full out F ∧ RestoredBorrowedStage n (w+1) B K x out := by
   intro J tapes ports
-  obtain ⟨T,fan,banks,build⟩ := allocatedArchiveSweepWithCharge n tapes ports
+  obtain ⟨T,fan,banks,_,_,build⟩ := allocatedArchiveSweepWithCharge n tapes ports
   refine ⟨T,fan,banks,?_⟩
   intro P U Q capacity headers body scratch owner host outer stage full table
   obtain ⟨rate,compile⟩ := build capacity body
@@ -632,7 +635,9 @@ theorem parentArchiveSweepWithCharge [M8.Machine.Net] (n : Fin 9) :
   have hk : 0 < K := Nat.mul_pos (Nat.mul_pos (Nat.mul_pos pos.1 pos.2.1) pos.2.2.2.1) pos.2.2.2.2
   have hp := Shared50ModularControl.prime_prime.pos
   have hv : 0 < V := by dsimp only [V,blocks]; positivity
-  obtain ⟨initial,_,execute⟩ := run (w+1) B K hv work time supplied ⟨[],[],fun _ => [],fun _ => []⟩
+  let shared : Stacks (142081+2) prime := ⟨[],[],fun _ => [],fun _ => []⟩
+  choose seeds _ steps using fun p => supplied p shared
+  obtain ⟨initial,_,_,execute⟩ := run (w+1) B K hv work time shared seeds steps
   obtain ⟨seed,input,blank,stored⟩ := parentArchiveHost_exists (L := LeafCore.small) node w initial
   refine ⟨seed,?_⟩
   intro x u S live agrees

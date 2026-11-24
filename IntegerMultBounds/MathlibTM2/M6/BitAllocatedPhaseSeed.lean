@@ -30,10 +30,10 @@ def PhaseSeedExec {T Q k : ℕ} {U : Type}
 
 /-- Embed a loader on a caller's bank. Only the private component tapes
 can change, so all other components keep their input or their loaded seed. -/
-theorem PhaseSeedExec.place {T Q k H count : ℕ} {P U : Type}
+theorem PhaseSeedExec.place {T Q k H count overhead : ℕ} {P U : Type}
     {setup : Pr Empty (T+7) Q prime U} {fan : Fin k ↪ Fin T}
     {c : CutoffNodeInput} {prepared : Stacks T prime}
-    (run : PhaseSeedExec setup fan count c prepared) (host : P → Pr P H Q prime U)
+    (run : PhaseSeedExec setup fan count c prepared overhead) (host : P → Pr P H Q prime U)
     (bank : Fin (T+7) ↪ Fin H) :
     let data := (Fin.castAddEmb 7 (n := T)).trans bank
     let ext := (Fin.natAddEmb T (m := 7)).trans bank
@@ -44,7 +44,7 @@ theorem PhaseSeedExec.place {T Q k H count : ℕ} {P U : Type}
       S.R (ext 4) = [] → S.R (ext 5) = [] → S.R (ext 6) = binSyms c.root.width.size c.cutoff →
       (∀ j, (∀ h, fan h ≠ j) → S.L (data j) = [] ∧ S.R (data j) = []) →
       ∃ z F t, Exec host (embProg bank Empty.elim setup) (mk u S) t (mk z F) ∧ z.user = u.user ∧
-        CleanupBound S F t (178*count*c.cells+count*(8*(S.R (ext 6)).length+6)+2) ∧
+        CleanupBound S F t (178*count*c.cells+count*(8*(S.R (ext 6)).length+6)+overhead) ∧
         (∀ j, (∀ h, fan h ≠ j) → F.L (data j) = prepared.L j ∧ F.R (data j) = prepared.R j) ∧
         ∀ j, (∀ l, (∀ h, fan h ≠ l) → data l ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro data ext M W u S modulus spectator unit atom ht hs cut blank

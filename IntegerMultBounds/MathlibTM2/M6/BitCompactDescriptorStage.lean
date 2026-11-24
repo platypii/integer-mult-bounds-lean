@@ -35,7 +35,7 @@ theorem compactDescriptorStage [M8.Machine.Net] (n : Fin 9) :
     let stage := Fin.natAddEmb 80 (m := (T+273)+LeafCore.small)
     let H := 80+((T+273)+LeafCore.small)
     let place := Fin.castAddEmb 37 (n := H)
-    ∃ (host : Label → Pr Label (H+37) Q prime U) (code : Pr Label (H+37) Q prime U) (localRate : ℕ) (packRate : ℝ),
+    ∃ (host : Label → Pr Label (H+37) Q prime U) (code : Pr Label (H+37) Q prime U) (localRate : ℕ) (packRate : ℝ) (workers : Pr Empty (T+7) Q prime U),
     ∀ c : CutoffNodeInput,
       let w := c.w
       let W := c.stageWidth
@@ -48,6 +48,7 @@ theorem compactDescriptorStage [M8.Machine.Net] (n : Fin 9) :
       (∀ p j i, c.cutoff < (child p j i).width → ScheduledChildExec c.node (child p j i) w W (regs p j i)
         (binSyms c.root.width.size c.cutoff) (pos p j i) (body p j i) (some (.active (f p j i))) (time (slot p j i).val) true) →
       ∀ shared : Stacks (142081+2) prime, ∃ initial : Stacks T prime, embStk fan initial = shared ∧
+      PhaseSeedExec workers fan (160*(count 0+count 1+count 2)) c initial 960 ∧
       ∀ (x : Fin 142081 → Fin V → ZMod 2) u S, HelperFan ((fan.trans owner).trans stage) x (embStk place S) →
       (∀ i : Fin 37, S.R (i.natAdd H) = callerHeaderBank (fun j => (Routines.hdr c.node j).map bitSymbol) i) →
       (∀ j, let k := place (archiveSetupPlacement 80 T LeafCore.small j); S.L k = [] ∧ S.R k = []) →
@@ -64,18 +65,18 @@ theorem compactDescriptorStage [M8.Machine.Net] (n : Fin 9) :
   obtain ⟨C,tapes,regs,T,states,fan,build⟩ := compactParentStage n
   refine ⟨C,tapes,regs,T,states,fan,?_⟩
   intro P U Q cap large f
-  obtain ⟨body,active,host,code,localRate,packRate,run⟩ := build cap large f
+  obtain ⟨body,active,host,code,localRate,packRate,workers,run⟩ := build cap large f
   refine ⟨body,active,?_⟩
   intro Label scratch owner stage H place
   let table := fun g : Label => embProg place id (host g)
   obtain ⟨setup,load⟩ := compactCallerArchive (T := T) (R := LeafCore.small) table
-  refine ⟨table,setup.seq (embProg place id code),314*142080+localRate,packRate,?_⟩
+  refine ⟨table,setup.seq (embProg place id code),314*142080+localRate,packRate,workers,?_⟩
   intro c w W V child
   obtain ⟨pos,geom,entry⟩ := run c
   refine ⟨pos,geom,?_⟩
   intro rate time enough price recurse shared
-  obtain ⟨initial,view,execute⟩ := entry rate time enough recurse shared
-  refine ⟨initial,view,?_⟩
+  obtain ⟨initial,view,init,execute⟩ := entry rate time enough recurse shared
+  refine ⟨initial,view,init,?_⟩
   intro x u S live words free empty fresh
   obtain ⟨v,D,a,start,user,setupBill,archive,frame⟩ := load c u S words free
   have kept j := frame (stage (owner j)) (fun i => (archiveSetupPlacement_frame (R := 80) (T := T) (L := LeafCore.small) i).1 j)
