@@ -22,12 +22,12 @@ at most the local charge and the allowances of its scheduled children. -/
 def SplitRecordTreeFamily [M8.Machine.Net] {Config P U : Type} {N Q : ℕ}
     (input : Config → CutoffNodeInput) (body : P → Pr P N Q prime U) (dst : Fin (142081+2) ↪ Fin N)
     (leafRate : ℝ) (budget : Config → ℕ → ℕ) : Prop :=
-    ∃ minimum : ℝ, 0 ≤ minimum ∧ ∀ D : ℝ, minimum ≤ D → ∀ {T : ℕ}
+    ∃ minimum : ℝ, 0 ≤ minimum ∧ ∀ {T : ℕ}
       (live : Fin (142080+2) ↪ Fin T) (record : Fin 34 ↪ Fin T),
       (∀ i j, 8 ≤ j.val → record j ≠ live i) →
       let H := 142082+T+N
       ∃ (bank : Fin N ↪ Fin H) (host : Empty ⊕ P → Pr (Empty ⊕ P) H Q prime U)
-        (program : Pr (Empty ⊕ P) H Q prime U), (∀ f, host (.inr f) = embProg bank Sum.inr (body f)) ∧ ChildBankFrame live bank ∧ ∀ x, let c := input x
+        (program : Pr (Empty ⊕ P) H Q prime U), (∀ f, host (.inr f) = embProg bank Sum.inr (body f)) ∧ ChildBankFrame live bank ∧ ∀ D : ℝ, minimum ≤ D → ∀ x, let c := input x
         c.cutoff < c.node.width →
         let fuel := c.depth-(c.path.length+1)
         (∀ k : Fin nodeChildren5.length, let d := scheduledChild prime c.node k
@@ -51,10 +51,10 @@ theorem splitRecordTreeBudget [M8.Machine.Net] {Config P U : Type} {N Q : ℕ}
   obtain ⟨rate,build⟩ := runRecordChild loader
   let minimum := max 0 C+(rate+21 : ℕ)
   refine ⟨minimum,by dsimp [minimum]; positivity,?_⟩
-  intro D enough T live record apart H
+  intro T live record apart H
   obtain ⟨bank,host,program,installed,frame,exec⟩ := build body code src dst live record apart
   refine ⟨bank,host,program,installed,frame,?_⟩
-  intro x c active fuel allowance
+  intro D enough x c active fuel allowance
   have shrink : c.root.width*42^c.depth ≤ c.cutoff*64^c.depth := by
     rw [c.rootWidth]
     simpa only [Nat.mul_assoc,Nat.mul_comm,Nat.mul_left_comm] using Nat.mul_le_mul_right (64^c.depth) c.stop

@@ -63,11 +63,11 @@ theorem compiledIdleRecord [M8.Machine.Net] {P U Config : Type} {N T Q : ℕ}
     let src := raw 24
     let caller := (Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)
     let embed := caller.trans (intervalExtend T N)
-    ∃ minimum : ℝ, 0 ≤ minimum ∧ ∀ D : ℝ, minimum ≤ D →
+    ∃ minimum : ℝ, 0 ≤ minimum ∧
       ∃ table : Option (Empty ⊕ P) → Pr (Option (Empty ⊕ P)) (intervalHostSize T N) Q prime U,
       let work := idleCallerWork (((Fin.castAddEmb 35 (n := 78)).trans board).trans embed)
       ∃ (code : Pr (Option (Empty ⊕ P)) (intervalHostSize T N) Q prime U) (fixed base swaps : ℕ),
-      ∀ (p : CutoffNodeInput) x, let c := input x
+      ∀ D : ℝ, minimum ≤ D → ∀ (p : CutoffNodeInput) x, let c := input x
       c.node = scheduledChild prime p.node (idleDirectoryIndex (i,j)) → c.cutoff < c.node.width →
       (∀ k : Fin nodeChildren5.length, let d := scheduledChild prime c.node k
         c.cutoff < d.width → childBudget x k.val ≤ cutoffTreeBudget D leafRate c.cutoff (c.depth-(c.path.length+1)) d) →
@@ -115,8 +115,7 @@ theorem compiledIdleRecord [M8.Machine.Net] {P U Config : Type} {N T Q : ℕ}
       · rw [recOff k a]
         apply apart) (by rfl)
   refine ⟨minimum,nonneg,?_⟩
-  intro D enough
-  obtain ⟨bank,table,worker,rate,frame,execute⟩ := build D enough
+  obtain ⟨bank,table,worker,rate,frame,execute⟩ := build
   refine ⟨table,?_⟩
   intro work
   let shared := ((Fin.castAddEmb 35 (n := 78)).trans board).trans embed
@@ -141,7 +140,7 @@ theorem compiledIdleRecord [M8.Machine.Net] {P U Config : Type} {N T Q : ℕ}
   let regs := raw.trans embed
   obtain ⟨wrapped,enter⟩ := withIntervalDirectory table regs code
   refine ⟨wrapped,fixed+4*work.length+41,rate*base,rate*swaps,?_⟩
-  intro p x c scheduled active children budget e lane wide word u S payload ready fresh inherited
+  intro D enough p x c scheduled active children budget e lane wide word u S payload ready fresh inherited
   have wordAt (k : Fin 72) (ne : k ≠ 24) := (ready k ne).2
   have blankRegs (k : Fin 72) (lo : 59 ≤ k.val) (hi : k.val ≤ 65) : S.R (regs k) = [] := by
     refine (wordAt k ((by decide : ∀ i : Fin 72, 59 ≤ i.val → i ≠ 24) k lo)).trans ?_
@@ -183,7 +182,7 @@ theorem compiledIdleRecord [M8.Machine.Net] {P U Config : Type} {N T Q : ℕ}
     have fields' k : A.R (embed (fields k)) = _ := (right _ (embed.injective.ne (board.injective.ne
       ((by decide : ∀ k, (59 : Fin 113) ≠ idleRolePorts k) k)))).trans (inherited k)
     have middle := fields' (4 : Fin 6)
-    have child := execute p x scheduled active children
+    have child := execute D enough p x scheduled active children
     have privateAt k (hi : 78 ≤ k.val) : embed (board k) ∈ work := (inCallerWork shared _).2 (fun a =>
       embed.injective.ne (board.injective.ne (fun eq => by have bad := congrArg Fin.val eq; change a.val = k.val at bad; omega)))
     have empty k (hk : 3 ≤ k.val) := (fresh' _ (privateAt (idleHeaderArithmetic k)

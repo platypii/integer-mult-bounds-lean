@@ -37,12 +37,12 @@ theorem splitRecordTreeDirectory [M8.Machine.Net] {I U : Type} [Fintype I]
   choose minimum nonneg build using family
   let D := ∑ i, minimum i
   have enough i : minimum i ≤ D := Finset.single_le_sum (fun j _ => nonneg j) (Finset.mem_univ i)
-  choose bank host program installed frame exec using fun i => build i D (enough i) (live i) (record i) (apart i)
+  choose bank host program installed frame exec using fun i => build i (live i) (record i) (apart i)
   refine ⟨D,bank,recordChildDirectory place host program,Finset.sum_nonneg (fun i _ => nonneg i),frame,?_,?_⟩
   · intro i f
     change embProg (place i) _ (host i (.inr f)) = _
     rw [installed i f]
   · intro i x c active children
-    exact InstalledRecordChildExec.inDirectory place host program i (exec i x active children).2
+    exact InstalledRecordChildExec.inDirectory place host program i (exec i D (enough i) x active children).2
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

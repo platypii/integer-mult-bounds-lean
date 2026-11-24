@@ -275,11 +275,11 @@ theorem compiledIdleInterval [M8.Machine.Net] {P U Config : Type} {T N Q : ℕ}
     (recordFree : ∀ r : Fin 142080, ∀ k, live (r.castAdd 2) ≠ record k)
     (lengthPort : record 7 = live ((1 : Fin 2).natAdd 142080)) :
     let bounds := idleBounds i idleCopies[j.val].2
-    ∃ minimum : ℝ, 0 ≤ minimum ∧ ∀ D : ℝ, minimum ≤ D →
+    ∃ minimum : ℝ, 0 ≤ minimum ∧
       ∃ (bank : Fin N ↪ Fin (142082+T+N)) (table : Option (Empty ⊕ P) → Pr (Option (Empty ⊕ P)) (intervalHostSize T N) Q prime U)
         (program : Pr (Option (Empty ⊕ P)) (intervalHostSize T N) Q prime U) (rate : ℕ),
         ChildBankFrame live bank ∧
-        ∀ (parent : CutoffNodeInput) x, let c := input x
+        ∀ D : ℝ, minimum ≤ D → ∀ (parent : CutoffNodeInput) x, let c := input x
           c.node = scheduledChild prime parent.node (idleDirectoryIndex (i,j)) →
           c.cutoff < c.node.width →
           (∀ k : Fin nodeChildren5.length, let d := scheduledChild prime c.node k
@@ -291,14 +291,13 @@ theorem compiledIdleInterval [M8.Machine.Net] {P U Config : Type} {T N Q : ℕ}
   intro bounds
   obtain ⟨minimum,nonneg,build⟩ := family
   refine ⟨minimum,nonneg,?_⟩
-  intro D enough
-  obtain ⟨bank,host,childCode,_,frame,exec⟩ := build D enough live record scratchOff
+  obtain ⟨bank,host,childCode,_,frame,exec⟩ := build live record scratchOff
   let table := intervalEntryTable (intervalExtend T N) host childCode
   obtain ⟨program,rate,run⟩ := directoryIdlePasses capacity i j live headers width record dst bank
     frame apart widthFree recordFree lengthPort table none
   refine ⟨bank,table,program,rate,frame,?_⟩
-  intro parent x c scheduled active children
+  intro D enough parent x c scheduled active children
   apply run parent c scheduled _
-  exact (exec x active children).2 (intervalExtend T N) some table none (fun _ => rfl) rfl
+  exact (exec D enough x active children).2 (intervalExtend T N) some table none (fun _ => rfl) rfl
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
