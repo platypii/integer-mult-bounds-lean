@@ -1281,6 +1281,39 @@ theorem scalarWithCutoff {k Q V cost : ℕ} {U : Type} {g : Pr Empty (k+2) Q pri
   exact view ▸ out
 
 open Certificates.PR589 in
+/-- Execute a selected scalar block with a volume-linear bound on its owner bank. -/
+theorem scalarOwnerLinear {k : ℕ} (layout : Fin 661 ↪ Fin k) :
+    ∃ states, ∀ {Q : ℕ} {U : Type}, states ≤ Q →
+    ∀ gs : List RawGate, (∀ g ∈ gs, g ∈ program) →
+    ∃ (code : Pr Empty (k+2) Q prime U) (rate : ℕ), ∀ {V : ℕ}, 0 < V →
+    ∀ (x : Fin k → Fin V → ZMod 2) u S, HelperFan (Function.Embedding.refl _) x S →
+      ∃ z F n, Exec Empty.elim code (mk u S) n (mk z F) ∧ CleanupBound S F n (rate*V) ∧
+        z.user = u.user ∧ HelperFan (Function.Embedding.refl _) (gs.foldl (scalarOwnerEffect layout) x) F := by
+  obtain ⟨states,compile⟩ := scalarOwnerBlock layout
+  refine ⟨states,?_⟩
+  intro Q U capacity gs allowed
+  obtain ⟨g,rate,run⟩ := compile (U := U) capacity gs allowed
+  let bill := fun V (gs : List RawGate) => (gs.map fun g => 76*g.toCircuit.terms.length*V*(k+7)+6).sum+1
+  refine ⟨g,rate*bill 1 gs,?_⟩
+  intro V pos x
+  have scale (gs : List RawGate) : bill V gs ≤ bill 1 gs*V := by
+    unfold bill
+    rw [Nat.add_mul,Nat.one_mul]
+    apply Nat.add_le_add _ pos
+    apply sumScaled
+    intro g
+    simp only [Nat.mul_one,Nat.add_mul]
+    nlinarith only [pos]
+  intro u S live
+  obtain ⟨z,F,n,exec,_,paid,user,out⟩ := run pos x u S live
+  refine ⟨z,F,n,exec,?_,user,out⟩
+  intro js distinct
+  apply (paid js distinct).trans
+  apply Nat.add_le_add_left
+  change rate*bill V gs ≤ rate*bill 1 gs*V
+  simpa only [Nat.mul_assoc] using Nat.mul_le_mul_left rate (scale gs)
+
+open Certificates.PR589 in
 /-- Compile a selected scalar block on the shared bank with a volume-linear charge. -/
 theorem scalarCutoffBlock {k : ℕ} (layout : Fin 661 ↪ Fin k) :
     ∃ states, ∀ {Q : ℕ} {U : Type}, states ≤ Q →
@@ -1291,30 +1324,13 @@ theorem scalarCutoffBlock {k : ℕ} (layout : Fin 661 ↪ Fin k) :
       ∃ z F n, Exec Empty.elim code (mk u S) n (mk z F) ∧ CleanupBound S F n (rate*V) ∧
         z.user = u.user ∧ HelperFan (Fin.castAddEmb 1) (gs.foldl (scalarOwnerEffect layout) x) F ∧
         F.R (Fin.last (k+2)) = word := by
-  obtain ⟨states,compile⟩ := scalarOwnerBlock layout
+  obtain ⟨states,compile⟩ := scalarOwnerLinear layout
   refine ⟨states,?_⟩
   intro Q U capacity gs allowed
-  obtain ⟨g,rate,run⟩ := compile (U := U) capacity gs allowed
-  let bill := fun V (gs : List RawGate) => (gs.map fun g => 76*g.toCircuit.terms.length*V*(k+7)+6).sum+1
-  refine ⟨embProg (Fin.castAddEmb 1) (id : Empty → Empty) g,rate*bill 1 gs,?_⟩
+  obtain ⟨code,rate,run⟩ := compile (U := U) capacity gs allowed
+  refine ⟨embProg (Fin.castAddEmb 1) (id : Empty → Empty) code,rate,?_⟩
   intro V pos x
-  have scale (gs : List RawGate) : bill V gs ≤ bill 1 gs*V := by
-    unfold bill
-    rw [Nat.add_mul,Nat.one_mul]
-    apply Nat.add_le_add _ pos
-    apply sumScaled
-    intro g
-    simp only [Nat.mul_one,Nat.add_mul]
-    nlinarith only [pos]
-  apply scalarWithCutoff
-  intro u S live
-  obtain ⟨z,F,n,exec,_,paid,user,out⟩ := run pos x u S live
-  refine ⟨z,F,n,exec,?_,user,out⟩
-  intro js distinct
-  apply (paid js distinct).trans
-  apply Nat.add_le_add_left
-  change rate*bill V gs ≤ rate*bill 1 gs*V
-  simpa only [Nat.mul_assoc] using Nat.mul_le_mul_left rate (scale gs)
+  exact scalarWithCutoff (run pos x)
 
 open Certificates.PR589 in
 /-- Execute PR589 scalar blocks before and after a worker on its owner tapes. Its private archive is
@@ -1477,6 +1493,20 @@ noncomputable def selectedMoveOutput {w W : ℕ} (n : Fin 9) (p : Fin 32 × Fin 
   let z := moveOwnerEffect owner (block.1.foldl (scalarOwnerEffect owner) x) (start+i.val) block.2
   (if i.val+1 = schedule.1.length then schedule.2 else []).foldl (scalarOwnerEffect owner) z
 
+theorem selectedPhaseGates (afterCopy : Bool) (j : Fin (selectedPhaseSchedule afterCopy).1.length) :
+    let schedule := selectedPhaseSchedule afterCopy
+    (∀ g ∈ schedule.1[j.val].1, g ∈ program) ∧
+      ∀ g ∈ (if j.val+1 = schedule.1.length then schedule.2 else []), g ∈ program := by
+  unfold selectedPhaseSchedule at *
+  let phase := if afterCopy then sectionB++sectionC else sectionD++sectionA
+  let cur := if afterCopy then Frames.scatterFinish Frames.beforeScatter else Frames.snapshot Frames.initialRefs
+  obtain ⟨allowed,suffix⟩ := phaseMoveBlocks_allowed phase cur (invocationPhase_allowed afterCopy)
+  intro schedule
+  refine ⟨allowed j,?_⟩
+  by_cases h : j.val+1 = schedule.1.length
+  · simpa only [if_pos h] using suffix
+  · simp only [if_neg h,List.not_mem_nil,false_implies,implies_true]
+
 /-- The ordered worker effects for the phase on one side of COPY. -/
 @[irreducible] def InvocationPhaseTrace {w W : ℕ} (n : Fin 9) (p : Fin 32 × Fin 5) (afterCopy : Bool)
     (x : Fin 142081 → Fin ((prime^w)^16*W) → ZMod 2) (next : (Fin 142081 → Fin ((prime^w)^16*W) → ZMod 2) → Prop) : Prop :=
@@ -1533,6 +1563,14 @@ noncomputable def selectedPhaseIndex (afterCopy : Bool) :
     Fin (selectedPhaseSchedule afterCopy).1.length → MoveIndex := by
   unfold selectedPhaseSchedule
   exact (phaseDirectory afterCopy).choose
+
+theorem selectedPhaseIndex_spec (afterCopy : Bool) (j : Fin (selectedPhaseSchedule afterCopy).1.length) :
+    let i := selectedPhaseIndex afterCopy j
+    let start := if afterCopy then ((Frames.edges (sectionD++sectionA) (Frames.snapshot Frames.initialRefs)).filter positiveMove).length else 0
+    i.val = start+j.val ∧ (Geometry.Moves.phaseEdges.filter positiveMove)[i.val]'i.isLt =
+      (selectedPhaseSchedule afterCopy).1[j.val].2 := by
+  unfold selectedPhaseIndex selectedPhaseSchedule at *
+  exact (phaseDirectory afterCopy).choose_spec j
 
 open RecursiveInterchangeLayout Certificates.PR589 in
 /-- Compile each MOVE in either literal PR589 phase on its occurrence bank.

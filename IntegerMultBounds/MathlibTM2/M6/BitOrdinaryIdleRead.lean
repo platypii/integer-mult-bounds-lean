@@ -2313,13 +2313,15 @@ open Cover.Fallback IntegerMultBounds.Networks.Certificates.PR589 RecursiveInter
 /-- Allocate one scheduled MOVE around its selected owner. The local table only
 has to execute the transpose at the strictly smaller child descriptor. -/
 theorem allocatedPhaseMove_host (charged : Bool) [M8.Machine.Net] {k : ℕ} (src : Fin k)
-    (p : ℕ × ℕ) (checked : Geometry.Moves.CheckedPair p) (paid : 0 < Geometry.moveRank p.1 p.2) :
+    (p : ℕ × ℕ) (checked : Geometry.Moves.CheckedPair p) (paid : 0 < Geometry.moveRank p.1 p.2) (inherited : Bool := false) :
     ∃ (A B' : List (FlatCoordinateSchedule.Op 16)) (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (k+2) ↪ Fin T)
       (a : Fin (1+FlatCoordinateCleanSchedule.tapeCount A) ↪ Fin T)
       (b : Fin (1+FlatCoordinateCleanSchedule.tapeCount B') ↪ Fin T),
     ∃ basis : WorkerBasisLayout ports, basis.OwnerTapes fan ∧
     (∀ w W record, basis.seed w W record = recordBasisStacks ports ((Fin.natAddEmb 1).trans a) ((Fin.natAddEmb 1).trans b)
       (moveRecordSeed w W record [] []) (basisHeaderStacks A (w+1) W) (basisHeaderStacks B' (w+1) W)) ∧
+    let observed := if inherited then frameSlots fan else []
+    let reserve := fun S : Stacks T prime => tapeCharge (fun l r => 4*l.length+2*r.length+4) observed S
     let payload := ports ((Fin.castLEEmb swapHostFits) ((Fin.castLEEmb (by decide : 35 ≤ 59)) 24))
     let privateSlot := fun j => j ≠ payload ∧ ¬ ((∀ l, a l ≠ j) ∧ (∀ l, ports l ≠ j) ∧ (∀ l, b l ≠ j))
     (∀ j, privateSlot j → ∀ l, fan l ≠ j) ∧ fan (src.castAdd 2) = payload ∧ a ((0 : Fin 1).castAdd _) = payload ∧ b ((0 : Fin 1).castAdd _) = payload ∧
@@ -2340,11 +2342,13 @@ theorem allocatedPhaseMove_host (charged : Bool) [M8.Machine.Net] {k : ℕ} (src
     let live := fun (X : Fin k → Fin V → ZMod 2) (D : Stacks T prime) => RepT (PointwiseRoleGate.bank (a := prime)
       (fun _ _ => blank) (fun _ => 0) (SparseRoleCircuit.encoded X) (FlatCoordinateSchedule.bits V))
       (embStk fan D).L (embStk fan D).R
-    ∃ (position : Fin (volume prime desc) ≃ Fin V), (∀ h, (position h).val = (CopyChildLayout.packActive desc h).val) ∧
     let lo := min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
     let hi := max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
     let view := phaseIntervalChild lo hi (w+1) W
     let size := phaseIntervalChild_volume (phaseInterval_bounds checked paid).1.le (phaseInterval_bounds checked paid).2 (w+1) W
+    ∃ (position : Fin (volume prime desc) ≃ Fin V),
+    (if inherited then InheritedIntervalPositions desc view size position
+      else ∀ h, (position h).val = (CopyChildLayout.packActive desc h).val) ∧
     let input := fun stages (x : Fin V → ZMod 2) =>
       (⟨fun _ => 0,fun _ => sourceWord (v := view) (fun j => x (j.cast size))⟩ : Tapes 1 prime).append (basisWorkspace stages x)
     let stock := PrivateStock privateSlot
@@ -2355,15 +2359,16 @@ theorem allocatedPhaseMove_host (charged : Bool) [M8.Machine.Net] {k : ℕ} (src
         (moveRecordSeed w W record L R) (basisHeaderStacks A (w+1) W) (basisHeaderStacks B' (w+1) W))) ∧
     ∀ budget,
     (desc.width < node.width → ∀ u D word, stored word D → clean D →
-      ∃ z F n changed, Exec body (body f) (mk u D) n (mk z F) ∧ workerCost charged D F n budget ∧ z.user = u.user ∧
+      ∃ z F n changed, Exec body (body f) (mk u D) n (mk z F) ∧ workerCost charged D F (n+reserve F) (budget+reserve D) ∧ z.user = u.user ∧
         stored changed F ∧ clean F ∧ (∀ j, (∀ l, ports l ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) ∧
         ∀ h : Fin (volume prime desc), changed (position h) =
           Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (word ∘ position) h) →
     ∀ data u S, live data S → stock S → ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧
-      workerCost charged S F t (budget+nativePrice charged ((base+swaps*swapVolumeRate w)*V)) ∧ z.user = u.user ∧ live (Function.update data src y) F ∧
+      workerCost charged S F (t+reserve F) (budget+nativePrice charged ((base+(if inherited then 0 else swaps)*swapVolumeRate w)*V)+
+        (if inherited then 13*(base*V) else 0)+reserve S) ∧ z.user = u.user ∧ live (Function.update data src y) F ∧
       stock F ∧ ∀ s (j : Fin W), y (index (AffineFieldCoordinates.embed (AffineFieldProgram.run (selectedWord (w+1) p) s)) j) =
         data src (index (AffineFieldCoordinates.embed s) j) := by
-  obtain ⟨C,rev,fwd,build⟩ := scheduledPhaseBasis_host false charged p checked paid
+  obtain ⟨C,rev,fwd,build⟩ := scheduledPhaseBasis_host inherited charged p checked paid
   let A := description _ rev.good
   let B' := description _ fwd.good
   let recordPort : Fin (rowSwapBlock.tapes+35) := (Fin.castLEEmb swapHostFits) ((Fin.castLEEmb (by decide : 35 ≤ 59)) 24)
@@ -2401,23 +2406,32 @@ theorem allocatedPhaseMove_host (charged : Bool) [M8.Machine.Net] {k : ℕ} (src
     · intro j
       exact disjoint _ ⟨((privateB j).2 recordPort).symm,fun off => off.2.2 _ rfl⟩
   intro P U Q fits body f
-  obtain ⟨setup,swaps,run⟩ := build (k := k) ports body f (by omega)
+  let observed := if inherited then frameSlots fan else []
+  have unique : observed.Nodup := by cases inherited <;> simp [observed,frameSlots_nodup]
+  have empty : observed.isEmpty = !inherited := by
+    have nonempty : frameSlots fan ≠ [] := by
+      intro eq
+      have len := frameSlots_length fan
+      rw [eq] at len
+      simp at len
+    cases inherited <;> simp [observed,nonempty]
+  obtain ⟨setup,swaps,run⟩ := build (k := k) ports body f (by omega) observed unique (by intro h; simp [observed,h])
   let rate := fun (stages : List (FlatCoordinateSchedule.Op 16)) => FlatCoordinateCleanSchedule.constant stages*(1+FlatCoordinateCleanSchedule.tapeCount stages+5)
   let pack := fun js => statePlacedNormalized (U := U) ports (show rowSwapBlock.states ≤ Q by omega)
     swapStates_pos (Empty.elim : Empty → P) (packSchedule 16 js)
   let is := phasePackSchedule (min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2))
     (max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2))
-  let middle := (pack is).seq ((Prog.call f).seq (pack is.reverse))
+  let middle := if inherited then Prog.call f else (pack is).seq ((Prog.call f).seq (pack is.reverse))
   let machine := fun (stages : List (FlatCoordinateSchedule.Op 16)) =>
     Placement.placed (FlatCoordinateCleanSchedule.program stages) (sharedPlacement (0 : Fin 1) (segmentSource stages))
-  refine ⟨rate A+rate B'+setup+16,swaps,(embProg a (Empty.elim : Empty → P) (foreign (liftQ (machine A) (show qa ≤ Q by omega)))).seq
+  refine ⟨rate A+rate B'+(if inherited then 0 else setup)+16,swaps,(embProg a (Empty.elim : Empty → P) (foreign (liftQ (machine A) (show qa ≤ Q by omega)))).seq
     (middle.seq (embProg b (Empty.elim : Empty → P) (foreign (liftQ (machine B') (show qb ≤ Q by omega))))),?_⟩
-  intro node i w B rows rank width split label M K W V hW record dest q desc bank stored clean live
+  intro node i w B rows rank width split label M K W V hW record dest q desc bank stored clean live lo hi view size
   obtain ⟨position,offset,step⟩ := run node i w B rows rank width split label hW
   have useMove := step a b (show qa ≤ Q by omega) (show qb ≤ Q by omega) srcA srcB apart privateB fan src shared
     ownersOff controlsOff record dest q
   refine ⟨position,offset,?_⟩
-  intro lo hi view size input stock
+  intro input stock
   constructor
   · intro L R readDest
     let D := recordBasisStacks ports ((Fin.natAddEmb 1).trans a) ((Fin.natAddEmb 1).trans b)
@@ -2426,7 +2440,11 @@ theorem allocatedPhaseMove_host (charged : Bool) [M8.Machine.Net] {k : ℕ} (src
     exact ⟨D,⟨0,ha,hb,hr,hc⟩,fun _ _ => ⟨rfl,rfl⟩⟩
   intro budget child data u S liveS stockS
   obtain ⟨y,z,F,t,exec,time,user,rep,kept,_,action⟩ := useMove budget child data u S liveS stockS
-  exact ⟨z,F,t,y,exec,time,user,rep,kept,action⟩
+  refine ⟨z,F,t,y,exec,?_,user,rep,kept,action⟩
+  apply workerCost.weaken time
+  apply Nat.add_le_add_right
+  rw [empty]
+  cases inherited <;> simp <;> exact le_rfl
 
 open IntegerMultBounds.Networks.Certificates.PR589 in
 noncomputable def positiveMove (p : ℕ × ℕ) : Bool := Geometry.moveRank p.1 p.2 != 0
