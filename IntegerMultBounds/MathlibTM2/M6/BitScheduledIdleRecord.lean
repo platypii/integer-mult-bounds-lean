@@ -142,6 +142,36 @@ theorem scheduledIdleRecord [M8.Machine.Net] {P U : Type} {N T Q : ℕ}
     simpa only [idleRecordOverhead,x,← cells,mass,cut,remaining,node,child,index,fuel] using paid
   · exact parentReadOfPhysicalTranspose i idleCopies[j.val].2 _ _ wide shape size word y rfl
 
+/-- Installing an entry costs two control steps. The placed program preserves
+every host tape except its own payload, including tapes outside its bank. -/
+theorem ScheduledIdleRecordRun.call [M8.Machine.Net] {A B U : Type} {H T Q : ℕ}
+    {table : A → Pr A T Q prime U} {code raw fields work i j D leafRate childBudget fixed base swaps}
+    (run : ScheduledIdleRecordRun table code raw fields work i j D leafRate childBudget fixed base swaps)
+    (place : Fin T ↪ Fin H) (label : A → B) (outer : B → Pr B H Q prime U) (entry : B)
+    (installed : ∀ f, outer (label f) = embProg place label (table f))
+    (dispatch : outer entry = embProg place label code) :
+    ScheduledIdleRecordRun outer (.call entry) (raw.trans place) (fields.trans place)
+      (work.map place) i j D leafRate childBudget (fixed+2) base swaps := by
+  intro p blocks positive rows align index child fuel active children word u S payload ready fresh roles
+  obtain ⟨v,E,n,y,exec,same,paid,out,read,frame⟩ := run p blocks positive rows align active children word
+    (embDn place u) (embStk place S) payload ready (fun k hk => fresh _ (List.mem_map_of_mem hk)) roles
+  obtain ⟨z,F,lifted,_,user,view,off⟩ := exec_emb place.injective installed exec u rfl S rfl
+  rw [← view] at paid out frame
+  refine ⟨z,F,n+2,y,Exec.call (dispatch ▸ lifted),user.trans same,?_,out,read,?_⟩
+  · have pos : 0 < p.cells := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)
+      (Nat.mul_pos p.idlePositive (by decide))
+    intro js nd
+    have bound := CleanupBound.place place off paid js nd
+    unfold idleRecordOverhead at bound ⊢
+    rw [Nat.add_mul]
+    dsimp only [fuel,child,index]
+    omega
+  · intro t ne
+    by_cases hit : ∃ k, place k = t
+    · obtain ⟨k,rfl⟩ := hit
+      exact frame k (fun eq => ne (congrArg place eq))
+    · exact off t (fun k eq => hit ⟨k,eq⟩)
+
 /-- Choose all entries in a window before selecting the recurrence
 coefficient. The three uniform rates also price every active subwindow. -/
 theorem scheduledIdleWindowRecords [M8.Machine.Net] {P U : Type} {N T Q : ℕ}
@@ -158,27 +188,81 @@ theorem scheduledIdleWindowRecords [M8.Machine.Net] {P U : Type} {N T Q : ℕ}
     let raw j := ((Fin.castLEEmb (by decide : 72 ≤ 113)).trans (board j)).trans embed
     let fields j := (idleRolePorts.trans (board j)).trans embed
     let work j := idleCallerWork (((Fin.castAddEmb 35 (n := 78)).trans (board j)).trans embed)
-    let A := Option (Empty ⊕ P)
-    ∃ (minimum : ℝ) (table : Fin idleCopies.length → A → Pr A (intervalHostSize T N) Q prime U)
-      (code : Fin idleCopies.length → Pr A (intervalHostSize T N) Q prime U) (fixed base swaps : ℕ),
-      0 ≤ minimum ∧ ∀ D : ℝ, minimum ≤ D → ∀ j,
-      ScheduledIdleRecordRun (table j) (code j) (raw j) (fields j) (work j) i j D leafRate childBudget fixed base swaps := by
+    let Job := Fin idleCopies.length
+    let Label := Job ⊕ (Σ _ : Job, Option (Empty ⊕ P))
+    ∃ (minimum : ℝ) (fixed base swaps : ℕ), 0 ≤ minimum ∧
+      ∀ {H : ℕ} (place : Job → Fin (intervalHostSize T N) ↪ Fin H),
+      ∃ table : Label → Pr Label H Q prime U, ∀ D : ℝ, minimum ≤ D → ∀ j,
+      ScheduledIdleRecordRun table (.call (.inl j)) ((raw j).trans (place j)) ((fields j).trans (place j))
+        ((work j).map (place j)) i j D leafRate childBudget fixed base swaps := by
   classical
-  intro caller embed raw fields work A
+  intro caller embed raw fields work Job Label
   choose minimum nonneg table code fixed base swaps run using fun j =>
     scheduledIdleRecord family swapCap capacity i j (board j) (splitter j) (apart j)
-  refine ⟨∑ j, minimum j,table,code,Finset.univ.sup fixed,Finset.univ.sup base,Finset.univ.sup swaps,
+  refine ⟨∑ j, minimum j,Finset.univ.sup fixed+2,Finset.univ.sup base,Finset.univ.sup swaps,
     Finset.sum_nonneg (fun j _ => nonneg j),?_⟩
+  intro H place
+  let directory := recordChildDirectory place table code
+  refine ⟨directory,?_⟩
   intro D enough j p blocks positive rows label index child fuel active children word u S payload ready fresh roles
   have threshold := (Finset.single_le_sum (fun j _ => nonneg j) (Finset.mem_univ j)).trans enough
-  obtain ⟨z,F,n,y,exec,user,paid,out,read,frame⟩ := run j D threshold p blocks positive rows label active
+  have call := (run j D threshold).call (place j) (fun f => Sum.inr ⟨j,f⟩) directory (.inl j)
+    (fun _ => rfl) rfl
+  obtain ⟨z,F,n,y,exec,user,paid,out,read,frame⟩ := call p blocks positive rows label active
     children word u S payload ready fresh roles
   refine ⟨z,F,n,y,exec,user,?_,out,read,frame⟩
-  have localBound : idleRecordOverhead p (fixed j) (base j) (swaps j) ≤
-      idleRecordOverhead p (Finset.univ.sup fixed) (Finset.univ.sup base) (Finset.univ.sup swaps) := by
+  have localBound : idleRecordOverhead p (fixed j+2) (base j) (swaps j) ≤
+      idleRecordOverhead p (Finset.univ.sup fixed+2) (Finset.univ.sup base) (Finset.univ.sup swaps) := by
     unfold idleRecordOverhead
     gcongr <;> exact Finset.le_sup (Finset.mem_univ j)
   intro js distinct
   exact (paid js distinct).trans (Nat.add_le_add_left (Nat.add_le_add_right localBound _) _)
+
+/-- All idle calls share one scratch suffix. Only the 72 dispatch registers
+and six archived role fields are attached to the live window. -/
+theorem installedIdleWindow [M8.Machine.Net] {P U : Type} {B N Q : ℕ}
+    {body : P → Pr P N Q prime U} {dst : Fin (142081+2) ↪ Fin N} {leafRate : ℝ}
+    {childBudget : {c : CutoffNodeInput // c.cutoff < c.node.width} → ℕ → ℕ}
+    (family : SplitRecordTreeFamily Subtype.val body dst leafRate childBudget)
+    (swapCap : (@rowSwapBlock BinaryRadixEqualShared.supplierNet).states ≤ Q)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
+    (i : Fin 9) (window : Fin idleCopies.length → Fin 78 ↪ Fin B) :
+    let H := intervalHostSize (113+intervalSplitTapes) N
+    let windowBank := Fin.castAddEmb H (n := B)
+    let raw j := ((Fin.castAddEmb 6 (n := 72)).trans (window j)).trans windowBank
+    let fields j := ((Fin.natAddEmb 72 (m := 6)).trans (window j)).trans windowBank
+    let Job := Fin idleCopies.length
+    let Label := Job ⊕ (Σ _ : Job, Option (Empty ⊕ P))
+    ∃ (table : Label → Pr Label (B+H) Q prime U) (scratch : List (Fin H))
+      (minimum : ℝ) (fixed base swaps : ℕ), 0 ≤ minimum ∧ ∀ D : ℝ, minimum ≤ D → ∀ j,
+      ScheduledIdleRecordRun table (.call (.inl j)) (raw j) (fields j)
+        (scratch.map (Fin.natAddEmb B)) i j D leafRate childBudget fixed base swaps := by
+  classical
+  intro H windowBank raw fields Job Label
+  let board := Fin.castAddEmb intervalSplitTapes (n := 113)
+  let splitter := Fin.natAddEmb 113 (m := intervalSplitTapes)
+  let caller := (Fin.natAddEmb 142082 (m := 113+intervalSplitTapes)).trans (Fin.castAddEmb N)
+  let embed := caller.trans (intervalExtend (113+intervalSplitTapes) N)
+  let shared := ((Fin.castAddEmb 35 (n := 78)).trans board).trans embed
+  choose place links outside using fun j => adjacentStagePlacement (window j) shared
+  obtain ⟨minimum,fixed,base,swaps,nonneg,install⟩ := scheduledIdleWindowRecords family swapCap capacity i
+    (fun _ => board) (fun _ => splitter) (fun _ r k => suffixApart r k)
+  obtain ⟨table,run⟩ := install place
+  refine ⟨table,idleCallerWork shared,minimum,fixed,base,swaps,nonneg,?_⟩
+  intro D enough j
+  have regs : (((Fin.castLEEmb (by decide : 72 ≤ 113)).trans board).trans embed).trans (place j) = raw j :=
+    Function.Embedding.ext (fun k => links j (k.castAdd 6))
+  have roles : (((idleRolePorts.trans board).trans embed).trans (place j)) = fields j := by
+    apply Function.Embedding.ext
+    intro k
+    have eq : idleRolePorts k = (k.natAdd 72).castAdd 35 := by fin_cases k <;> rfl
+    change place j (embed (board (idleRolePorts k))) = _
+    rw [eq]
+    exact links j (k.natAdd 72)
+  have cleared : (idleCallerWork shared).map (place j) = (idleCallerWork shared).map (Fin.natAddEmb B) := by
+    apply List.map_congr_left
+    intro k hk
+    exact outside j k (by simpa [idleCallerWork] using hk)
+  exact regs ▸ roles ▸ cleared ▸ run D enough j
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

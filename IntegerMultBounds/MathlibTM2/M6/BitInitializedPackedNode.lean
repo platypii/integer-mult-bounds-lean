@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitIdleWindowBoard
+public import IntegerMultBounds.MathlibTM2.M6.BitPreparedIdleDirectory
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
