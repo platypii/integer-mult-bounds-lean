@@ -270,4 +270,151 @@ theorem RoutedPhaseMove.call {U P : Type} {T Q : ℕ}
     obtain ⟨l,r⟩ := (suffixClean fits F).1 fresh k hk
     exact ⟨(kept k ne).1.trans l,(kept k ne).2.trans r⟩
 
+
+/-- Share only the routed payload with the selected owner. The returned bank
+represents the updated family, including its two volume counters. -/
+theorem RoutedPhaseMove.ownerCall {U P : Type} {T Q k : ℕ}
+    {stage : Fin 9} {run : StageRun} {afterCopy : Bool}
+    {j : Fin (selectedPhaseSchedule afterCopy).1.length} {fits : rowSwapBlock.tapes+35 ≤ T}
+    {body : P → Pr P T Q prime U} {entry : P} {D leafRate : ℝ} {rate base swaps : ℕ}
+    {p : CutoffNodeInput} {blocks : ℕ}
+    (move : RoutedPhaseMove stage run afterCopy j fits body entry D leafRate rate base swaps p blocks)
+    (root : p.root.Positive) (rows : 142080^(p.depth+1) ∣ p.root.rows)
+    (label : p.root.beforeH = blocks*prime^(64*p.root.width)) (band : 49*(p.w+1) ≤ 64*p.cutoff)
+    (owner : Fin k) :
+    let edge := selectedMoveEdge afterCopy j
+    let a := Geometry.Dimensions.value edge.1
+    let b := Geometry.Dimensions.value edge.2
+    let lane := phaseIntervalChild (min a b) (max a b) (p.w+1) p.stageWidth
+    let V := (prime^(p.w+1))^16*p.stageWidth
+    let bank := scheduledRecordPorts (Fin.castLEEmb fits)
+    let fan := Fin.natAddEmb T (m := k+2)
+    let place := payloadPlacement (bank 24) (owner.castAdd 2)
+    let stored := RecordReady (b := prime) (w := p.w) (W := p.stageWidth) (d := 16) bank
+      (prime^(p.w+1)).size p.stageWidth.size (binSyms p.root.width.size p.cutoff) SparseRoleCircuit.encode
+      (fun _ => blank) (fun _ => blank) 0 0
+    let child := scheduledChild prime p.node (phaseChildPositions.choose (stage,run,selectedPhaseIndex afterCopy j))
+    let price := cutoffTreeBudget D leafRate p.cutoff (p.depth-(p.path.length+1)) child
+    let code := (Prog.call entry).seq (compactOwner (bank 24) (bank 0) (bank 1))
+    ∃ size : volume prime lane = V, ∀ (data : Fin k → Fin V → ZMod 2) u S,
+      HelperFan fan data S → (∃ old, stored old (embStk place S)) →
+      (∀ i, 35 ≤ i.val → S.L (place i) = [] ∧ S.R (place i) = []) →
+      let after := fun i : Fin V => Shared50RecursiveNodeRows.transpose (v := lane)
+        (one_dvd _) (fun h => data owner (h.cast size)) (i.cast size.symm)
+      ∃ z F t, Exec (embTab place body) (embProg place id code) (mk u S) t (mk z F) ∧
+        CleanupBound S F (t+tapeCharge cleanupWeight (frameSlots fan) F)
+          (price+rate*p.cells+6+(base+swaps*swapVolumeRate p.w)*V+16*V+23+
+            tapeCharge cleanupWeight (frameSlots fan) S) ∧
+        z.user = u.user ∧ HelperFan fan (Function.update data owner after) F ∧
+        stored after (embStk place F) ∧ (∀ i, 35 ≤ i.val → F.L (place i) = [] ∧ F.R (place i) = []) ∧
+        ∀ i, i ≠ owner.castAdd 2 → F.L (fan i) = S.L (fan i) ∧ F.R (fan i) = S.R (fan i) := by
+  intro edge a b lane V bank fan place stored child price code
+  obtain ⟨size,call⟩ := move.call root rows label band
+  refine ⟨size,?_⟩
+  intro data u S live previous free after
+  obtain ⟨old,prepared⟩ := previous
+  have shared : place (bank 24) = fan (owner.castAdd 2) := payloadPlacement_shared ..
+  have ready : stored (data owner) (embStk place S) := by
+    apply prepared.returnPayload (outBank := bank) (fun _ _ => ⟨rfl,rfl⟩)
+    intro h
+    have cell := fanPayload live owner h
+    change _ = readAt blank (S.L (place (bank 24))) (S.R (place (bank 24))) _
+    rw [shared]
+    simpa only [List.map_ofFn] using cell.symm
+  obtain ⟨v,B,t,exec,bill,user,out,zl,zr,fresh⟩ := call (data owner) (embDn place u) (embStk place S) ready free
+  have apart i (ne : i ≠ owner.castAdd 2) l : place l ≠ fan i := payloadPlacement_off _ _ _ ne _
+  have payload : RecordPayload (bank 24) (fun _ => blank) 0 after B := fun h => by simpa only [List.map_ofFn] using out.src h
+  obtain ⟨z,F,run,same,result,view,frame⟩ := placeIdleOwner_exec place (bank 24) fan owner shared apart
+    body (embTab place body) id (fun _ => rfl) code u S data live v B t after exec payload
+  rw [← view] at bill out fresh zl zr
+  have paid := CleanupBound.place place frame bill
+  refine ⟨z,F,t,run,?_,same.trans user,result,out,fresh,fun i ne => frame _ (apart i ne)⟩
+  let target := fan (owner.castAdd 2)
+  have left : F.L target = [] := by
+    change F.L (fan (owner.castAdd 2)) = []
+    rw [← shared]
+    exact zl
+  have right : (F.R target).length = V := by
+    change (F.R (fan (owner.castAdd 2))).length = V
+    rw [← shared]
+    change ((embStk place F).R (bank 24)).length = V
+    rw [zr,List.length_ofFn]
+  let weight := cleanupWeight (S.L target) (S.R target)
+  have balance (js : List (Fin (T+(k+2)))) (nd : js.Nodup) (inside : ∀ l ∈ js, ∃ i, fan i = l) :
+      tapeCharge cleanupWeight js F+(if target ∈ js then weight else 0) =
+      tapeCharge cleanupWeight js S+(if target ∈ js then 2*V+4 else 0) := by
+    induction js with
+    | nil => simp [tapeCharge]
+    | cons l js ih =>
+      have tail := ih nd.of_cons (fun a ha => inside a (List.mem_cons_of_mem _ ha))
+      by_cases eq : l = target
+      · subst l
+        simp [tapeCharge,cleanupWeight,nd.notMem,left,right,weight] at tail ⊢
+        omega
+      · obtain ⟨i,rfl⟩ := inside l List.mem_cons_self
+        have ne : i ≠ owner.castAdd 2 := fun h => eq (congrArg fan h)
+        obtain ⟨l,r⟩ := frame _ (apart i ne)
+        simp [tapeCharge,l,r,Ne.symm eq] at tail ⊢
+        omega
+  have total := balance (frameSlots fan) (frameSlots_nodup fan) (fun l => (mem_frameSlots fan l).mp)
+  have member : target ∈ frameSlots fan := (mem_frameSlots fan _).mpr ⟨_,rfl⟩
+  simp only [member,ite_true] at total
+  intro js nd
+  have h := paid js nd
+  change t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+    (price+rate*p.cells+6+(base+swaps*swapVolumeRate p.w)*V+
+      cleanupWeight (S.L (place (bank 24))) (S.R (place (bank 24)))+14*V+19) at h
+  rw [shared] at h
+  change _+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+_
+  dsimp only [weight,target] at total
+  omega
+
+
+open M8.Machine.Segments in
+/-- The certified basis programs turn the interval transpose returned by
+the owner call into the selected scalar MOVE, with linear cost on each side. -/
+theorem selectedOwnerBasis (afterCopy : Bool) (j : Fin (selectedPhaseSchedule afterCopy).1.length) :
+    let edge := selectedMoveEdge afterCopy j
+    let a := Geometry.Dimensions.value edge.1
+    let b := Geometry.Dimensions.value edge.2
+    ∃ (C : Matrix (Fin 8) (Fin 8) ℚ) (rev : CopyBasisPass C.adjugate) (fwd : CopyBasisPass C),
+    let A := description _ rev.good
+    let B := description _ fwd.good
+    ∀ (p : CutoffNodeInput) (k : ℕ) (owners : Fin 661 ↪ Fin k),
+    let w := p.w+1
+    let W := p.stageWidth
+    let V := (prime^w)^16*W
+    let lane := phaseIntervalChild (min a b) (max a b) w W
+    let bank := fun stages (word : Fin V → ZMod 2) => SharedBankStageInput.raw
+      (FlatCoordinateShiftSharedBank.common (d := 16) (b := w) (W := W)
+        (fun i => SparseRoleCircuit.encode (word i))) (FlatCoordinateCleanSchedule.tapeCount stages)
+    let i := selectedPhaseIndex afterCopy j
+    let owner := owners (paidRegister i.val)
+    ∀ (data : Fin k → Fin V → ZMod 2) (size : volume prime lane = V),
+      ∃ loaded y : Fin V → ZMod 2,
+        HoareTime (FlatCoordinateCleanSchedule.program A) (fun z => z = bank A (data owner))
+          (fun z => z = bank A loaded) (FlatCoordinateCleanSchedule.constant A*V) ∧
+        let moved := fun h : Fin V => Shared50RecursiveNodeRows.transpose (v := lane) (one_dvd _)
+          (fun l => loaded (l.cast size)) (h.cast size.symm)
+        HoareTime (FlatCoordinateCleanSchedule.program B) (fun z => z = bank B moved)
+          (fun z => z = bank B y) (FlatCoordinateCleanSchedule.constant B*V) ∧
+        Function.update data owner y = moveOwnerEffect owners data i.val edge := by
+  intro edge a b
+  have mem := List.mem_filter.mp (List.getElem_mem (l := Geometry.Moves.phaseEdges.filter positiveMove)
+    (selectedPhaseIndex afterCopy j).isLt)
+  have checked := Geometry.Moves.phase_checked edge mem.1
+  have pos : 0 < Geometry.moveRank edge.1 edge.2 := Nat.pos_of_ne_zero (bne_iff_ne.mp mem.2)
+  obtain ⟨C,shape,rev,fwd⟩ := modular_move_profile.choose_spec.1 edge checked
+  refine ⟨C,rev,fwd,?_⟩
+  intro A B p k owners w W V lane bank i owner data size
+  have cells : 0 < p.cells := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)
+    (Nat.mul_pos p.idlePositive (by decide))
+  have positive : 0 < W := Nat.pos_of_mul_pos_left (p.stageCells ▸ cells)
+  obtain ⟨loaded,y,first,last,read⟩ := phaseBasis_runs (w := w) (phaseInterval_bounds checked pos).1.le
+    (phaseInterval_bounds checked pos).2 positive C rev fwd (data owner)
+  refine ⟨loaded,y,first,last,moveOwnerEffect_of_exec owners data i.val edge checked y ?_⟩
+  intro s h
+  simp only [copyAddress_index,selectedWord,selectedRaw,shape]
+  exact read s h
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
