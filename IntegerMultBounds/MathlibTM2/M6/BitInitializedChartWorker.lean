@@ -11,6 +11,109 @@ local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularCo
 
 /-- Run both sweep charts around the embedded worker. A single preparation
 supplies the record for both directions; the middle call cannot alter it. -/
+theorem initializedChartWorkerWithReserve [M8.Machine.Net] (n : Fin 9) :
+    ∃ entrySpace returnSpace states : ℕ, ∀ {P U : Type} {t T Q : ℕ}
+      (body : P → Pr P t Q prime U) (worker : Pr P t Q prime U)
+      (place : Fin t ↪ Fin T) (localFan : Fin (142081+2) ↪ Fin t)
+      (slots : List (Fin t)) (_ : slots.Nodup)
+      (entry : Fin (rowSwapBlock.tapes+35+entrySpace) ↪ Fin T)
+      (ret : Fin returnSpace ↪ Fin T) (caller : Fin 6 ↪ Fin T),
+      let host := fun f => embProg place id (body f)
+      let fan := localFan.trans place
+      states ≤ Q → (∀ i j, entry i ≠ place j) → (∀ i j, ret i ≠ place j) →
+      (∀ i j, ret i ≠ entry j) → (∀ i j, caller i ≠ place j) →
+      (∀ i j, entry i ≠ caller j) → (∀ i j, ret i ≠ caller j) →
+      ∃ (C : ℝ) (code : Pr P T Q prime U), ∀ w W, 0 < W →
+        let M := prime^(w+1)
+        ∀ {V : ℕ} (size : M^128*W = V),
+        ∀ (price : ℕ) (initial : Stacks t prime),
+        (∀ (x : Fin 142081 → Fin V → ZMod 2) u D, HelperFan localFan x D →
+          (∀ j, (∀ i, localFan i ≠ j) → D.L j = initial.L j ∧ D.R j = initial.R j) →
+          ∃ z F k y, Exec body worker (mk u D) k (mk z F) ∧ (∀ js, js.Nodup → k+tapeCharge cleanupWeight slots F+tapeCharge cleanupWeight js F ≤
+            tapeCharge cleanupWeight js D+price+tapeCharge cleanupWeight slots D) ∧
+            z.user = u.user ∧ HelperFan localFan y F ∧ ∀ j : Fin W,
+            sweepRoles n 0 j (sweepView (w := w+1) size y) =
+              (Piece.stage n).run (sweepRoles n 0 j (sweepView (w := w+1) size x))) →
+        ∀ (x : Fin 142081 → Fin V → ZMod 2) u S, HelperFan fan x S →
+          (∀ j, (∀ i, localFan i ≠ j) → S.L (place j) = initial.L j ∧ S.R (place j) = initial.R j) →
+          S.R (caller 0) = binSyms M.size M → S.R (caller 1) = binSyms W.size W →
+          S.R (caller 2) = binSyms 1 1 → S.R (caller 3) = binSyms (w+1).size (w+1) →
+          S.R (caller 4) = [] → S.R (caller 5) = [] →
+          (∀ i, S.L (entry i) = [] ∧ S.R (entry i) = []) →
+          (∀ i, S.L (ret i) = [] ∧ S.R (ret i) = []) →
+          ∃ z F k y, Exec host code (mk u S) k (mk z F) ∧ z.user = u.user ∧
+            (∀ js : List (Fin T), js.Nodup → (k : ℝ)+tapeCharge cleanupWeight (slots.map place) F+tapeCharge cleanupWeight js F ≤
+              tapeCharge cleanupWeight js S+price+C*V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau+tapeCharge cleanupWeight (slots.map place) S) ∧
+            HelperFan fan y F ∧ ∀ j : Fin W,
+              let address := fun z => (flatWindowEquiv (w+1) W (windowState (w+1) z,j)).cast size
+              readRoles address y = (Piece.stage n).run (readRoles address x) := by
+  obtain ⟨a,qa,setup⟩ := prepareSweepFan n false
+  obtain ⟨b,qb,restore⟩ := initializedSweepFan n true
+  refine ⟨a,b,max qa qb,?_⟩
+  intro P U t T Q body worker place localFan slots nd entry ret caller host fan capacity entryOff retOff disjoint callerOff sourceA sourceB
+  let owners := sweepRoleTape.trans ((Fin.castAddEmb 2).trans fan)
+  let recBank := (Fin.castAddEmb a).trans entry
+  obtain ⟨A,load,enter⟩ := setup host entry caller fan ((le_max_left _ _).trans capacity)
+    (fun _ _ => entryOff _ _) sourceA (fun _ => (callerOff _ _).symm)
+  obtain ⟨B,unload,leave⟩ := restore host ret recBank fan (caller 3) ((le_max_right _ _).trans capacity)
+    (fun _ _ => disjoint _ _) (fun _ _ => retOff _ _) (fun _ _ => entryOff _ _) (fun _ => sourceB _ _)
+    (fun _ => (callerOff _ _).symm)
+  refine ⟨2*(A+B),(load.seq (embProg place id worker)).seq unload,?_⟩
+  intro w W pos M V size price initial execute x u S live fresh modulus spectators unit prec tmp saved free vacant
+  subst V
+  let V := M^128*W
+  obtain ⟨v,D,i,p,start,user,first,ready,forward,_,stock,_,frame⟩ :=
+    enter w W pos u S x live modulus spectators unit prec tmp saved free
+  have proj (G : Stacks T prime) : embStk localFan (embStk place G) = embStk fan G := rfl
+  obtain ⟨v',E,j,q,call,paid,same,done,act⟩ := execute p (embDn place v) (embStk place D)
+    (by unfold HelperFan; rw [proj]; exact ready) (by
+      intro k outside
+      have keep := frame (place k) (fun r => place.injective.ne (outside _)) (fun _ => entryOff _ _)
+      exact ⟨keep.1.trans (fresh k outside).1,keep.2.trans (fresh k outside).2⟩)
+  obtain ⟨z,G,middle,_,zu,project,off⟩ := exec_emb (body' := host) (ι := id) place.injective
+    (fun _ => rfl) call v rfl D rfl
+  have represented : HelperFan fan q G := by
+    unfold HelperFan at done ⊢
+    rw [← project,proj] at done
+    exact done
+  have record := stock
+  obtain ⟨z',F,k,y,finish,last,final,out,back,_,_⟩ := leave w W pos z G q (by
+    intro i ne
+    have h := off (recBank i) (fun _ => (entryOff _ _).symm)
+    exact ⟨h.1.trans (record i ne).1,h.2.trans (record i ne).2⟩) represented (by
+      have h := off (caller 3) (fun _ => (callerOff _ _).symm)
+      exact h.2.trans ((frame _ (fun _ => (callerOff _ _).symm) (fun _ => sourceA _ _)).2.trans prec)) (by
+      intro i
+      have h := off (ret i) (fun _ => (retOff _ _).symm)
+      have e := frame (ret i) (fun _ => (retOff i _).symm) (fun _ => (disjoint i _).symm)
+      exact ⟨h.1.trans (e.1.trans (vacant i).1),h.2.trans (e.2.trans (vacant i).2)⟩)
+  refine ⟨z',F,i+j+k,y,(start.seq middle).seq finish,last.trans (zu.trans (same.trans user)),?_,out,?_⟩
+  · rw [← project] at paid
+    let reserve (E : Stacks T prime) := tapeCharge cleanupWeight (slots.map place) E
+    have view (E : Stacks T prime) : tapeCharge cleanupWeight slots (embStk place E) = reserve E := by
+      simp [reserve,tapeCharge,embStk,Function.comp_def]
+    have m := placedCleanup_cost_le place D G cleanupWeight (j+reserve G) (price+reserve D) off
+      (fun is distinct => by simpa only [view,Nat.add_assoc] using paid is distinct)
+    intro js unique
+    have cost := Nat.cast_le (α := ℝ).mpr (m js unique)
+    push_cast at cost
+    have a := first js unique
+    have b := final js unique
+    have af := first (slots.map place) (nd.map place.injective)
+    have bf := final (slots.map place) (nd.map place.injective)
+    change (i : ℝ)+_ ≤ _+A*V*_ at a
+    change (k : ℝ)+_ ≤ _+B*V*_ at b
+    change (i : ℝ)+reserve D ≤ reserve S+A*V*_ at af
+    change (k : ℝ)+reserve F ≤ reserve G+B*V*_ at bf
+    change ((i+j+k : ℕ) : ℝ)+reserve F+_ ≤ _+_+_*V*_+reserve S
+    rw [Nat.cast_add,Nat.cast_add i j]
+    linarith only [a,b,af,bf,cost,Nat.cast_nonneg i (α := ℝ),Nat.cast_nonneg k (α := ℝ)]
+  · intro j address
+    have enterRead := sweepRoles_of_flat n x (sweepView (w := w+1) rfl p) (fun r i => forward r i) j
+    have leaveRead := sweepRoles_of_flat n y (sweepView (w := w+1) rfl q) (fun r i => (back r i).symm) j
+    simpa only [address,flatWindowEquiv_read,Fin.cast_refl,id_eq] using
+      leaveRead.symm.trans ((act j).trans (congrArg (Piece.stage n).run enterRead))
+
 theorem initializedChartWorker [M8.Machine.Net] (n : Fin 9) :
     ∃ entrySpace returnSpace states : ℕ, ∀ {P U : Type} {t T Q : ℕ}
       (body : P → Pr P t Q prime U) (worker : Pr P t Q prime U)
@@ -45,64 +148,15 @@ theorem initializedChartWorker [M8.Machine.Net] (n : Fin 9) :
             HelperFan fan y F ∧ ∀ j : Fin W,
               let address := fun z => (flatWindowEquiv (w+1) W (windowState (w+1) z,j)).cast size
               readRoles address y = (Piece.stage n).run (readRoles address x) := by
-  obtain ⟨a,qa,setup⟩ := prepareSweepFan n false
-  obtain ⟨b,qb,restore⟩ := initializedSweepFan n true
-  refine ⟨a,b,max qa qb,?_⟩
-  intro P U t T Q body worker place localFan entry ret caller host fan capacity entryOff retOff disjoint callerOff sourceA sourceB
-  let owners := sweepRoleTape.trans ((Fin.castAddEmb 2).trans fan)
-  let recBank := (Fin.castAddEmb a).trans entry
-  obtain ⟨A,load,enter⟩ := setup host entry caller fan ((le_max_left _ _).trans capacity)
-    (fun _ _ => entryOff _ _) sourceA (fun _ => (callerOff _ _).symm)
-  obtain ⟨B,unload,leave⟩ := restore host ret recBank fan (caller 3) ((le_max_right _ _).trans capacity)
-    (fun _ _ => disjoint _ _) (fun _ _ => retOff _ _) (fun _ _ => entryOff _ _) (fun _ => sourceB _ _)
-    (fun _ => (callerOff _ _).symm)
-  refine ⟨A+B,(load.seq (embProg place id worker)).seq unload,?_⟩
-  intro w W pos M V size price initial execute x u S live fresh modulus spectators unit prec tmp saved free vacant
-  subst V
-  let V := M^128*W
-  obtain ⟨v,D,i,p,start,user,first,ready,forward,_,stock,_,frame⟩ :=
-    enter w W pos u S x live modulus spectators unit prec tmp saved free
-  have proj (G : Stacks T prime) : embStk localFan (embStk place G) = embStk fan G := rfl
-  obtain ⟨v',E,j,q,call,paid,same,done,act⟩ := execute p (embDn place v) (embStk place D)
-    (by unfold HelperFan; rw [proj]; exact ready) (by
-      intro k outside
-      have keep := frame (place k) (fun r => place.injective.ne (outside _)) (fun _ => entryOff _ _)
-      exact ⟨keep.1.trans (fresh k outside).1,keep.2.trans (fresh k outside).2⟩)
-  obtain ⟨z,G,middle,_,zu,project,off⟩ := exec_emb (body' := host) (ι := id) place.injective
-    (fun _ => rfl) call v rfl D rfl
-  have represented : HelperFan fan q G := by
-    unfold HelperFan at done ⊢
-    rw [← project,proj] at done
-    exact done
-  have record := stock
-  obtain ⟨z',F,k,y,finish,last,final,out,back,_,_⟩ := leave w W pos z G q (by
-    intro i ne
-    have h := off (recBank i) (fun _ => (entryOff _ _).symm)
-    exact ⟨h.1.trans (record i ne).1,h.2.trans (record i ne).2⟩) represented (by
-      have h := off (caller 3) (fun _ => (callerOff _ _).symm)
-      exact h.2.trans ((frame _ (fun _ => (callerOff _ _).symm) (fun _ => sourceA _ _)).2.trans prec)) (by
-      intro i
-      have h := off (ret i) (fun _ => (retOff _ _).symm)
-      have e := frame (ret i) (fun _ => (retOff i _).symm) (fun _ => (disjoint i _).symm)
-      exact ⟨h.1.trans (e.1.trans (vacant i).1),h.2.trans (e.2.trans (vacant i).2)⟩)
-  refine ⟨z',F,i+j+k,y,(start.seq middle).seq finish,last.trans (zu.trans (same.trans user)),?_,out,?_⟩
-  · rw [← project] at paid
-    have m := CleanupBound.place place off paid
-    intro js unique
-    have cost := Nat.cast_le (α := ℝ).mpr (m js unique)
-    change ((j+tapeCharge cleanupWeight js G : ℕ) : ℝ) ≤ ((tapeCharge cleanupWeight js D+price : ℕ) : ℝ) at cost
-    rw [Nat.cast_add,Nat.cast_add] at cost
-    have a := first js unique
-    have b := final js unique
-    change (i : ℝ)+_ ≤ _+A*V*_ at a
-    change (k : ℝ)+_ ≤ _+B*V*_ at b
-    rw [Nat.cast_add,Nat.cast_add i j]
-    linarith only [a,b,cost]
-  · intro j address
-    have enterRead := sweepRoles_of_flat n x (sweepView (w := w+1) rfl p) (fun r i => forward r i) j
-    have leaveRead := sweepRoles_of_flat n y (sweepView (w := w+1) rfl q) (fun r i => (back r i).symm) j
-    simpa only [address,flatWindowEquiv_read,Fin.cast_refl,id_eq] using
-      leaveRead.symm.trans ((act j).trans (congrArg (Piece.stage n).run enterRead))
+  obtain ⟨a,b,q,charts⟩ := initializedChartWorkerWithReserve n
+  refine ⟨a,b,q,?_⟩
+  intro P U t T Q body worker place fan entry ret caller host live cap ea ra re ca ec rc
+  obtain ⟨C,code,run⟩ := charts body worker place fan [] (by simp) entry ret caller cap ea ra re ca ec rc
+  refine ⟨C,code,?_⟩
+  intro w W pos M V size price initial execute
+  simpa only [List.map_nil,tapeCharge,List.sum_nil,Nat.cast_zero,add_zero] using
+    run w W pos size price initial (by
+      simpa only [CleanupBound,tapeCharge,List.map_nil,List.sum_nil,Nat.add_zero,cleanupWeight] using execute)
 
 /-- Install the two borrowed-port corrections around the restored stage
 worker, then execute both outer charts from the six caller tapes. -/

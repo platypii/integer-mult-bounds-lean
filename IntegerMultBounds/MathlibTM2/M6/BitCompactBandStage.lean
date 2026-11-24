@@ -289,6 +289,7 @@ theorem prepareCompactDimensions {P U : Type} {H Q : ℕ} (body : P → Pr P H Q
         (∀ i, F.R (dims i) = (compactDimensionSeed c).R i) ∧
         (∀ i : Fin 4, F.R (outer (i.castAdd 2)) =
           stageChartWords (c.w+1) (c.idleWidth*142080) false i) ∧
+        (∀ i : Fin 2, F.R (outer (i.natAdd 4)) = []) ∧
         ∀ j, (∀ i, archive i ≠ j) → (∀ i, outer i ≠ j) → (∀ i, dims i ≠ j) →
           F.L j = S.L j ∧ F.R j = S.R j := by
   let inner := (Fin.castAddEmb 1 (n := 6)).trans dims
@@ -298,7 +299,7 @@ theorem prepareCompactDimensions {P U : Type} {H Q : ℕ} (body : P → Pr P H Q
   intro c u S ready clear blank cutoff
   obtain ⟨z,F,t,exec,user,paid,flat,owned,scratch,frame⟩ := prepare c u S ready clear blank
   rw [c.stageCells] at paid
-  refine ⟨z,F,t,exec,user,paid,?_,?_,fun j a b d => frame j a (fun i => b _) (fun i => d _)⟩
+  refine ⟨z,F,t,exec,user,paid,?_,?_,fun i => (scratch i).1,fun j a b d => frame j a (fun i => b _) (fun i => d _)⟩
   · let W := c.B*prime^(64*((c.w+1)*64))*c.stageFactor
     have suffix : (prime^(c.w+1))^112*W = c.stageWidth := by simp only [W,CutoffNodeInput.stageWidth,Nat.mul_assoc]
     have kept := frame (dims 6) (fun j => (dimsOff 6 j).symm) (fun i => apart _ _)
@@ -328,6 +329,7 @@ theorem loadCompactDimensions {P U : Type} {H Q : ℕ} (body : P → Pr P H Q pr
         (∀ i, F.R (dims i) = (compactDimensionSeed c).R i) ∧
         (∀ i : Fin 4, F.R (outer (i.castAdd 2)) =
           stageChartWords (c.w+1) (c.idleWidth*142080) false i) ∧
+        (∀ i : Fin 2, F.R (outer (i.natAdd 4)) = []) ∧
         ∀ j, (∀ i, archive i ≠ j) → (∀ i, outer i ≠ j) → (∀ i, dims i ≠ j) →
           F.L j = S.L j ∧ F.R j = S.R j := by
   have regs i : [source i,archive (parentArchivePorts i),archive 0,archive 1].Nodup := by
@@ -343,11 +345,11 @@ theorem loadCompactDimensions {P U : Type} {H Q : ℕ} (body : P → Pr P H Q pr
   have ready : ParentArchiveInput c.node c.w (embStk archive D) :=
     parentInput_congr (funext (fun i => (stored i).1.symm)) (funext (fun i => (stored i).2.symm))
       (parentArchiveSeed_ready c.node c.w)
-  obtain ⟨z,F,m,finish,last,bill,dim,flat,frame⟩ := prepare c v D ready
+  obtain ⟨z,F,m,finish,last,bill,dim,flat,scratch,frame⟩ := prepare c v D ready
     (fun i => (keep _ (fun j => (outerOff i j).symm)).2.trans (clear i))
     (fun i => (keep _ (fun j => (dimsOff _ j).symm)).2.trans (blank i))
     ((keep _ (fun j => (dimsOff 6 j).symm)).2.trans cutoff)
-  refine ⟨z,F,n+m,start.seq finish,last.trans user,?_,dim,flat,?_⟩
+  refine ⟨z,F,n+m,start.seq finish,last.trans user,?_,dim,flat,scratch,?_⟩
   · intro js nd
     apply ((price.seq bill) js nd).trans
     rw [Nat.add_mul]
@@ -383,7 +385,7 @@ theorem loadCompactStageInputs {P U : Type} {H Q : ℕ} (body : P → Pr P H Q p
   intro c u S words free vacant clear blank
   obtain ⟨p,D,n,start,user,paid,set,keep⟩ := load c u S words free
   have read i := (keep (source i) (fun j => hs j i)).2.trans (words i)
-  obtain ⟨z,F,m,finish,last,bill,dim,flat,frame⟩ := prepare c p D
+  obtain ⟨z,F,m,finish,last,bill,dim,flat,_,frame⟩ := prepare c p D
     (fun i => read i.succ)
     (fun i => ⟨(keep _ (fun j => ha j i)).1.trans (vacant i).1,(keep _ (fun j => ha j i)).2.trans (vacant i).2⟩)
     (fun i => (keep _ (fun j => ho j i)).2.trans (clear i))
@@ -737,7 +739,7 @@ theorem recordCorrectedCompactStage [M8.Machine.Net] (n : Fin 9) :
   have clear (j : Fin T) (lo : t ≤ j.val) (hi : j.val < h+365) := blank (ext j)
     (fun i eq => by have v := congrArg Fin.val (ext.injective eq); change 0+i.val = j.val at v; omega)
     (fun i eq => by have v := congrArg Fin.val (ext.injective eq); change h+365+i.val = j.val at v; omega)
-  obtain ⟨v,D,m,start,user,paid,dim,_,frame⟩ := prepare c u S (fun i => words i.succ)
+  obtain ⟨v,D,m,start,user,paid,dim,_,_,frame⟩ := prepare c u S (fun i => words i.succ)
     (fun i => clear _ (by change t ≤ h+i.val; dsimp [h]; omega) (by change h+i.val < _; omega))
     (fun i => (clear _ (by change t ≤ h+353+i.val; dsimp [h]; omega) (by change h+353+i.val < _; omega)).2)
     (fun i => (clear _ (by change t ≤ h+359+i.val; dsimp [h]; omega) (by change h+359+i.val < _; omega)).2)
