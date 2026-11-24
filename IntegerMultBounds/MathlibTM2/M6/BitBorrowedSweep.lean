@@ -534,11 +534,11 @@ private theorem archiveFan_view {k T R V : ℕ} (fan : Fin (k+2) ↪ Fin T) (sta
     (x : Fin k → Fin V → ZMod 2) (S : Stacks R prime) :
     HelperFan (fan.trans stage) x S ↔ HelperFan fan x (embStk stage S) := Iff.rfl
 
-private theorem chargedStageAfterSetup {T L Q V : ℕ} {P U : Type}
+theorem chargedStageAfterSetup {T L Q V : ℕ} {P U : Type}
     (fan : Fin (142081+2) ↪ Fin T) (host : P → Pr P ((T+273)+L) Q prime U)
     (code : Pr P ((T+273)+L) Q prime U) (words : Fin 127 → Fin 6 → List (Fin (prime+4)))
     (initial : Stacks T prime) (price : ℕ) (effect : (Fin 142081 → Fin V → ZMod 2) → Prop)
-    (x : Fin 142081 → Fin V → ZMod 2) :
+    (x : Fin 142081 → Fin V → ZMod 2) (reserve : Stacks T prime → ℕ := fun _ => 0) :
     let stage := Fin.natAddEmb 80 (m := (T+273)+L)
     let owner := (Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb L)
     let full := (fan.trans owner).trans stage
@@ -549,13 +549,13 @@ private theorem chargedStageAfterSetup {T L Q V : ℕ} {P U : Type}
       (∀ i j, D.R ((borrowedHeaders T i j).castAdd L) = words i j) →
       (∀ j : Fin L, D.L (j.natAdd (T+273)) = [] ∧ D.R (j.natAdd (T+273)) = []) →
       (∀ i, (∀ h, fan h ≠ i) → D.L (owner i) = initial.L i ∧ D.R (owner i) = initial.R i) →
-      ∃ z G m out, Exec host code (mk v D) m (mk z G) ∧ (∀ js : List _, js.Nodup → m+tapeCharge (fun l r => 4*l.length+2*r.length+4) js G ≤ tapeCharge (fun l r => 4*l.length+2*r.length+4) js D+price) ∧ z.user = v.user ∧
+      ∃ z G m out, Exec host code (mk v D) m (mk z G) ∧ (∀ js : List _, js.Nodup → m+reserve (embStk owner G)+tapeCharge (fun l r => 4*l.length+2*r.length+4) js G ≤ tapeCharge (fun l r => 4*l.length+2*r.length+4) js D+(price+reserve (embStk owner D))) ∧ z.user = v.user ∧
         HelperFan (fan.trans owner) out G ∧ effect out) →
     ∀ v F, (∀ i j, F.R (stage ((borrowedHeaders T i j).castAdd L)) = words i j) →
       (∀ i, F.L (stage (owner i)) = S.L (stage (owner i)) ∧ F.R (stage (owner i)) = S.R (stage (owner i))) →
       (∀ j : Fin L, let k := stage (j.natAdd (T+273)); F.L k = S.L k ∧ F.R k = S.R k) →
       ∃ z G m, Exec (fun f => embProg stage id (host f)) (embProg stage id code) (mk v F) m (mk z G) ∧
-        (∀ js : List _, js.Nodup → (m : ℝ)+tapeCharge (fun l r => 4*l.length+2*r.length+4) js G ≤ tapeCharge (fun l r => 4*l.length+2*r.length+4) js F+price) ∧ z.user = v.user ∧ ∃ out, HelperFan full out G ∧ effect out := by
+        (∀ js : List _, js.Nodup → ((m+reserve (embStk (owner.trans stage) G) : ℕ) : ℝ)+tapeCharge (fun l r => 4*l.length+2*r.length+4) js G ≤ tapeCharge (fun l r => 4*l.length+2*r.length+4) js F+((price+reserve (embStk (owner.trans stage) F) : ℕ) : ℝ)) ∧ z.user = v.user ∧ ∃ out, HelperFan full out G ∧ effect out := by
   intro stage owner full S live free fresh run v F headers keep leaf
   have mid := (archiveFan_view (fan.trans owner) stage x F).mp
     (helperFan_of_agree (fan := full) live (F := F) (fun i => keep (fan i)))
@@ -567,7 +567,7 @@ private theorem chargedStageAfterSetup {T L Q V : ℕ} {P U : Type}
   rw [← view] at paid done
   refine ⟨z,G,m,placed,?_,user.trans same,out,(archiveFan_view (fan.trans owner) stage out G).mpr done,act⟩
   intro js unique
-  exact_mod_cast placedCleanup_cost_le stage F G _ m price untouched paid js unique
+  exact_mod_cast placedCleanup_cost_le stage F G _ (m+reserve (embStk (owner.trans stage) G)) (price+reserve (embStk (owner.trans stage) F)) untouched paid js unique
 
 private theorem roundedStageBill {t f s work children : ℕ} {localPrice : ℝ}
     (bill : (t : ℝ)+f ≤ s+localPrice+work+children) :
@@ -645,7 +645,7 @@ theorem parentArchiveSweepWithCharge [M8.Machine.Net] (n : Fin 9) :
   · rintro z ⟨F,t,exec,paid,user,out,ready,act⟩
     exact ⟨z,F,t,out,exec,paid,user,ready,act⟩
   apply chargedStageAfterSetup fan outer sweep _ initial price (RestoredBorrowedStage n (w+1) B K x)
-    x S live free (fun i off => ⟨(privateTapes i off).1.trans (stored i).1,(privateTapes i off).2.trans (stored i).2⟩)
+    x (fun _ => 0) S live free (fun i off => ⟨(privateTapes i off).1.trans (stored i).1,(privateTapes i off).2.trans (stored i).2⟩)
   intro v F represented ready empty fresh
   obtain ⟨y,D,m,out,exec,paid,same,done,act⟩ := execute x v F represented ready empty fresh
   refine ⟨y,D,m,out,exec,?_,same,done,act⟩

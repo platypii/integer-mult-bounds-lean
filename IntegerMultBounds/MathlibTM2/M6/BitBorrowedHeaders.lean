@@ -639,10 +639,11 @@ theorem parentArchiveThen_exec {T L Q : ℕ} {P U : Type}
   rw [Nat.cast_add]
   exact add_le_add (Nat.cast_le.mpr bill) paid
 
-/-- Building the archive costs a fixed rate per cell and preserves the continuation budget. -/
+/-- Building the archive costs a fixed rate per cell and preserves the continuation's budget, which may deduct a charge for the final owner tapes. -/
 theorem parentArchiveThenWithCharge {Q : ℕ} {U : Type}
     (capacity : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q) :
-    ∃ rate : ℕ, ∀ {T L : ℕ} {P : Type} (host : P → Pr P (80+((T+273)+L)) Q prime U),
+    ∃ rate : ℕ, ∀ {T L : ℕ} {P : Type} (host : P → Pr P (80+((T+273)+L)) Q prime U)
+      (terminalBudget : Stacks (80+((T+273)+L)) prime → ℝ → ℝ := fun _ price => price),
     ∃ setup, ∀ (node : RecursiveInterchangeLayout.Descriptor) (w B rows : ℕ),
     node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
     let role := {node with rows := rows}
@@ -660,12 +661,12 @@ theorem parentArchiveThenWithCharge {Q : ℕ} {U : Type}
         F.L p = S.L p ∧ F.R p = S.R p) →
       ∃ z G t, Exec host code (mk v F) t (mk z G) ∧ (∀ js : List (Fin (80+((T+273)+L))), js.Nodup →
         (t : ℝ)+tapeCharge (fun l r => 4*l.length+2*r.length+4) js G ≤
-          tapeCharge (fun l r => 4*l.length+2*r.length+4) js F+price) ∧ z.user = v.user ∧ post G) →
+          tapeCharge (fun l r => 4*l.length+2*r.length+4) js F+terminalBudget G price) ∧ z.user = v.user ∧ post G) →
     ∃ z G t, Exec host (.seq setup code) (mk u S) t (mk z G) ∧
       (∀ js : List (Fin (80+((T+273)+L))), js.Nodup →
         (t : ℝ)+tapeCharge (fun l r => 4*l.length+2*r.length+4) js G ≤
         tapeCharge (fun l r => 4*l.length+2*r.length+4) js S+(rate*
-        (M^16*((M^112*B)*prime^(64*((w+1)*64))*K)) : ℕ)+price) ∧ z.user = u.user ∧ post G := by
+        (M^16*((M^112*B)*prime^(64*((w+1)*64))*K)) : ℕ)+terminalBudget G price) ∧ z.user = u.user ∧ post G := by
   let slots := Fin.castAddEmb 42 (n := 38)
   let hdr := (Fin.natAddEmb 38 (m := 6)).trans (Fin.castAddEmb 36)
   let tmp := (44 : Fin 80)
@@ -680,7 +681,7 @@ theorem parentArchiveThenWithCharge {Q : ℕ} {U : Type}
   let factor := 1+6*push
   let setupRate := (RecursiveRowsQuotient.constant 142080+30)*142080*43+152402152
   refine ⟨factor*setupRate,?_⟩
-  intro T L P host
+  intro T L P host terminalBudget
   let e := archiveSetupPlacement 80 T L
   refine ⟨embProg e Empty.elim prog,?_⟩
   intro node w B rows width split label role K W M pos u S input code price post stage
@@ -709,8 +710,8 @@ theorem parentArchiveThenWithCharge {Q : ℕ} {U : Type}
   have scaled : (m : ℝ)+tapeCharge weight js E ≤ (tapeCharge weight js S : ℝ)+
       ((factor*setupRate*V : ℕ) : ℝ) := by exact_mod_cast total
   have work := paid js unique
-  change (n : ℝ)+tapeCharge weight js G ≤ tapeCharge weight js E+price at work
-  change ((m+n : ℕ) : ℝ)+tapeCharge weight js G ≤ tapeCharge weight js S+_+price
+  change (n : ℝ)+tapeCharge weight js G ≤ tapeCharge weight js E+terminalBudget G price at work
+  change ((m+n : ℕ) : ℝ)+tapeCharge weight js G ≤ tapeCharge weight js S+_+terminalBudget G price
   rw [Nat.cast_add]
   linarith only [scaled,work]
 
