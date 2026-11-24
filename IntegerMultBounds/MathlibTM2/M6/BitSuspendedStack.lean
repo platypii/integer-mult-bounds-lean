@@ -98,27 +98,24 @@ all caller symbols while retaining the worker output on every other stack. -/
 theorem suspendSide_run (body : P → Pr P T Q A U) (i : TapeSide T) (again : P)
     (child : Pr P T Q A U) (installed : body again = suspendSide i again child)
     (S F : Stacks T A) (empty : i.contents F = []) (price : ℕ)
-    (worker : ∀ v : HS T Q A U, ∃ z n, z.user = v.user ∧ n ≤ price ∧
-      Exec body child (mk v (i.write S [])) n (mk z F))
-    (xs : List (Fin (A+4))) (v : HS T Q A U) :
-    ∃ z n, z.user = v.user ∧ n ≤ price+(A+8)*(xs.length+1) ∧
-      Exec body (.call again) (mk v (i.write S xs)) n
-        (mk z (i.write F xs)) := by
+    (xs : List (Fin (A+4))) (v z : HS T Q A U)
+    (run : Exec body child (mk {v with sym := none} (i.write S [])) price (mk z F)) :
+    ∃ n, n ≤ price+(A+8)*(xs.length+1) ∧
+      Exec body (.call again) (mk v (i.write S xs)) n (mk z (i.write F xs)) := by
   induction xs generalizing v with
   | nil =>
-    obtain ⟨z,n,user,cost,run⟩ := worker {v with sym := none}
     obtain ⟨t,b,r⟩ := resumeSymbol_run body i again child (List.finRange (A+4))
-      {v with sym := none} z (i.write S []) F n run
-    refine ⟨z,1+t+2,user,by simp at b ⊢; omega,Exec.call (installed ▸ Exec.seq (t := mk {v with sym := none} (i.write S [])) ?_ ?_)⟩
+      {v with sym := none} z (i.write S []) F price run
+    refine ⟨1+t+2,by simp at b ⊢; omega,Exec.call (installed ▸ Exec.seq (t := mk {v with sym := none} (i.write S [])) ?_ ?_)⟩
     · apply (Exec.act _ _).cast rfl
       simp
     · simpa [empty] using r
   | cons x xs ih =>
-    obtain ⟨z,n,user,cost,run⟩ := ih {v with sym := some x}
+    obtain ⟨n,cost,rec⟩ := ih {v with sym := some x} run
     obtain ⟨t,b,r⟩ := resumeSymbol_run body i again child (List.finRange (A+4))
       {v with sym := some x} z (i.write S xs)
-      (i.write F xs) n ⟨by simp,run⟩
-    refine ⟨z,1+t+2,user,by simp [Nat.mul_add] at b cost ⊢; omega,Exec.call (installed ▸ Exec.seq (t := mk {v with sym := some x} (i.write S xs)) ?_ ?_)⟩
+      (i.write F xs) n ⟨by simp,rec⟩
+    refine ⟨1+t+2,by simp [Nat.mul_add] at b cost ⊢; omega,Exec.call (installed ▸ Exec.seq (t := mk {v with sym := some x} (i.write S xs)) ?_ ?_)⟩
     · apply (Exec.act _ _).cast rfl
       simp
     · simpa using r
@@ -130,23 +127,22 @@ theorem suspendTape_run (body : P → Pr P T Q A U) (i : Fin T) (left right : P)
     (saveLeft : body left = suspendSide ⟨i,true⟩ left (.call right))
     (saveRight : body right = suspendSide ⟨i,false⟩ right child)
     (S F : Stacks T A) (cleanL : F.L i = []) (cleanR : F.R i = []) (price : ℕ)
-    (worker : ∀ v : HS T Q A U, ∃ z n, z.user = v.user ∧ n ≤ price ∧
-      Exec body child (mk v {S with L := Function.update S.L i [], R := Function.update S.R i []})
-        n (mk z F)) (v : HS T Q A U) :
-    ∃ z n, z.user = v.user ∧ n ≤ price+(A+8)*((S.L i).length+(S.R i).length+2) ∧
+    (v z : HS T Q A U)
+    (worker : Exec body child (mk {v with sym := none}
+      {S with L := Function.update S.L i [], R := Function.update S.R i []}) price (mk z F)) :
+    ∃ n, n ≤ price+(A+8)*((S.L i).length+(S.R i).length+2) ∧
       Exec body (.call left) (mk v S) n
         (mk z {F with L := Function.update F.L i (S.L i), R := Function.update F.R i (S.R i)}) := by
   let L : TapeSide T := ⟨i,true⟩
   let R : TapeSide T := ⟨i,false⟩
   let saved := R.write F (S.R i)
-  have inner (u : HS T Q A U) := suspendSide_run body R right child saveRight
-    (L.write S []) F cleanR price worker (S.R i) u
-  obtain ⟨z,n,user,cost,run⟩ := suspendSide_run body L left (.call right) saveLeft S saved
-    cleanL (price+(A+8)*((S.R i).length+1)) (fun u => by
-      simpa [L,R,TapeSide.write,saved] using inner u) (S.L i) v
-  refine ⟨z,n,user,?_,?_⟩
-  · apply cost.trans_eq
-    ring
+  obtain ⟨m,paid,inner⟩ := suspendSide_run body R right child saveRight
+    (L.write S []) F cleanR price (S.R i) {v with sym := none} z worker
+  obtain ⟨n,cost,run⟩ := suspendSide_run body L left (.call right) saveLeft S saved
+    cleanL m (S.L i) v z (by simpa [L,R,TapeSide.write,saved] using inner)
+  refine ⟨n,?_,?_⟩
+  · simp only [Nat.mul_add,Nat.mul_two,Nat.mul_one] at *
+    omega
   · simpa [L,R,TapeSide.write,saved] using run
 
 /-- The procedure chain visiting a physical bank before entering the worker. -/
@@ -193,18 +189,17 @@ def replaceBank (tapes : List (Fin T)) (S saved : Stacks T A) : Stacks T A :=
           R := fun j => if j ∈ tapes then saved.R j else S.R j}
 
 /-- The total surcharge is linear in the caller symbols and number of saved tapes. -/
-theorem SuspendedBank.run {body : P → Pr P T Q A U} {child entry : Pr P T Q A U}
+theorem SuspendedBank.replay {body : P → Pr P T Q A U} {child entry : Pr P T Q A U}
     {tapes : List (Fin T)} (chain : SuspendedBank body child tapes entry)
     (S F : Stacks T A) (distinct : tapes.Nodup)
     (clean : ∀ j ∈ tapes, F.L j = [] ∧ F.R j = []) (price : ℕ)
-    (worker : ∀ v : HS T Q A U, ∃ z n, z.user = v.user ∧ n ≤ price ∧
-      Exec body child (mk v (replaceBank tapes S {S with L := fun _ => [], R := fun _ => []}))
-        n (mk z F)) (v : HS T Q A U) :
-    ∃ z n, z.user = v.user ∧
-      n ≤ price+(A+8)*(tapes.map (fun j => (S.L j).length+(S.R j).length+2)).sum ∧
+    (v z : HS T Q A U)
+    (worker : Exec body child (mk (if tapes.isEmpty then v else {v with sym := none})
+      (replaceBank tapes S {S with L := fun _ => [], R := fun _ => []})) price (mk z F)) :
+    ∃ n, n ≤ price+(A+8)*(tapes.map (fun j => (S.L j).length+(S.R j).length+2)).sum ∧
       Exec body entry (mk v S) n (mk z (replaceBank tapes F S)) := by
   induction chain generalizing S v with
-  | nil => simpa [replaceBank] using worker v
+  | nil => exact ⟨price,by simp,by simpa [replaceBank] using worker⟩
   | @cons i tail next left right sl sr _ ih =>
     let D := {S with L := Function.update S.L i [], R := Function.update S.R i []}
     have away := (List.nodup_cons.mp distinct).1
@@ -218,15 +213,16 @@ theorem SuspendedBank.run {body : P → Pr P T Q A U} {child entry : Pr P T Q A 
       intro j mem
       have ne : j ≠ i := fun e => away (e ▸ mem)
       simp [D,ne]
-    have inner (u : HS T Q A U) := ih D (List.nodup_cons.mp distinct).2
-      (fun j h => clean j (List.mem_cons_of_mem _ h)) (fun w => eqInput ▸ worker w) u
+    obtain ⟨m,paid,inner⟩ := ih D (List.nodup_cons.mp distinct).2
+      (fun j h => clean j (List.mem_cons_of_mem _ h)) {v with sym := none}
+      (by simpa [eqInput] using worker)
     have fresh := clean i (by simp)
-    obtain ⟨z,n,user,cost,run⟩ := suspendTape_run body i left right next sl sr S (replaceBank tail F D)
+    obtain ⟨n,cost,run⟩ := suspendTape_run body i left right next sl sr S (replaceBank tail F D)
       (by simpa [replaceBank,away] using fresh.1) (by simpa [replaceBank,away] using fresh.2)
-      _ (fun u => inner u) v
-    refine ⟨z,n,user,?_,?_⟩
-    · rw [mass] at cost
-      exact cost.trans_eq (by simp; ring)
+      m v z inner
+    refine ⟨n,?_,?_⟩
+    · rw [mass] at paid
+      exact cost.trans ((Nat.add_le_add_right paid _).trans_eq (by simp; ring))
     · convert run using 1
       congr 2
       unfold replaceBank
@@ -247,10 +243,10 @@ theorem bankTable_run {k : ℕ} (ports : Fin k ↪ Fin T)
   intro tapes body worker v
   have installed : SuspendedBank body child tapes (bankEntry child k le_rfl) := by
     simpa [tapes,List.map_reverse,body] using bankTable_installed ports child work k le_rfl
-  apply installed.run S F _ _ price worker v
-  · simpa [tapes] using (List.nodup_finRange k).map ports.injective
-  · intro j hj
-    obtain ⟨i,_,rfl⟩ := List.mem_map.mp (List.mem_reverse.mp hj)
-    exact clean i
+  obtain ⟨z,m,user,paid,run⟩ := worker (if tapes.isEmpty then v else {v with sym := none})
+  obtain ⟨n,cost,replay⟩ := installed.replay S F (by simpa [tapes] using (List.nodup_finRange k).map ports.injective)
+    (by intro j hj; obtain ⟨i,_,rfl⟩ := List.mem_map.mp (List.mem_reverse.mp hj); exact clean i)
+    m v z run
+  exact ⟨z,n,by split at user <;> exact user,cost.trans (Nat.add_le_add_right paid _),replay⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
