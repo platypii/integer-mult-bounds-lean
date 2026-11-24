@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitNodeSeedWords
+public import IntegerMultBounds.MathlibTM2.M6.BitNodeHeaderSetup
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
@@ -45,7 +45,7 @@ theorem initializedPackedNode [M8.Machine.Net] (P U Config : Type) :
       IntervalWorkerExec idleBody (.inr (idleEntry n)) (phaseIntervalChild (e.1+1) (e.2+1) (v.w+1) v.idleWidth 64)
         (v.w+1) v.idleWidth (budget c i.val) (binSyms v.root.width.size v.cutoff)) →
     ∃ (R : Type) (T : ℕ) (table : R → Pr R T Q prime U), ∃ code src dst, ∃ seed : Config → Stacks T prime,
-      LoadsPackedSeed (nodeSeedWords ∘ input) (CutoffNodeInput.cells ∘ input) seed ∧
+      LoadsPackedSeed (nodeSeedWords ∘ input) (CutoffNodeInput.cells ∘ input) seed ∧ LoadsNodeSeedFromRecord input seed ∧
       ∀ c, let v := input c
         PackedPieceHandoffWithCharge cleanupWeight v.cells (packedChildOutput (v.w+1) v.cells) table code src dst (seed c)
           (v.localCharge localWork assemblyRate+∑ i : Fin nodeChildren5.length, time c i.val) := by
@@ -132,7 +132,7 @@ theorem initializedPackedNode [M8.Machine.Net] (P U Config : Type) :
       · change parentIntervalRead n idleCopies[j.val].2 (v.w+1) (v.idleWidth*142080) word y at read
         simpa only [j,idleCopyIndex_get] using read)
     exact installed)
-  refine ⟨R,T,table,program,src,dst,initial,ready,?_⟩
+  refine ⟨R,T,table,program,src,dst,initial,ready,LoadsPackedSeed.fromNodeRecord ready,?_⟩
   intro c v x u S words fresh
   obtain ⟨z,F,t,y,exec,paid,user,out,act⟩ := run c x u S words fresh
   refine ⟨z,F,t,y,exec,?_,user,out,act⟩

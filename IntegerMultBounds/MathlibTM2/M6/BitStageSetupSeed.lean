@@ -85,7 +85,7 @@ private theorem loadStageArchive {P U : Type} {T R H Q : ℕ} (body : P → Pr P
   obtain ⟨copy,load⟩ := loadParentArchiveSeed body bank _ tmp saved apart regs
   refine ⟨gen.seq copy,?_⟩
   intro c u S words clocks temps free ht hs
-  obtain ⟨v,D,n,start,user,paid,digits,kept⟩ := make c.node c.w c.width u S words clocks temps
+  obtain ⟨v,D,n,start,user,paid,_,digits,kept⟩ := make c.node c.w c.width u S words clocks temps
   have keep j (off : outsideArchiveOutputs r power j) := kept j off.1 off.2.1 off.2.2.1 off.2.2.2
   obtain ⟨z,F,t,exec,same,charge,ready,allFrame⟩ := load c.node c.w v D digits
     (fun i => ⟨(keep _ (placeOff (archive i))).1.trans (free i).1,(keep _ (placeOff (archive i))).2.trans (free i).2⟩)

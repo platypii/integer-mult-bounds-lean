@@ -86,6 +86,7 @@ theorem descriptorArchiveWords {P U : Type} {T Q : ℕ} (body : P → Pr P T Q p
         (∀ j : Fin 10, j ≠ 0 → S.R (power j) = []) →
         ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
           CleanupBound S F t ((18*(w+1)+11*(w+1).size+17)+(47*prime^(w+1)+15)) ∧
+          F.R (clock 1) = List.replicate (w+1) blank ∧
           (∀ i, F.R (src i) = (parentArchiveSeed node w).R (parentArchivePorts i)) ∧
           ∀ j, j ≠ clock 1 → j ≠ clock 2 → j ≠ power 1 → j ≠ power 3 →
             F.L j = S.L j ∧ F.R j = S.R j := by
@@ -103,7 +104,10 @@ theorem descriptorArchiveWords {P U : Type} {T Q : ℕ} (body : P → Pr P T Q p
     have away : power j ≠ clock 1 := longPort ▸ power.injective.ne ne
     simp [D,(shortFree j).symm,away,free j ne]
   obtain ⟨z,t,finish,same,charge⟩ := encode (w+1) v D live clear
-  refine ⟨z,_,_,start.seq finish,same.trans user,paid.seq charge,?_,?_⟩
+  refine ⟨z,_,_,start.seq finish,same.trans user,paid.seq charge,?_,?_,?_⟩
+  · have a : clock 1 ≠ power 1 := longPort ▸ power.injective.ne (by decide : (0 : Fin 10) ≠ 1)
+    have b : clock 1 ≠ power 3 := longPort ▸ power.injective.ne (by decide : (0 : Fin 10) ≠ 3)
+    simp [D,a,b,clock.injective.eq_iff]
   · intro i
     change _ = (fun j => (parentArchiveSeed node w).R (parentArchivePorts j)) i
     rw [parentArchiveSeed_words]
