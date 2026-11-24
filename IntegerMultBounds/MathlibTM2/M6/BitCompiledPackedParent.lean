@@ -17,6 +17,35 @@ def PackedParentRun (U : Type) (Q : ℕ) {Config : Type} (input : Config → Cut
       PackedPieceHandoffWithCharge cleanupWeight p.cells (packedChildOutput (p.w+1) p.cells)
         host code src dst (seed c) (price c)
 
+/-- After removing ranks at most seven, only nine owners in window six remain. -/
+private theorem largeRemainders (i : Fin 9) :
+    ((remainderRanks i).filter (7 < ·)) = if i = 6 then List.replicate 9 42 else [] := by
+  rw [remainderRanks_eq.1 i i.isLt]
+  revert i
+  decide +kernel
+
+/-- In the cutoff band the only possible active idle calls are the nine rank-42
+owners per replica and class. Above the band every idle call is stopped. -/
+theorem idleWindowCutoffCharge (p : CutoffNodeInput) (i : Fin 9) (charge : ℕ)
+    (small : 7*(p.w+1) ≤ p.cutoff) :
+    160*((remainderRanks i).map (fun r => if p.cutoff < r*(p.w+1) then charge else 0)).sum =
+      if i = 6 ∧ p.cutoff < 42*(p.w+1) then 1440*charge else 0 := by
+  let price := fun r => if p.cutoff < r*(p.w+1) then charge else 0
+  have discard (rs : List ℕ) : (rs.map price).sum = ((rs.filter (7 < ·)).map price).sum := by
+    induction rs with
+    | nil => rfl
+    | cons r rs ih =>
+      by_cases large : 7 < r
+      · simp [large,ih]
+      · have stop := (Nat.mul_le_mul_right (p.w+1) (Nat.le_of_not_gt large)).trans small
+        have zero : price r = 0 := ite_eq_right (Nat.not_lt_of_ge stop)
+        simp [large,zero,ih]
+  change 160*((remainderRanks i).map price).sum = _
+  rw [discard,largeRemainders]
+  by_cases h : i = 6 <;> by_cases active : p.cutoff < 42*(p.w+1) <;>
+    simp [h,active,price]
+  omega
+
 /-- Work at the parent, including all window wrappers and the final tape assembly. -/
 noncomputable def compiledParentLocal (p : CutoffNodeInput) (work : Fin 9 → ℕ → ℕ → ℕ)
     (init fixed base swaps : Fin 9 → ℕ) (assemble : ℕ) : ℕ :=
@@ -26,10 +55,49 @@ noncomputable def compiledParentLocal (p : CutoffNodeInput) (work : Fin 9 → �
         idleRecordOverhead p (fixed i) (base i) (swaps i) else 0)).sum)) +
     assemble*p.cells+2
 
+/-- Near the cutoff, the complete parent pays at most one window's active
+routing tariff. Its coefficient counts exactly the live owners. -/
+theorem compiledParentLocal_cutoff (p : CutoffNodeInput) (work : Fin 9 → ℕ → ℕ → ℕ)
+    (init fixed base swaps : Fin 9 → ℕ) (assemble : ℕ) (small : 7*(p.w+1) ≤ p.cutoff) :
+    compiledParentLocal p work init fixed base swaps assemble =
+      (∑ i, work i (p.w+1) p.cells) +
+      (∑ i, (init i*p.cells+735*p.cells+1+(142081*(10*p.cells+10)+1))) +
+      (if p.cutoff < 42*(p.w+1) then 1440*idleRecordOverhead p (fixed 6) (base 6) (swaps 6) else 0) +
+      assemble*p.cells+2 := by
+  unfold compiledParentLocal
+  simp_rw [idleWindowCutoffCharge p _ _ small]
+  rw [Finset.sum_add_distrib]
+  by_cases active : p.cutoff < 42*(p.w+1) <;> simp [active,Nat.add_assoc]
+
 noncomputable def compiledParentCharge [M8.Machine.Net] (p : CutoffNodeInput)
     (work : Fin 9 → ℕ → ℕ → ℕ) (init fixed base swaps : Fin 9 → ℕ) (assemble : ℕ)
     (time : ℕ → ℕ) : ℕ :=
   compiledParentLocal p work init fixed base swaps assemble + ∑ i : Fin nodeChildren5.length, time i.val
+
+private theorem phaseChildRank_le (n : Fin 9) (run : StageRun) (j : MoveIndex) :
+    nodeChildren5[(phaseChildPositions.choose (n,run,j)).val] ≤ 7 := by
+  rw [(phaseChildPositions.choose_spec n run j).1]
+  let edges := Geometry.Moves.phaseEdges.filter positiveMove
+  let e := edges[j.val]
+  have edge := List.mem_filter.mp (List.getElem_mem (l := edges) (n := j.val) j.isLt)
+  have mem : Geometry.moveRank e.1 e.2 ∈ Geometry.Moves.phaseEdges.map (fun p => Geometry.moveRank p.1 p.2) :=
+    List.mem_map.mpr ⟨e,edge.1,rfl⟩
+  rw [Geometry.Moves.phase_ranks] at mem
+  have paid := BitOccurrences.phase_perm.mem_iff.mp (List.mem_filter.mpr ⟨mem,by simpa [positiveMove,e] using edge.2⟩)
+  exact (show ∀ r ∈ Layer.SelectedMoments.expand BitOccurrences.phaseHist, r ≤ 7 by decide +kernel) _ paid
+
+/-- Every sweep invocation stops once seven atoms fit under the cutoff. -/
+theorem sweepChildWidth_le (p : CutoffNodeInput) (n : Fin 9) (run : StageRun) {l r : ℕ}
+    (pre : Fin l → MoveIndex) (post : Fin r → MoveIndex) (j : Fin 3)
+    (k : Fin (invocationCounts l r j)) :
+    (scheduledChild prime p.node (invocationChildren n run pre post j k)).width ≤ 7*(p.w+1) := by
+  change nodeChildren5[_]*(p.node.width/64) ≤ _
+  rw [p.width,Nat.mul_div_cancel_left _ (by decide : 0 < 64)]
+  apply Nat.mul_le_mul_right
+  fin_cases j
+  · exact phaseChildRank_le n run (pre k)
+  · exact (copyChildPosition_rank n run.1 run.2 k).le
+  · exact phaseChildRank_le n run (post k)
 
 /-- Execute every sweep and remainder of a parent using their scheduled child calls. -/
 theorem compiledPackedParent [M8.Machine.Net] (P U Config R : Type) {N : ℕ} :
@@ -69,7 +137,7 @@ theorem compiledPackedParent [M8.Machine.Net] (P U Config R : Type) {N : ℕ} :
       cutoffTreeBudget D leafRate (input c).cutoff (fuel c) (scheduledChild prime (input c).node ⟨i,h⟩) else 0
     let time := fun (c : Config) => stageBranchTime (input c).node (input c).cutoff rate (budget c)
     (∀ c n i, let v := input c
-      v.cutoff < (desc c n i).width →
+      v.cutoff < 7*(v.w+1) → v.cutoff < (desc c n i).width →
       if i.2.1 = 1 then ScheduledChildExec v.node (desc c n i) v.w v.stageWidth (ports n i) (binSyms v.root.width.size v.cutoff)
         (position c n i) (body n i) (.active (f n i)) (budget c (sweepChild n i).val) true
       else MoveOnBankExec v.node (desc c n i) v.w v.stageWidth (movePrefix.trans (ports n i)) (binSyms v.root.width.size v.cutoff)
@@ -116,7 +184,8 @@ theorem compiledPackedParent [M8.Machine.Net] (P U Config R : Type) {N : ℕ} :
     intro n
     refine ⟨_,tapes n,host n,code n,src n,out n,_,nodeSweepLoader input (load n),?_⟩
     intro c
-    have run := runs c n (budget c) rate ((Finset.le_sup' rates (Finset.mem_univ n)).trans ((le_max_left _ _).trans rateBound)) (recurse c n)
+    have run := runs c n (budget c) rate ((Finset.le_sup' rates (Finset.mem_univ n)).trans ((le_max_left _ _).trans rateBound)) (fun i active =>
+      recurse c n i (active.trans_le (sweepChildWidth_le _ _ _ _ _ _ _)) active)
     exact stageCast n (input c).stageTail _ (work n ((input c).w+1)) run)
   refine ⟨A,T,host,program,src,dst,initial,load,?_⟩
   intro c p x u S words fresh
