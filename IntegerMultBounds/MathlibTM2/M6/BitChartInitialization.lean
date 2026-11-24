@@ -474,6 +474,33 @@ theorem loadedChartStage_rep {d V T l r : ℕ}
     exact fun h => h
   exact ⟨_,transport dims data full rep⟩
 
+/-- Charged initialization, hosted execution and erasure of the chart bank. -/
+noncomputable def recordChartCost [M8.Machine.Net] (rate c k tapes w V : ℕ) : ℕ :=
+  rate*V+13*((c*V+k*(3808274*V+LeafCore.coreCost V w+1)+2)*(tapes+5)+6)+4*(tapes+35)+1
+
+theorem recordChartCost_bound [M8.Machine.Net] (rate c k tapes : ℕ) :
+    ∃ C : ℝ, ∀ w V : ℕ, 0 < w → 0 < V →
+      (recordChartCost rate c k tapes w V : ℝ) ≤ C*V*(w : ℝ)^M8.Machine.BudgetBound.tau := by
+  refine ⟨rate+13*((c+k*(3808275+|LeafCore.C|)+2)*(tapes+5)+6)+4*(tapes+35)+1,?_⟩
+  intro w V hw hv
+  let power := (w : ℝ)^M8.Machine.BudgetBound.tau
+  have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast hw) M8.Machine.BudgetBound.exponent_range.1.le
+  have vol : (V : ℝ) ≤ V*power := le_mul_of_one_le_right (Nat.cast_nonneg _) one
+  have unit : 1 ≤ (V : ℝ)*power := one_le_mul_of_one_le_of_one_le (by exact_mod_cast hv) one
+  have core := RevBudget.coreCost_le V w (L := power) (by rw [max_eq_right hw])
+  have swap : 3808274*(V : ℝ)+LeafCore.coreCost V w+1 ≤ (3808275+|LeafCore.C|)*(V*power) := by
+    linarith only [core,vol,unit]
+  have stage : (c : ℝ)*V+k*(3808274*(V : ℝ)+LeafCore.coreCost V w+1)+2 ≤
+      (c+k*(3808275+|LeafCore.C|)+2)*(V*power) := by
+    linarith only [mul_le_mul_of_nonneg_left vol (Nat.cast_nonneg c),
+      mul_le_mul_of_nonneg_left swap (Nat.cast_nonneg k),unit]
+  unfold recordChartCost
+  push_cast
+  change _ ≤ _*(V : ℝ)*power
+  linarith only [mul_le_mul_of_nonneg_left vol (Nat.cast_nonneg rate),
+    mul_le_mul_of_nonneg_right stage (show (0 : ℝ) ≤ tapes+5 by positivity),
+    mul_le_mul_of_nonneg_left unit (show (0 : ℝ) ≤ 4*(tapes+35)+79 by positivity)]
+
 /-- Runtime contract for a chart on the live child row, including initialization,
 cleanup charges and preservation outside the chart and owner. -/
 def RunsRecordChart [M8.Machine.Net] (d : ℕ)
@@ -491,9 +518,9 @@ def RunsRecordChart [M8.Machine.Net] (d : ℕ)
         ready x S → S.R precision = binSyms (w+1).size (w+1) →
         (∀ i, S.L (chart i) = [] ∧ S.R (chart i) = []) →
         ∃ z F n y, Exec body code (mk u S) n (mk z F) ∧ z.user = u.user ∧
-          CleanupBound S F n (rate*V+13*((c*V+k*(3808274*V+LeafCore.coreCost V (w+1)+1)+2)*(machine.tapes+5)+6)) ∧
+          CleanupBound S F n (recordChartCost rate c k machine.tapes (w+1) V) ∧
           ready y F ∧ effect w W x y ∧
-          ∀ j, j ≠ scheduledRecordPorts ports 24 → (∀ i, chart i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j
+          ∀ j, j ≠ scheduledRecordPorts ports 24 → F.L j = S.L j ∧ F.R j = S.R j
 
 theorem RunsRecordChart.implies [M8.Machine.Net] {d : ℕ} {effect result}
     (run : RunsRecordChart d effect) (imp : ∀ w W x y, effect w W x y → result w W x y) :
@@ -537,7 +564,10 @@ theorem initializedRecordChart [M8.Machine.Net] {d : ℕ} (U : Matrix (Fin d) (F
   let r := scheduledRecordPorts ports
   let full := (Fin.castAddEmb 35).trans chart
   let live := chartLivePorts full (machine.slots 0) (r 24) (fun _ => external _ _)
-  refine ⟨rate,load.seq (embProg live Empty.elim (foreign (liftQ machine.program capacity))),?_⟩
+  let work := (List.finRange (machine.tapes+35)).map chart
+  have distinct : work.Nodup := (List.nodup_finRange _).map chart.injective
+  refine ⟨rate,(load.seq (embProg live Empty.elim (foreign (liftQ machine.program capacity)))).seq
+    (clearWorkTapes work),?_⟩
   intro w W pos u S M V record x ready stored prec free
   obtain ⟨v,D,t,start,user,charged,readyD,_,_,loaded,keep⟩ :=
     init w W pos u S record x stored prec (fun i => free _)
@@ -569,15 +599,44 @@ theorem initializedRecordChart [M8.Machine.Net] {d : ℕ} (U : Matrix (Fin d) (F
         bank ((i.cast size).castAdd 35) := congrArg chart (Fin.ext rfl)
     change stage.metadata.tape i h = readAt blank (D.L (full (i.cast _))) (D.R (full (i.cast _))) _
     exact cell.trans (congrArg (fun j => readAt blank (D.L j) (D.R j) (h-stage.metadata.head i)) eq.symm))
-  refine ⟨z,F,t+n,stage.transform x,start.seq exec,last.trans user,?_,out,action x,?_⟩
-  · have tape := congrArg SharedBankSkeleton.Skeleton.tapes same
+  obtain ⟨u',final,clear⟩ := clearWorkTapes_exec body work distinct z F
+  let G := {F with L := fun j => if j ∈ work then [] else F.L j,
+                   R := fun j => if j ∈ work then [] else F.R j}
+  have blankAt j (inside : j ∈ work) : G.L j = [] ∧ G.R j = [] := by simp [G,inside]
+  have recordOff i : r i ∉ work := by
+    intro mem
+    obtain ⟨h,_,eq⟩ := List.mem_map.mp mem
+    exact external h _ eq
+  have retained i : G.L (r i) = F.L (r i) ∧ G.R (r i) = F.R (r i) := by simp [G,recordOff]
+  refine ⟨u',G,_,stage.transform x,(start.seq exec).seq clear,final.trans (last.trans user),?_,?_,action x,?_⟩
+  · have paid := cleanupBound_clearBank work distinct (charged.seq bill)
+      (le_refl (tapeCharge cleanupWeight work F+1)) blankAt
+      (fun j => by by_cases h : j ∈ work <;> simp [G,h])
+    have stock : tapeCharge cleanupWeight work S = 4*(machine.tapes+35) := by
+      unfold tapeCharge
+      rw [List.map_congr_left (g := fun _ => 4) (by
+        intro j mem
+        obtain ⟨i,_,rfl⟩ := List.mem_map.mp mem
+        simp [cleanupWeight,(free i).1,(free i).2])]
+      rw [List.map_const']
+      simp [work,Nat.mul_comm]
+    have tape := congrArg SharedBankSkeleton.Skeleton.tapes same
     change stage.tapes = machine.tapes at tape
     change stage.cost = _ at cost
-    simpa only [cost,tape] using charged.seq bill
-  · intro j ne outside
-    have f := off j ne (fun _ => outside _)
-    have e := keep j (fun _ => outside _) (fun _ => outside _)
-    exact ⟨f.1.trans e.1,f.2.trans e.2⟩
+    rw [cost,tape,stock] at paid
+    exact paid
+  · apply out.returnPayload (fun i _ => retained i)
+    intro h
+    rw [(retained 24).1,(retained 24).2]
+    exact (out.src h).symm
+  · intro j ne
+    by_cases mem : j ∈ work
+    · obtain ⟨i,_,rfl⟩ := List.mem_map.mp mem
+      exact ⟨(blankAt _ mem).1.trans (free i).1.symm,(blankAt _ mem).2.trans (free i).2.symm⟩
+    · have outside i : chart i ≠ j := fun eq => mem (List.mem_map.mpr ⟨i,List.mem_finRange _,eq⟩)
+      have f := off j ne (fun _ => outside _)
+      have e := keep j (fun _ => outside _) (fun _ => outside _)
+      simpa only [G,ite_eq_right mem] using And.intro (f.1.trans e.1) (f.2.trans e.2)
 
 open Matrix IntegerMultBounds.Swap.Modular Certificates.PR589 Certificates.PR589.Nine in
 theorem initializedPairedChart [M8.Machine.Net] {ι : Type} [Fintype ι] [DecidableEq ι]
@@ -626,5 +685,31 @@ theorem initializedHelperChart [M8.Machine.Net] (c : PortCertificate) (hc : c.Ch
   exact initializedPairedChart (height := 2) c.fullChart.transpose c.fullChart (c.fullChart_orthonormal hc)
     (fun i j => fullChart_entry c hc j i) (helperFieldOrder slot) backward
     ((by decide : 2 ≤ 10^1).trans (pow_le_pow_right₀ (by decide : 1 ≤ (10:ℕ)) (by decide)))
+
+open Certificates.PR589 Certificates.PR589.Nine in
+/-- Initialize and execute the selected sweep address change on any role.
+On active roles the paired chart also performs the local polynomial shift. -/
+theorem initializedSweepChart [M8.Machine.Net] (n : Fin 9) (r : Role) (backward : Bool) :
+    RunsRecordChart 128 (fun w W x y => ∀ i, routedCell backward x y i
+      ((flatToSweep (w+1) W n r i).cast
+        (by simpa only [Nat.one_mul] using ordinaryCompact_width (prime^(w+1)) W))) := by
+  by_cases active : r.bank.val / 2 = BitHosting.activePair n.val
+  · obtain ⟨H,J,inverse,height,dst⟩ := activeSweepChartMatrix n r active
+    apply (initializedPairedChart H J inverse height helperDigits backward le_rfl).implies
+    intro w W x y read i
+    obtain ⟨⟨s,j⟩,rfl⟩ := (flatWindowEquiv (w+1) W).surjective i
+    rw [dst]
+    exact read s j
+  · apply (initializedHelperChart (port r.port.val) (port_checked _ r.port.isLt) none backward).implies
+    intro w W x y read i
+    obtain ⟨⟨s,j⟩,rfl⟩ := (flatWindowEquiv (w+1) W).surjective i
+    simp only [flatToSweep,Equiv.trans_apply,Equiv.symm_apply_apply,sweepRoleEquiv,active,↓reduceIte]
+    let cell := FlatCoordinateLayout.index (helperSlotField (port r.port.val) none (w+1) s) j
+    change routedCell backward x y _ ((stagedOwnerIndex (0 : Fin 1) cell).cast _)
+    have same : (stagedOwnerIndex (0 : Fin 1) cell).cast
+        (by simpa only [Nat.one_mul] using ordinaryCompact_width (prime^(w+1)) W) = cell :=
+      Fin.ext (staged_single_val cell)
+    rw [same]
+    exact read s j
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

@@ -72,6 +72,44 @@ private theorem activeSweep_cell {w W : ℕ} (n : Fin 9) (r : Role)
   simp only [flatToSweep,Equiv.trans_apply,Equiv.symm_apply_apply,sweepRoleEquiv,active,↓reduceIte]
   exact (translatedWindow_index y j).symm
 
+/-- The active role's sweep address is a bounded invertible paired chart,
+including the inverse translation on the local axes. -/
+theorem activeSweepChartMatrix (n : Fin 9) (r : Role)
+    (active : r.bank.val / 2 = BitHosting.activePair n.val) :
+    ∃ H J : Matrix Axis Axis ℚ, H*J = 1 ∧
+      (∀ i j, (H i j).num.natAbs ≤ 10^10000 ∧ (H i j).den ≤ 10^10000) ∧
+      ∀ w W (s : Swap.Shear.State Axis (ZMod (prime^w))) (j : Fin W),
+        (flatToSweep w W n r (flatWindowEquiv w W (s,j))).cast
+          (by simpa only [Nat.one_mul] using ordinaryCompact_width (prime^w) W) =
+          FlatCoordinateLayout.index (Sum.elim (reduce (prime^w) H *ᵥ s.1)
+            (reduce (prime^w) H *ᵥ s.2) ∘ helperDigits) j := by
+  have cancel : localShift shiftBack * localShift undoTranslation = 1 := by
+    simp [localShift,fromBlocks_multiply,shift_cast_cancel]
+  let c := port r.port.val
+  have checked := port_checked _ r.port.isLt
+  let H := c.stageRoute n
+  have inverse : (localShift shiftBack * H) * (H * localShift undoTranslation) = 1 := by
+    rw [mul_assoc, ← mul_assoc H H, c.stageRoute_mul_self checked n, one_mul, cancel]
+  have smallShift : M8.Height.Bounded (localShift shiftBack) (2^14) := fun i j =>
+    (max_le (localShift_bound i j).1 (localShift_bound i j).2).trans (by decide)
+  have smallRoute : M8.Height.Bounded H (2^2) := fun i j =>
+    max_le (stageRoute_entry c checked n i j).1 (stageRoute_entry c checked n i j).2
+  have height := M8.Height.bounded_mul smallShift smallRoute
+  refine ⟨_,_,inverse,?_,?_⟩
+  · intro i j
+    have large := (Nat.pow_le_pow_left (by decide : 2 ≤ 10) _).trans
+      (pow_le_pow_right₀ (by decide : 1 ≤ (10:ℕ)) (show Fintype.card Axis * (14+2+1) ≤ 10000 by simp [Axis]))
+    exact ⟨((M8.Height.num_le_ht _).trans (height i j)).trans large,
+      ((M8.Height.den_le_ht _).trans (height i j)).trans large⟩
+  intro w W s j
+  have adm : Admissible (prime^w) (localShift shiftBack) := by
+    intro i k
+    cases i <;> cases k <;> simp [localShift,one_apply] <;> split <;> simp
+  have eq := activeSweep_cell n r active s j
+  rw [reduce_mul _ adm (stageRoute_admissible c checked n w)]
+  simp only [← mulVec_mulVec]
+  exact Fin.ext eq
+
 /-- Each stage role reaches its certified sweep address on one fixed owner
 tape. The live case adds the inverse polynomial translation on the local axes. -/
 theorem sweepChart_owner [M8.Machine.Net] (n : Fin 9) (r : Role) (backward : Bool := false) :
@@ -90,43 +128,15 @@ theorem sweepChart_owner [M8.Machine.Net] (n : Fin 9) (r : Role) (backward : Boo
     intro w W hw hW V
     obtain ⟨stage,fixed,cost,seed,read⟩ := build w W hw hW
     exact ⟨stage,fixed,cost,seed,read⟩
-  have cancel : localShift shiftBack * localShift undoTranslation = 1 := by
-    simp [localShift,fromBlocks_multiply,shift_cast_cancel]
-  let c := port r.port.val
-  have checked := port_checked _ r.port.isLt
-  let H := c.stageRoute n
-  have inverse : (localShift shiftBack * H) * (H * localShift undoTranslation) = 1 := by
-    rw [mul_assoc, ← mul_assoc H H, c.stageRoute_mul_self checked n, one_mul, cancel]
-  have smallShift : M8.Height.Bounded (localShift shiftBack) (2^14) := fun i j =>
-    (max_le (localShift_bound i j).1 (localShift_bound i j).2).trans (by decide)
-  have smallRoute : M8.Height.Bounded H (2^2) := fun i j =>
-    max_le (stageRoute_entry c checked n i j).1 (stageRoute_entry c checked n i j).2
-  have height := M8.Height.bounded_mul smallShift smallRoute
-  obtain ⟨a,k,m,build⟩ := pairedChart_owner _ _ inverse
-    (fun i j => ⟨(M8.Height.num_le_ht _).trans (height i j),
-      (M8.Height.den_le_ht _).trans (height i j)⟩) helperDigits backward
-    ((Nat.pow_le_pow_left (by decide : 2 ≤ 10) _).trans
-      (pow_le_pow_right₀ (by decide : 1 ≤ (10:ℕ)) (by simp [Axis])))
+  obtain ⟨H,J,inverse,height,dst⟩ := activeSweepChartMatrix n r active
+  obtain ⟨a,k,m,build⟩ := pairedChart_owner H J inverse height helperDigits backward le_rfl
   refine ⟨a,k,m,?_⟩
   intro w W hw hW V
   obtain ⟨A,fixed,cost,seed,read⟩ := build w W hw hW
   refine ⟨A,fixed,cost,seed,?_⟩
   intro x i
   obtain ⟨⟨s,j⟩,rfl⟩ := (flatWindowEquiv w W).surjective i
-  have adm : Admissible (prime^w) (localShift shiftBack) := by
-    intro i k
-    cases i <;> cases k <;> simp [localShift,one_apply] <;> split <;> simp
-  have eq := activeSweep_cell n r active s j
-  have cell := read x s j
-  rw [reduce_mul _ adm (stageRoute_admissible c checked n w)] at cell
-  simp only [← mulVec_mulVec] at cell
-  let R := reduce (prime^w) H
-  let T := reduce (prime^w) (localShift shiftBack)
-  have dst : (flatToSweep w W n r (flatWindowEquiv w W (s,j))).cast
-      (by simpa only [Nat.one_mul] using ordinaryCompact_width (prime^w) W) =
-      FlatCoordinateLayout.index (Sum.elim (T *ᵥ (R *ᵥ s.1)) (T *ᵥ (R *ᵥ s.2)) ∘ helperDigits) j :=
-    Fin.ext eq
   rw [dst]
-  exact cell
+  exact read x s j
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
