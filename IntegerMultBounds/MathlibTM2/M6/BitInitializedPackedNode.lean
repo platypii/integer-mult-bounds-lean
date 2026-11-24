@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitRecordChildRun
+public import IntegerMultBounds.MathlibTM2.M6.BitRecordChildBudget
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
@@ -48,6 +48,7 @@ theorem initializedPackedNode [M8.Machine.Net] (P U Config : Type) :
       LoadsPackedSeed (nodeSeedWords ∘ input) (CutoffNodeInput.cells ∘ input) seed ∧ LoadsNodeSeedFromRecord input seed ∧
       SplitRecordChildFamily (P := R) (U := U) (Q := Q) input dst (fun c =>
         (input c).localCharge localWork assemblyRate+∑ i : Fin nodeChildren5.length, time c i.val) ∧
+      SplitRecordTreeFamily (P := R) (U := U) (Q := Q) input dst rate budget ∧
       ∀ c, let v := input c
         PackedPieceHandoffWithCharge cleanupWeight v.cells (packedChildOutput (v.w+1) v.cells) table code src dst (seed c)
           (v.localCharge localWork assemblyRate+∑ i : Fin nodeChildren5.length, time c i.val) := by
@@ -73,8 +74,9 @@ theorem initializedPackedNode [M8.Machine.Net] (P U Config : Type) :
   refine ⟨body,idleBody,active,fun _ => rfl,?_⟩
   obtain ⟨assemblyRate,join⟩ := assemble ((Nat.le_max_left ..).trans room)
   let localWork := fun n w V => cost n (w+1) V
-  refine ⟨localWork,assemblyRate,CutoffNodeInput.localCharge_bound _ _ (fun n =>
-    ⟨(bound n).choose,fun w V hv => (bound n).choose_spec (w+1) V (Nat.succ_pos _) hv⟩),?_⟩
+  obtain ⟨C,localBound⟩ := CutoffNodeInput.localCharge_bound localWork assemblyRate (fun n =>
+    ⟨(bound n).choose,fun w V hv => (bound n).choose_spec (w+1) V (Nat.succ_pos _) hv⟩)
+  refine ⟨localWork,assemblyRate,⟨C,localBound⟩,?_⟩
   intro input desc
   choose positions coords runs using fun c n => step n (input c)
   refine ⟨positions,coords,?_⟩
@@ -136,7 +138,11 @@ theorem initializedPackedNode [M8.Machine.Net] (P U Config : Type) :
     exact installed)
   have fromRecord := LoadsPackedSeed.fromNodeRecord ready
   refine ⟨R,T,table,program,src,dst,initial,ready,fromRecord,?_⟩
-  apply (fun physical => And.intro (splitRecordChildFamily fromRecord physical) physical)
+  suffices physical : ∀ c, let v := input c
+      PackedPieceHandoffWithCharge cleanupWeight v.cells (packedChildOutput (v.w+1) v.cells)
+        table program src dst (initial c) (v.localCharge localWork assemblyRate+∑ i : Fin nodeChildren5.length, time c i.val) by
+    exact ⟨splitRecordChildFamily fromRecord physical,
+      splitRecordTreeBudget fromRecord localWork assemblyRate C (fun c => localBound (input c)) rate budget physical,physical⟩
 
   intro c v x u S words fresh
   obtain ⟨z,F,t,y,exec,paid,user,out,act⟩ := run c x u S words fresh
@@ -148,6 +154,7 @@ theorem initializedPackedNode [M8.Machine.Net] (P U Config : Type) :
     (fun i => by dsimp only [idleCost,overhead]; omega) (fun _ _ => le_rfl)
   simp only [Finset.sum_const,Finset.card_univ,Fintype.card_fin,nsmul_eq_mul,Nat.cast_id] at bill
   have charged := paid js unique
+  dsimp only [v]
   unfold CutoffNodeInput.localCharge
   dsimp only [work,overhead,V,W,CutoffNodeInput.cells] at bill charged ⊢
   omega
