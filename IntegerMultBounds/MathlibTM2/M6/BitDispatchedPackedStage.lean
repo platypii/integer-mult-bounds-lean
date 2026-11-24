@@ -109,7 +109,8 @@ theorem dispatchedPackedStage [M8.Machine.Net] (n : Fin 9) :
   intro budget childRate enough time recurse W size
   let word := binSyms (A := prime) c.root.width.size c.cutoff
   let words := fun i => (Routines.hdr c.node i).map (bitSymbol (a := prime))
-  obtain ⟨external,externalReady⟩ := input words
+  let external := callerHeaderBank words
+  have externalReady := input words
   let initial := callerSeed fan word external
   let kids := ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map time).sum
   let fee := rate*((V : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau)

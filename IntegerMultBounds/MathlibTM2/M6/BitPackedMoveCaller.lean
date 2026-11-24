@@ -184,14 +184,14 @@ theorem packedRowsFromPayload {P R U : Type} {T H Q : ℕ} (body : P → Pr P T 
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
     let fan := (withHelperPort (intervalOwners 142080)).trans bank
     ∀ dst : Fin (142081+2) ↪ Fin T, (∀ j i, bank (moveReturnPorts j) ≠ childReturnFan dst i) →
-    ∃ code : Pr R H Q prime U, ∀ atom W price seed,
+    ∃ code : Pr R H Q prime U, ∀ (child : Descriptor) (atom price : ℕ) seed,
+      child.width = 64*atom → 142080 ∣ child.rows →
+      let W := CopyChildLayout.spectators child / 142080
       let lane := packedDescriptor (64*atom) W
       let m := volume prime lane
-      let wide := {lane with afterD := lane.afterD*142080}
-      PackedPieceHandoffWithCharge cleanupWeight m (packedChildOutput atom m) body (body entry) fan dst seed price →
-      0 < m → ∀ (x : Fin (volume prime wide) → ZMod 2) u (S : Stacks H prime),
+      let run := fun (wide : Descriptor) => ∀ (x : Fin (volume prime wide) → ZMod 2) u (S : Stacks H prime),
       let B := embStk place S
-      RecordPayload payload (fun _ => blank) 0 x S →
+      RecordPayload (N := volume prime wide) payload (fun _ => blank) 0 x S →
       S.R count = [] → S.R saved = [] → S.L aux = [] → S.R aux = [] →
       (∀ i, B.L (bank i) = [] ∧ B.R (bank i) = []) →
       B.L tmp = [] → B.R tmp = [] → B.R buf = [] →
@@ -199,8 +199,10 @@ theorem packedRowsFromPayload {P R U : Type} {T H Q : ℕ} (body : P → Pr P T 
       (∀ j, (∀ i, bank i ≠ j) → B.L j = seed.L j ∧ B.R j = seed.R j) →
       ∃ z F t, Exec host code (mk u S) t (mk z F) ∧ z.user = u.user ∧
         CleanupBound S F t (price+1000000034*volume prime wide+49) ∧
-        RecordPayload payload (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) x) F ∧
-        ∀ j, j ≠ payload → (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+        RecordPayload (N := volume prime wide) payload (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (v := wide) (one_dvd wide.rows) x) F ∧
+        ∀ j, j ≠ payload → (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j
+      PackedPieceHandoffWithCharge cleanupWeight m (packedChildOutput atom m) body (body entry) fan dst seed price →
+      0 < m → run (packedDescriptor child.width (CopyChildLayout.spectators child)) := by
   intro fan dst apart
   obtain ⟨move,transpose⟩ := chargedPackedMoveTranspose body entry bank tmp buf tmpOff bufOff distinct capacity dst apart
   let dest := place (bank (Fin.succ 0))
@@ -208,7 +210,13 @@ theorem packedRowsFromPayload {P R U : Type} {T H Q : ℕ} (body : P → Pr P T 
     (((Node.usub count payload aux).seq (Mult.PhaseCellToeplitz.movePrefix count dest payload saved aux)).seq (bclear count))
   refine ⟨((loadCompactWord payload aux dest).seq (embProg place label move)).seq
     (write.seq (clearWorkTapes [dest])),?_⟩
-  intro atom W price seed lane m wide worker pos x u S B source hc hs al ar free tl tr br privateSeed rest
+  intro child atom price seed aligned groups W lane m run worker pos
+  have layout : packedDescriptor child.width (CopyChildLayout.spectators child) = {lane with afterD := lane.afterD*142080} :=
+    scheduledPackedDescriptor child atom aligned groups
+  rw [layout]
+  let wide := {lane with afterD := lane.afterD*142080}
+  change run wide
+  intro x u S B source hc hs al ar free tl tr br privateSeed rest
   have reads : WordAtZero x (S.L payload) (S.R payload) := by
     intro i
     rw [← encodedOwnerCell]

@@ -180,6 +180,17 @@ theorem scheduledMoveSpectators (child : Descriptor) (atom : ℕ) (groups : 1420
       rw [CopyChildLayout.spectators,rows]; ring⟩
   simpa only [W,CopyChildLayout.spectators,packedDescriptor,one_mul] using Nat.div_mul_cancel divides
 
+/-- The packed caller's width and total spectator count determine the entire
+descriptor used after splitting the active child's 142080 rows. -/
+theorem scheduledPackedDescriptor (child : Descriptor) (atom : ℕ)
+    (aligned : child.width = 64*atom) (groups : 142080 ∣ child.rows) :
+    let n := CopyChildLayout.spectators child
+    packedDescriptor child.width n = packedDescriptor (64*atom) (n/142080*142080) := by
+  have count := scheduledMoveSpectators child atom groups
+  simp only [CopyChildLayout.spectators,packedDescriptor,one_mul] at count
+  dsimp only
+  exact congrArg₂ packedDescriptor aligned count.symm
+
 /-- Execute a scheduled MOVE in the descriptor's own coordinate order.
 Packing and unpacking here name physical addresses; the program is the
 same uniform split, recursive call, and merge. -/
