@@ -73,20 +73,20 @@ open IntegerMultBounds.Networks.Certificates.PR589 in
 -- The routed COPY wrappers are available in 116e7160.
 /-- Execute allocated COPY windows in order. Only unvisited windows need
 their private initialization; the common invariant survives every call. -/
-theorem scheduledWindows_exec {T Q : ℕ} {P U X : Type} (charged : Bool) (body : P → Pr P T Q prime U)
-    (effect : Fin Copy.lifecycles.length → X → X → Prop)
-    (trace : List (Fin Copy.lifecycles.length) → X → X → Prop)
+theorem scheduledWindows_exec {T Q : ℕ} {I P U X : Type} (charged : Bool) (body : P → Pr P T Q prime U)
+    (effect : I → X → X → Prop)
+    (trace : List I → X → X → Prop)
     (empty : ∀ x, trace [] x x)
     (cons : ∀ i ls x y z, effect i x y → trace ls y z → trace (i :: ls) x z)
-    (ready : X → Stacks T prime → Prop) (saved : Fin Copy.lifecycles.length → Stacks T prime → Prop)
-    (price : Fin Copy.lifecycles.length → ℕ)
-    (code : Fin Copy.lifecycles.length → Pr P T Q prime U)
+    (ready : X → Stacks T prime → Prop) (saved : I → Stacks T prime → Prop)
+    (price : I → ℕ)
+    (code : I → Pr P T Q prime U)
     (reserve : Stacks T prime → ℕ)
     (window : ∀ i, ∀ x u S, ready x S → saved i S →
       ∃ z F t y, Exec body (code i) (mk u S) t (mk z F) ∧ workerCost charged S F (t+reserve F) (price i+reserve S) ∧ z.user = u.user ∧ ready y F ∧
         effect i x y ∧
         ∀ j, j ≠ i → saved j S → saved j F)
-    (ls : List (Fin Copy.lifecycles.length)) (unique : ls.Nodup) :
+    (ls : List I) (unique : ls.Nodup) :
     ∀ x u S, ready x S → (∀ i ∈ ls, saved i S) →
       ∃ z F t y, Exec body (ls.foldr (fun i tail => (code i).seq tail) (.act .done)) (mk u S) t (mk z F) ∧ workerCost charged S F (t+reserve F) ((ls.map price).sum+1+reserve S) ∧ z.user = u.user ∧ ready y F ∧
         trace ls x y := by
