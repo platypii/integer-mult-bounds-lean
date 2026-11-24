@@ -96,6 +96,106 @@ theorem loadPortBasisMetadata {P U : Type} {T Q d : ℕ} (body : P → Pr P T Q 
   rw [(ready j outside).1,(ready j outside).2]
   exact basisHeaderStacks_rep ops (0 : Fin ((prime^w)^d*W) → ZMod 2) j h
 
+local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos w).ne'⟩
+
+/-- Load the basis headers and run the scheduled coordinate operations on
+the caller's live owner row. -/
+theorem runPortBasis {P U : Type} {T Q d : ℕ} (ops : List (FlatCoordinateSchedule.Op d))
+    (body : P → Pr P T Q prime U) (capacity : stateCount (FlatCoordinateCleanSchedule.program ops) ≤ Q)
+    (bank : Fin (FlatCoordinateCleanSchedule.tapeCount ops) ↪ Fin T)
+    (source : Fin 2 → Fin T) (tmp saved : Fin T)
+    (apart : ∀ i j, bank (basisSeedPorts ops i) ≠ source j)
+    (regs : ∀ i, [source i,bank (basisSeedPorts ops i),tmp,saved].Nodup) :
+    ∃ code, ∀ w W, 0 < W → ∀ (x : Fin ((prime^w)^d*W) → ZMod 2) u (S : Stacks T prime),
+      ∀ perm : (Fin d → ZMod (prime^w)) ≃ (Fin d → ZMod (prime^w)),
+      (∀ a, OrderedAffine.run (ops.map (fun op => op.action w)) a = perm a) →
+      let row := segmentSource ops
+      let bits : FlatCoordinateStages.Array d w W := fun i => SparseRoleCircuit.encode (a := 0) (x i)
+      let layout := fun a : FlatCoordinateStages.Array d w W => SharedBankStageInput.raw
+        (FlatCoordinateShiftSharedBank.common (d := d) (b := w) (W := W) a) (FlatCoordinateCleanSchedule.tapeCount ops)
+      S.R (source 0) = binSyms w.size w → S.R (source 1) = binSyms W.size W →
+      (∀ h, (layout bits).tape row h = readAt blank (S.L (bank row)) (S.R (bank row)) (h-(layout bits).head row)) →
+      (∀ j, j ≠ row → S.L (bank j) = [] ∧ S.R (bank j) = []) → S.R tmp = [] → S.R saved = [] →
+      ∃ (y : Fin ((prime^w)^d*W) → ZMod 2), ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        CleanupBound S F t (8*(w.size+W.size)+24+13*(FlatCoordinateCleanSchedule.constant ops*
+          ((prime^w)^d*W)*(FlatCoordinateCleanSchedule.tapeCount ops+5)+6)+4*FlatCoordinateCleanSchedule.tapeCount ops+1) ∧
+        (∀ h, let out := layout (fun i => SparseRoleCircuit.encode (y i))
+          out.tape row h = readAt blank (F.L (bank row)) (F.R (bank row)) (h-out.head row)) ∧
+        (∀ a j, y (FlatCoordinateLayout.index (Q := prime^w) (perm a) j) = x (FlatCoordinateLayout.index (Q := prime^w) a j)) ∧
+        (∀ j, j ≠ row → F.L (bank j) = [] ∧ F.R (bank j) = []) ∧
+        ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  obtain ⟨load,prepare⟩ := loadPortBasisMetadata body ops bank source tmp saved apart regs
+  let slots := (List.finRange (FlatCoordinateCleanSchedule.tapeCount ops)).filter (· ≠ segmentSource ops)
+  let work := slots.map bank
+  have mem j : bank j ∈ work ↔ j ≠ segmentSource ops := by simp [work,slots,bank.injective.eq_iff]
+  have distinct : work.Nodup := ((List.nodup_finRange _).filter _).map bank.injective
+  refine ⟨(load.seq (embProg bank Empty.elim (foreign (liftQ (FlatCoordinateCleanSchedule.program ops) capacity)))).seq
+    (clearWorkTapes work),?_⟩
+  intro w W positive x u S perm action row bits layout width count owner free ht hs
+  obtain ⟨v,D,l,start,user,charge,privateReady,frame⟩ := prepare w W u S width count free ht hs
+  have ready : RepT (layout bits) (D.L ∘ bank) (D.R ∘ bank) := by
+    intro j h
+    by_cases eq : j = row
+    · subst j
+      have kept := frame (bank row) (fun i eq => by
+        have h := congrArg Fin.val (bank.injective eq)
+        change 2+i.val = 0 at h
+        omega)
+      simpa only [Function.comp_apply,kept.1,kept.2] using owner h
+    · change j ≠ segmentSource ops at eq
+      have cell := privateReady j eq h
+      rw [basisWorkspace_eq ops 0 x] at cell
+      simpa only [layout,bits,Function.comp_apply,basisWorkspace,SharedPlacementAlphabet.setTape,Function.update_of_ne eq] using cell
+  obtain ⟨z,G,b,post,rep,same,_,_,_,n,time,run⟩ := foreign_exec (P := Empty) Empty.elim _
+    (HoareTime.liftQ capacity (FlatCoordinateCleanSchedule.realizes ops w W positive bits)) (embDn bank v) (embStk bank D) _ rfl ready
+  obtain ⟨z',F,placed,_,last,projection,off⟩ := exec_emb (ι := Empty.elim) (body' := body) bank.injective
+    (fun f => nomatch f) run v rfl D rfl
+  obtain ⟨v',zu,clear⟩ := clearWorkTapes_exec body work distinct z' F
+  let B := {F with L := fun j => if j ∈ work then [] else F.L j,
+                   R := fun j => if j ∈ work then [] else F.R j}
+  have blankAt j (hj : j ∈ work) : B.L j = [] ∧ B.R j = [] := by simp [B,hj]
+  have initial j (hj : j ∈ work) : S.L j = [] ∧ S.R j = [] := by
+    obtain ⟨i,hi,rfl⟩ := List.mem_map.mp hj
+    exact free i ((mem i).mp (List.mem_map_of_mem hi))
+  have bill : tapeCharge cleanupWeight work S = 4*work.length := by
+    unfold tapeCharge
+    rw [List.map_congr_left (g := fun _ => 4) (fun j hj => by simp [cleanupWeight,(initial j hj).1,(initial j hj).2])]
+    simp [List.map_const',Nat.mul_comm]
+  let addr := ((FlatCoordinateLayout.rankEquiv (Q := prime^w) (d := d)).prodCongr (Equiv.refl (Fin W))).trans finProdFinEquiv
+  let y := fun i => x (addr (perm.symm (addr.symm i).1,(addr.symm i).2))
+  have move a j : y (addr (perm a,j)) = x (addr (a,j)) := by
+    simp only [y,Equiv.symm_apply_apply]
+  have encoded : FlatCoordinateInitializedSchedule.array ops w W positive bits =
+      fun i => SparseRoleCircuit.encode (y i) := by
+    funext i
+    obtain ⟨⟨a,j⟩,rfl⟩ := addr.surjective i
+    obtain ⟨a,rfl⟩ := perm.surjective a
+    rw [move]
+    have step := FlatCoordinateInitializedSchedule.array_entry ops w W positive bits a j
+    exact (congrArg (fun z : Fin d → ZMod (prime^w) =>
+      FlatCoordinateInitializedSchedule.array ops w W positive bits (addr (z,j))) (action a)).symm.trans step
+  refine ⟨y,v',B,_,(start.seq placed).seq clear,zu.trans (last.trans (same.trans user)),?_,?_,move,
+    fun j hj => blankAt _ ((mem j).mpr hj),?_⟩
+  · have paid := cleanupBound_clearBank work distinct (charge.seq (foreignCleanupBound placed))
+      (le_refl (tapeCharge cleanupWeight work F+1)) blankAt
+      (fun j => by by_cases h : j ∈ work <;> simp [B,h])
+    rw [bill] at paid
+    have length : work.length ≤ FlatCoordinateCleanSchedule.tapeCount ops := by
+      simpa only [work,slots,List.length_map,List.length_finRange] using
+        (List.length_filter_le (l := List.finRange (FlatCoordinateCleanSchedule.tapeCount ops)) (p := fun j => decide (j ≠ segmentSource ops)))
+    intro js nd
+    exact (paid js nd).trans (by gcongr; exact time)
+  · intro h
+    rw [post.1,encoded,← projection] at rep
+    have keep : bank row ∉ work := fun hj => (mem row).mp hj rfl
+    simp only [B,ite_eq_right keep]
+    exact rep row h
+  · intro j hj
+    have away : j ∉ work := fun h => by obtain ⟨i,_,eq⟩ := List.mem_map.mp h; exact hj i eq
+    have a := off j hj
+    have b := frame j (fun i => hj _)
+    simpa only [B,ite_eq_right away] using And.intro (a.1.trans b.1) (a.2.trans b.2)
+
 /-- Initialize both directions of a worker's basis change using the same
 two source words and the same copy scratch. -/
 theorem loadWorkerBases {P U : Type} {T Q d : ℕ} (body : P → Pr P T Q prime U)

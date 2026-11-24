@@ -108,18 +108,18 @@ theorem preparePortSwap {T K Q : ℕ} {P U : Type}
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos w).ne'⟩
 
 /-- Prepare and run the digit correction on the selected owner's physical row. -/
-theorem runPortSwap [M8.Machine.Net] {T K : ℕ} {P U : Type}
-    (body : P → Pr P (T+(24+K)) (LabelSwap.program (0 : Fin 1)).states prime U) (roles : Tapes T prime) (io : Fin T)
+theorem runPortSwap [M8.Machine.Net] {T K Q : ℕ} {P U : Type}
+    (body : P → Pr P (T+(24+K)) Q prime U) (roles : Tapes T prime) (io : Fin T)
     (r : Fin 14 ↪ Fin (T+(24+K))) {d : ℕ} (i j : Fin d) (lt : i < j) (w W H J : ℕ) (pos : 0 < W)
     (baseFits : prime^(w+1) < 2^H) (widthFits : W < 2^J) :
     let block := LabelSwap.program (0 : Fin 1)
-    ∀ fitsBlock : block.tapes ≤ 1+(24+K),
+    ∀ (capacity : block.states ≤ Q) (fitsBlock : block.tapes ≤ 1+(24+K)),
     let fits : T+24 ≤ T+(24+K) := by omega
     let hdr := swapHeaderPort fits
     let port := portSwapPlacement io K
     let bank := (Fin.castLEEmb fitsBlock).trans port
     let view := payloadView prime d (w+1) W
-    let setup : Pr P (T+(24+K)) block.states prime U := (swapRuntimeHeaders r d).seq ((writeSwapConstants fits d i j).seq (markSwapHeaders fits))
+    let setup : Pr P (T+(24+K)) Q prime U := (swapRuntimeHeaders r d).seq ((writeSwapConstants fits d i j).seq (markSwapHeaders fits))
     let setupTime := dimensionTime H 1 d + (4*(d*H+1)+6) + (10*J+12) + (21*(w+1)+12) + 2
     let runTime := (3808274*RecursiveInterchangeLayout.volume prime view +
       M8.RevMachine.LeafCore.coreCost (RecursiveInterchangeLayout.volume prime view) (w+1))*(block.tapes+5)+6
@@ -135,7 +135,7 @@ theorem runPortSwap [M8.Machine.Net] {T K : ℕ} {P U : Type}
     (∀ k, S.L (hdr k) = [] ∧ S.R (hdr k) = []) →
     (∀ k, T+24 ≤ k.val → S.L k = [] ∧ S.R k = []) →
     ∃ y z F n, z.user = u.user ∧
-      Exec body ((setup.seq (embProg bank Empty.elim (foreign block.program))).seq (clearWorkTapes work)) (mk u S) n (mk z F) ∧
+      Exec body ((setup.seq (embProg bank Empty.elim (foreign (liftQ block.program capacity)))).seq (clearWorkTapes work)) (mk u S) n (mk z F) ∧
       CleanupBound S F n ((1+6*Fast.Main.mnProgPush setup)*setupTime+13*runTime+4*(24+K)+1) ∧
       (∀ k : Fin (24+K), F.L (k.natAdd T) = [] ∧ F.R (k.natAdd T) = []) ∧
       (∀ k : Fin T, k ≠ io → F.L (k.castAdd _) = S.L (k.castAdd _) ∧ F.R (k.castAdd _) = S.R (k.castAdd _)) ∧
@@ -144,12 +144,18 @@ theorem runPortSwap [M8.Machine.Net] {T K : ℕ} {P U : Type}
           M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord (v := view) y h) ∧
       ∀ (coords : Fin d → ZMod (prime^(w+1))) (k : Fin W), M8.RevMachine.ext y (FlatCoordinateLayout.index (coords ∘ Equiv.swap i j) k).val =
         M8.RevMachine.ext x (FlatCoordinateLayout.index coords k).val := by
-  intro block fitsBlock fits hdr port bank view setup setupTime runTime work x head word power spectator exponent
+  intro block capacity fitsBlock fits hdr port bank view setup setupTime runTime work x head word power spectator exponent
     u S base unit width clock scratch represented fresh tail
   obtain ⟨v,D,l,same,_,start,charge,kept,ready⟩ := preparePortSwap body roles io r d i j w W H J baseFits widthFits
     power spectator exponent u S base unit width clock scratch represented fresh tail
-  obtain ⟨y,z,G,n,user,time,run,_,out,effect⟩ := swapPayload_exec (P := Empty) (U := U) i j lt (Nat.succ_pos w) pos
-    (⟨fun _ => roles.head io,fun _ => roles.tape io⟩ : Tapes 1 prime) 0 x head word Empty.elim (embDn bank v) (embStk bank D) (fun k h => ready (k.castLE fitsBlock) h)
+  let one : Tapes 1 prime := ⟨fun _ => roles.head io,fun _ => roles.tape io⟩
+  obtain ⟨y,swap,effect⟩ := swapPayload_runs i j lt (Nat.succ_pos w) pos one 0 x head word
+  obtain ⟨z,G,_,rfl,rep,user,_,_,_,n,time,run⟩ := foreign_exec (P := Empty) Empty.elim
+    (liftQ block.program capacity) (HoareTime.liftQ capacity swap) (embDn bank v) (embStk bank D) _ rfl
+    (fun k h => ready (k.castLE fitsBlock) h)
+  have out h := swap_role_read _ view (LabelPrepare.input view d i.val j.val (w+1)) G rep 0
+    (block.slots (Fin.castAdd 24 0)) rfl h
+  simp only [SharedPlacementAlphabet.setTape,Function.update_self,sub_zero] at out
   obtain ⟨z',F,placed,_,last,projection,off⟩ := exec_emb (ι := Empty.elim) (body' := body) bank.injective
     (fun f => nomatch f) run v rfl D rfl
   have unique : work.Nodup := (List.nodup_finRange _).map (Fin.natAdd_injective _ T)
