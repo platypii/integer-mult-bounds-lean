@@ -9,7 +9,7 @@ open Shared50ModularControl (prime)
 open IntervalDescriptor
 open Cover Certificates.PR589 Certificates.PR589.Nine RecursiveInterchangeLayout
 
-private theorem phaseChildRank_le (n : Fin 9) (run : StageRun) (j : MoveIndex) :
+theorem phaseChildRank_le (n : Fin 9) (run : StageRun) (j : MoveIndex) :
     nodeChildren5[(phaseChildPositions.choose (n,run,j)).val] ≤ 7 := by
   rw [(phaseChildPositions.choose_spec n run j).1]
   let edges := Geometry.Moves.phaseEdges.filter positiveMove

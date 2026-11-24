@@ -12,7 +12,7 @@ is absorbed into a single volume rate for every invocation at this rank. -/
 theorem bandMoveOnBank {U : Type} :
     let _ := BinaryRadixEqualShared.supplierNet
     ∃ states : ℕ, ∀ {Q : ℕ}, states ≤ Q → ∃ minimum leafRate : ℝ, ∀ D, minimum ≤ D →
-      ∃ N : ℕ, ∀ {H : ℕ} (ports : Fin (N+35) ↪ Fin H) (rank : ℕ), rank ≤ 8 →
+      ∃ N : ℕ, rowSwapBlock.tapes ≤ N ∧ ∀ {H : ℕ} (ports : Fin (N+35) ↪ Fin H) (rank : ℕ), rank ≤ 8 →
       ∃ (P : Type) (table : P → Pr P H Q prime U) (code : Pr P H Q prime U) (rate : ℕ),
       ∀ (a : ActiveBandRecord) (node : Descriptor) (w W L : ℕ), let p := a.input
       let V := (prime^(w+1))^16*W
@@ -30,7 +30,7 @@ theorem bandMoveOnBank {U : Type} :
   intro D large
   obtain ⟨B,worker⟩ := build D large
   let N := rowSwapBlock.tapes+B
-  refine ⟨N,?_⟩
+  refine ⟨N,by dsimp [N]; omega,?_⟩
   intro H ports rank fits
   let front : Fin (rowSwapBlock.tapes+35) ↪ Fin (N+35) := Fin.castLEEmb (by dsimp [N]; omega)
   let back : Fin B ↪ Fin (N+35) := ⟨fun i => ⟨rowSwapBlock.tapes+35+i.val,by dsimp [N]; omega⟩,
@@ -84,7 +84,7 @@ recursive bill and a fixed multiple of the parent's cell count. -/
 theorem scheduledBandMoveOnBank {U : Type} :
     let _ := BinaryRadixEqualShared.supplierNet
     ∃ states : ℕ, ∀ {Q : ℕ}, states ≤ Q → ∃ minimum leafRate : ℝ, ∀ D, minimum ≤ D →
-      ∃ N : ℕ, ∀ {H : ℕ} (ports : Fin (N+35) ↪ Fin H) (rank : ℕ), rank ≤ 7 →
+      ∃ N : ℕ, rowSwapBlock.tapes ≤ N ∧ ∀ {H : ℕ} (ports : Fin (N+35) ↪ Fin H) (rank : ℕ), rank ≤ 7 →
       ∃ (P : Type) (table : P → Pr P H Q prime U) (code : Pr P H Q prime U) (rate : ℕ),
       ∀ (p : CutoffNodeInput) (blocks : ℕ) (i : Fin nodeChildren5.length),
         let child := scheduledChild prime p.node i
@@ -103,8 +103,8 @@ theorem scheduledBandMoveOnBank {U : Type} :
   obtain ⟨minimum,R,build⟩ := compile room
   refine ⟨minimum,R,?_⟩
   intro D large
-  obtain ⟨N,place⟩ := build D large
-  refine ⟨N,?_⟩
+  obtain ⟨N,space,place⟩ := build D large
+  refine ⟨N,space,?_⟩
   intro H ports rank fits
   obtain ⟨P,table,code,rate,call⟩ := place ports rank (fits.trans (by decide))
   refine ⟨P,table,code,rate,?_⟩
