@@ -9,12 +9,21 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks Certificates.PR589 Rec
 open Stack Host M8.RevMachine
 open Shared50ModularControl (prime)
 
-private theorem recordEntryBound (c : CutoffNodeInput) (rate : ℕ) :
+/-- The caller can initialize and return the record within a linear volume charge. -/
+theorem recordEntryBound (c : CutoffNodeInput) (rate : ℕ) :
     rate*c.cells+(142081*(10*c.cells+10)+1)+2 ≤ (rate+21)*volume prime c.node := by
   rw [← c.cells_share,Nat.add_mul]
   have positive : 0 < c.cells := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)
     (Nat.mul_pos c.idlePositive (by decide))
   have h := Nat.mul_le_mul_left rate (show c.cells ≤ c.cells*142080 by omega)
+  omega
+
+theorem CutoffNodeInput.remainingDepth_eq (p : CutoffNodeInput) (active : p.cutoff < p.node.width) :
+    p.depth-p.path.length = p.depth-(p.path.length+1)+1 := by
+  have shrink : p.root.width*42^p.depth ≤ p.cutoff*64^p.depth := by
+    rw [p.rootWidth]
+    simpa only [Nat.mul_assoc,Nat.mul_comm,Nat.mul_left_comm] using Nat.mul_le_mul_right (64^p.depth) p.stop
+  have short := scheduledPath_length_lt prime p.root p.depth p.cutoff shrink p.path active
   omega
 
 /-- A fixed entry program fits the tree allowance whenever the core receives
@@ -61,11 +70,7 @@ theorem splitRecordTreeBudget [M8.Machine.Net] {Config P U : Type} {N Q : ℕ}
   obtain ⟨bank,host,program,installed,frame,exec⟩ := build body code src dst live record apart
   refine ⟨bank,host,program,installed,frame,?_⟩
   intro D enough x c active fuel allowance
-  have shrink : c.root.width*42^c.depth ≤ c.cutoff*64^c.depth := by
-    rw [c.rootWidth]
-    simpa only [Nat.mul_assoc,Nat.mul_comm,Nat.mul_left_comm] using Nat.mul_le_mul_right (64^c.depth) c.stop
-  have short := scheduledPath_length_lt prime c.root c.depth c.cutoff shrink c.path active
-  have remaining : c.depth-c.path.length = fuel+1 := by dsimp only [fuel]; omega
+  have remaining : c.depth-c.path.length = fuel+1 := c.remainingDepth_eq active
   rw [remaining]
   have width : 1 ≤ c.node.width := by have := c.width; omega
   have growth := Real.one_le_rpow (show 1 ≤ (c.node.width : ℝ) by exact_mod_cast width)

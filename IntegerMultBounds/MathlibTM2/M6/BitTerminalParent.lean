@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitInitializedPackedNode
+public import IntegerMultBounds.MathlibTM2.M6.BitCompiledParentCost
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
@@ -41,6 +42,8 @@ theorem terminalChildParent [M8.Machine.Net] (U Config : Type) :
     ∃ states : ℕ, ∀ {Q : ℕ}, states ≤ Q →
     ∃ (work : Fin 9 → ℕ → ℕ → ℕ) (init fixed base swaps : Fin 9 → ℕ) (assemble : ℕ)
       (minimum childRate leafRate : ℝ),
+    (∀ i, ∃ C : ℝ, ∀ w V : ℕ, 0 < w → 0 < V → (work i w V : ℝ) ≤
+      C*((V : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau)) ∧
     ∀ D, minimum ≤ D → ∀ (input : Config → CutoffNodeInput) (blocks : Config → ℕ),
     (∀ c, (input c).root.Positive) → (∀ c, 142080^((input c).depth+1) ∣ (input c).root.rows) →
     (∀ c, (input c).root.beforeH = blocks c*prime^(64*(input c).root.width)) →
@@ -58,6 +61,7 @@ theorem terminalChildParent [M8.Machine.Net] (U Config : Type) :
       p.cutoff < p.node.width →
       (compiledParentLocal p work init fixed base swaps assemble : ℝ) ≤
         D*((volume prime p.node : ℝ)*(p.node.width : ℝ)^M8.Machine.BudgetBound.tau) →
+      price c ≤ cutoffTreeBudget D (max childRate leafRate) p.cutoff (p.depth-p.path.length) p.node ∧
       price c ≤ cutoffTreeBudget D (max childRate leafRate) p.cutoff (min (p.depth-(p.path.length+1)+1) 2) p.node := by
   obtain ⟨q,terminal⟩ := terminalPackedTree U
   obtain ⟨pre,post,ts,s,ports,parent⟩ := compiledPackedParent Unit U Config
@@ -67,7 +71,7 @@ theorem terminalChildParent [M8.Machine.Net] (U Config : Type) :
   obtain ⟨leafRate,build⟩ := parent ((Nat.le_max_right ..).trans room) (terminalTable family)
   obtain ⟨body,active,work,bound,init,fixed,base,swaps,minimum,leaf,assemble,nonneg,pos,run⟩ :=
     build (fun _ _ _ => .act .done) (fun _ _ => ())
-  refine ⟨work,init,fixed,base,swaps,assemble,minimum,childRate,leafRate,?_⟩
+  refine ⟨work,init,fixed,base,swaps,assemble,minimum,childRate,leafRate,bound,?_⟩
   intro D enough input blocks positive rows label band terminalWidth budget price
   have width (c : Config) (k : Fin nodeChildren5.length) :
       (scheduledChild prime (input c).node k).width ≤ 42*((input c).w+1) := by
@@ -86,10 +90,52 @@ theorem terminalChildParent [M8.Machine.Net] (U Config : Type) :
   · obtain ⟨P,T,body,code,src,dst,seed,load,exec⟩ := physical
     exact ⟨T,P,body,dst,splitRecordChildFamily (LoadsPackedSeed.fromNodeRecord load) exec⟩
   intro c p active localBound
-  apply (charged c active localBound).1.trans_eq
+  have full := (charged c active localBound).1
+  refine ⟨?_,?_⟩
+  · simpa only [p.remainingDepth_eq active] using full
+  apply full.trans_eq
   apply cutoffTreeBudget_prune
   intro path len
   obtain ⟨i,k,rfl⟩ := List.length_eq_two.mp len
   exact stop c i k
+
+/-- For the physical row-swap supplier one coefficient covers the local charge
+of every parent with terminal children, independently of the input and cutoff. -/
+theorem terminalChildSupplier (U Config : Type) :
+    let _ := BinaryRadixEqualShared.supplierNet
+    ∃ states : ℕ, ∀ {Q : ℕ}, states ≤ Q → ∃ (D rate : ℝ), ∀ (input : Config → CutoffNodeInput)
+      (blocks : Config → ℕ), (∀ c, (input c).root.Positive) →
+      (∀ c, 142080^((input c).depth+1) ∣ (input c).root.rows) →
+      (∀ c, (input c).root.beforeH = blocks c*prime^(64*(input c).root.width)) →
+      (∀ c, 7*((input c).w+1) ≤ (input c).cutoff) →
+      (∀ c, 42*(42*((input c).w+1)/64) ≤ (input c).cutoff) →
+      (∀ c, (input c).cutoff < (input c).node.width) →
+      let price := fun c => let p := input c
+        cutoffTreeBudget D rate p.cutoff (min (p.depth-(p.path.length+1)+1) 2) p.node
+      PackedParentRun U Q input price ∧ ∃ (T : ℕ) (P : Type) (body : P → Pr P T Q prime U)
+        (dst : Fin (142081+2) ↪ Fin T), SplitRecordChildFamily input body dst price ∧
+          RecordTreeFamily input body dst rate (fun _ _ _ => True) := by
+  intro inst
+  obtain ⟨states,build⟩ := terminalChildParent U Config
+  refine ⟨states,?_⟩
+  intro Q fits
+  obtain ⟨work,init,fixed,base,swaps,assemble,minimum,childRate,leafRate,stage,run⟩ := build fits
+  obtain ⟨C,bound⟩ := compiledParentLocal_bound work init fixed base swaps assemble stage
+  let D := max minimum C
+  refine ⟨D,max childRate leafRate,?_⟩
+  intro input blocks positive rows label band terminalWidth active price
+  obtain ⟨physical,_,bill⟩ := run D (le_max_left ..) input blocks positive rows label band terminalWidth
+  obtain ⟨P,T,body,code,src,dst,seed,load,exec⟩ := physical
+  have charged (c : Config) := bill c (active c) ((bound (input c)).trans
+    (mul_le_mul_of_nonneg_right (le_max_right minimum C) (by positivity)))
+  have result (c : Config) : PackedPieceHandoffWithCharge cleanupWeight (input c).cells
+      (packedChildOutput ((input c).w+1) (input c).cells) body code src dst (seed c) (price c) := by
+    intro x u S words fresh
+    obtain ⟨z,F,t,y,ran,cost,user,out,action⟩ := exec c x u S words fresh
+    exact ⟨z,F,t,y,ran,fun js nd => (cost js nd).trans (Nat.add_le_add_left (charged c).2 _),user,out,action⟩
+  have record := splitRecordChildFamily (LoadsPackedSeed.fromNodeRecord load) exec
+  refine ⟨⟨P,T,body,code,src,dst,seed,load,result⟩,
+    ⟨T,P,body,dst,splitRecordChildFamily (LoadsPackedSeed.fromNodeRecord load) result,?_⟩⟩
+  exact recordFamilyOfTreeBound record D _ (fun c _ => (charged c).1)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
