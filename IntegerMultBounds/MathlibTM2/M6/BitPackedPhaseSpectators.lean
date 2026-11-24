@@ -93,9 +93,9 @@ theorem packedSpectatorWord {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prim
 
 /-- Open a packed phase record as a flat descriptor, call its payload worker,
 and restore the record and scratch required by the scalar phase. -/
-theorem packedPhaseRecordCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+theorem packedMoveRecordCall [M8.Machine.Net] {N T Q : ℕ} {P U : Type}
     (body : P → Pr P T Q prime U) (worker : Pr P T Q prime U)
-    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (slot : Fin (rowSwapBlock.tapes+35))
+    (ports : Fin (N+35) ↪ Fin T) (slot : Fin (N+35))
     (high : 35 ≤ slot.val) (rank : ℕ) (fits : rank ≤ 8) :
     let bank := scheduledRecordPorts ports
     let dst := ports slot
@@ -109,16 +109,14 @@ theorem packedPhaseRecordCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
         (∀ i, D.R (fields i) = (Routines.hdr lane i).map bitSymbol) →
         D.R (bank 34) = binSyms L cutoff →
         (D.R (bank 33)).length = w → D.R (bank 2) = binSyms (prime^(w+1)).size (prime^(w+1)) →
-        (∀ j : Fin (rowSwapBlock.tapes+35), 35 ≤ j.val → j ≠ slot → D.L (ports j) = [] ∧ D.R (ports j) = []) →
+        (∀ j : Fin (N+35), 35 ≤ j.val → j ≠ slot → D.L (ports j) = [] ∧ D.R (ports j) = []) →
         RecordPayload (bank 24) (fun _ => blank) 0 x D →
         ∃ z F t, Exec body worker (mk u D) t (mk z F) ∧ CleanupBound D F t price ∧ z.user = u.user ∧
           RecordPayload (bank 24) (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (v := lane) (one_dvd _) x) F ∧
           ∀ j, j ≠ bank 24 → F.L j = D.L j ∧ F.R j = D.R j) →
-      ∀ entry, body entry = code →
-      ScheduledChildExec node child w W ports (binSyms L cutoff) position body entry
-        (price+30400*V) true := by
+      MoveOnBankExec node child w W ports (binSyms L cutoff) position body code (price+30400*V) true := by
   intro bank dst fields
-  have off (j : Fin (rowSwapBlock.tapes+35)) (hj : 35 ≤ j.val) (i : Fin 35) : bank i ≠ ports j := by
+  have off (j : Fin (N+35)) (hj : 35 ≤ j.val) (i : Fin 35) : bank i ≠ ports j := by
     apply ports.injective.ne
     intro eq
     have e := congrArg Fin.val eq
@@ -128,7 +126,7 @@ theorem packedPhaseRecordCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   obtain ⟨setup,prepare⟩ := packedSpectatorWord body bank dst apart rank fits
   let move := openedPackedMoveProgram worker bank rank []
   refine ⟨(setup.seq move).seq (clearWorkTapes [dst]),?_⟩
-  intro node child w W L cutoff price rows width V lane position packed work entry installed smaller u S x ready clean
+  intro node child w W L cutoff price rows width V lane position packed work smaller _ _ _ u S x ready clean
   let M := prime^(w+1)
   have volumeEq : volume prime child = V := by simpa only [Fintype.card_fin] using Fintype.card_congr position
   let n := CopyChildLayout.spectators child
@@ -137,7 +135,7 @@ theorem packedPhaseRecordCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   have atBank (i : Fin 35) : B.R (bank i) = S.R (bank i) := Function.update_of_ne (apart i) ..
   have stored := ready.returnPayload (F := B) (outBank := bank) (output := x)
     (fun i _ => ⟨rfl,atBank i⟩) (fun z => by simpa only [atBank] using (ready.src z).symm)
-  have free (j : Fin (rowSwapBlock.tapes+35)) (hj : 35 ≤ j.val) (ne : j ≠ slot) :
+  have free (j : Fin (N+35)) (hj : 35 ≤ j.val) (ne : j ≠ slot) :
       B.L (ports j) = [] ∧ B.R (ports j) = [] :=
     ⟨(clean j hj).1,(Function.update_of_ne (ports.injective.ne ne) ..).trans (clean j hj).2⟩
   obtain ⟨b,G,m,y,run,bill,same,out,frame,action⟩ := openedPackedMoveCallerAt body worker bank dst apart rank []
@@ -165,8 +163,7 @@ theorem packedPhaseRecordCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     (payload := bank 24) (by simpa using apart 24) (by simpa using clean slot high)
     start user paid (fun j hj => ⟨rfl,Function.update_of_ne (by simpa using hj) ..⟩) run same bill
     (y := y) (fun j => by simpa only [List.map_ofFn] using out.src j) frame
-  rw [installed]
-  refine ⟨z,F,t,y,exec,workerCost.weaken (charged := true) cost ?_,zu,?_,?_,?_,action⟩
+  refine ⟨z,F,t,y,exec,workerCost.weaken (charged := true) cost ?_,zu,?_,?_,(keep _ (bank.injective.ne (by decide : (34 : Fin 35) ≠ 24))).1,?_,action⟩
   · have radix : M ≤ V := (Nat.le_self_pow (by decide : 16 ≠ 0) M).trans (Nat.le_mul_of_pos_right _ rows)
     have atom := (Nat.lt_pow_self (n := w+1) Shared50ModularControl.prime_prime.one_lt).le.trans radix
     have span : child.width ≤ (w+1)*8 := width ▸ Nat.mul_le_mul_left _ fits
@@ -180,5 +177,37 @@ theorem packedPhaseRecordCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     exact ⟨h.1.trans (clean j hj).1,h.2.trans (clean j hj).2⟩
   · intro j outside
     exact keep _ (fun eq => outside _ eq.symm)
+
+theorem packedPhaseRecordCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+    (body : P → Pr P T Q prime U) (worker : Pr P T Q prime U)
+    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (slot : Fin (rowSwapBlock.tapes+35))
+    (high : 35 ≤ slot.val) (rank : ℕ) (fits : rank ≤ 8) :
+    let bank := scheduledRecordPorts ports
+    let dst := ports slot
+    let fields : Fin 6 → Fin T := ![bank 28,bank 28,bank 28,bank 1,bank 28,dst]
+    ∃ code, ∀ (node child : Descriptor) (w W L cutoff price : ℕ), 0 < W → child.width = (w+1)*rank →
+      let V := (prime^(w+1))^16*W
+      let lane := packedDescriptor child.width (CopyChildLayout.spectators child)
+      ∀ position : Fin (volume prime child) ≃ Fin V,
+      (∀ i, (position i).val = (CopyChildLayout.packActive child i).val) →
+      (∀ (x : Fin (volume prime lane) → ZMod 2) u (D : Stacks T prime),
+        (∀ i, D.R (fields i) = (Routines.hdr lane i).map bitSymbol) →
+        D.R (bank 34) = binSyms L cutoff →
+        (D.R (bank 33)).length = w → D.R (bank 2) = binSyms (prime^(w+1)).size (prime^(w+1)) →
+        (∀ j : Fin (rowSwapBlock.tapes+35), 35 ≤ j.val → j ≠ slot → D.L (ports j) = [] ∧ D.R (ports j) = []) →
+        RecordPayload (bank 24) (fun _ => blank) 0 x D →
+        ∃ z F t, Exec body worker (mk u D) t (mk z F) ∧ CleanupBound D F t price ∧ z.user = u.user ∧
+          RecordPayload (bank 24) (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (v := lane) (one_dvd _) x) F ∧
+          ∀ j, j ≠ bank 24 → F.L j = D.L j ∧ F.R j = D.R j) →
+      ∀ entry, body entry = code →
+      ScheduledChildExec node child w W ports (binSyms L cutoff) position body entry
+        (price+30400*V) true := by
+  intro bank dst fields
+  obtain ⟨code,call⟩ := packedMoveRecordCall body worker ports slot high rank fits
+  refine ⟨code,?_⟩
+  intro node child w W L cutoff price rows width V lane position packed work entry installed smaller u S x ready clean
+  obtain ⟨z,F,t,y,exec,paid,user,out,free,_,frame,action⟩ :=
+    call node child w W L cutoff price rows width position packed work smaller u S x ready clean
+  exact ⟨z,F,t,y,installed ▸ exec,paid,user,out,free,frame,action⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
