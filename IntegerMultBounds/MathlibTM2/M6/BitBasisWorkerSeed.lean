@@ -447,6 +447,63 @@ theorem inversePortCorrection_passes (t : Fin 111) (atExit : Bool) :
   rw [back]
   exact (congrArg (B *ᵥ ·) (inversePortDigits_cancel coords)).trans enter
 
+/-- Total charge of the correction on a row of volume V. -/
+noncomputable def portCorrectionTime [M8.Machine.Net] (C D push tapes K w H J V : ℕ) : ℕ :=
+  let setup := dimensionTime H 1 16 + (4*(16*H+1)+6) + (10*J+12) + (21*(w+1)+12) + 2
+  let run := (3808274*V + M8.RevMachine.LeafCore.coreCost V (w+1))*(tapes+5)+6
+  C*V+((1+6*push)*setup+13*run+4*(24+K)+1)+D*V
+
+/-- With the caller's canonical binary headers, all work outside the
+interchange core has a fixed linear charge in the physical row volume. -/
+theorem portCorrectionTime_bound [M8.Machine.Net] (C D push tapes K : ℕ) :
+    ∃ rate : ℕ, ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      let V := M^16*W
+      portCorrectionTime C D push tapes K w M.size W.size V ≤
+        rate*V + 13*(tapes+5)*M8.RevMachine.LeafCore.coreCost V (w+1) := by
+  refine ⟨C+D+(1+6*push)*10000+13*3808274*(tapes+5)+78+4*(24+K)+1,?_⟩
+  intro w W pos M V
+  have hm : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
+  have size (n : ℕ) : n.size ≤ n := Nat.size_le.mpr Nat.lt_two_pow_self
+  have square : M.size*M.size ≤ V := calc
+    _ ≤ M*M := Nat.mul_le_mul (size M) (size M)
+    _ = M^2 := (sq M).symm
+    _ ≤ M^16 := Nat.pow_le_pow_right hm (by decide)
+    _ ≤ V := Nat.le_mul_of_pos_right _ pos
+  have radix : M ≤ V := (Nat.le_self_pow (by decide : 16 ≠ 0) _).trans (Nat.le_mul_of_pos_right _ pos)
+  have clock : w+1 ≤ M := Nat.lt_two_pow_self.le.trans (Nat.pow_le_pow_left Shared50ModularControl.prime_prime.two_le _)
+  have count : W ≤ V := Nat.le_mul_of_pos_left _ (pow_pos hm _)
+  have positive := pos.trans_le count
+  have setup : dimensionTime M.size 1 16 + (4*(16*M.size+1)+6) + (10*W.size+12) + (21*(w+1)+12) + 2 ≤ 10000*V := by
+    nlinarith only [dimensionTime_le M.size 1 16,square,(size M).trans radix,(size W).trans count,clock.trans radix,positive]
+  have overhead := Nat.mul_le_mul_left (1+6*push) setup
+  have fixed := Nat.le_mul_of_pos_right (78+4*(24+K)+1) positive
+  unfold portCorrectionTime
+  nlinarith only [overhead,fixed]
+
+open M8.RevMachine in
+/-- The full physical correction inherits the supplied interchange exponent. -/
+theorem portCorrectionTime_width_bound [M8.Machine.Net] (C D push tapes K : ℕ) :
+    ∃ rate : ℝ, ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      let V := M^16*W
+      (portCorrectionTime C D push tapes K w M.size W.size V : ℝ) ≤
+        rate*(V : ℝ)*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau := by
+  obtain ⟨a,linear⟩ := portCorrectionTime_bound C D push tapes K
+  refine ⟨a+(13*(tapes+5) : ℕ)*|LeafCore.C|,?_⟩
+  intro w W pos M V
+  let width := ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
+  have one : 1 ≤ width := Real.one_le_rpow (by exact_mod_cast Nat.le_add_left 1 w)
+    M8.Machine.BudgetBound.exponent_range.1.le
+  have core := RevBudget.coreCost_le V (w+1) (L := width)
+    (by rw [max_eq_right (by omega : 1 ≤ w+1)])
+  have bound : (portCorrectionTime C D push tapes K w M.size W.size V : ℝ) ≤
+      (a : ℝ)*V+(13*(tapes+5) : ℕ)*(LeafCore.coreCost V (w+1) : ℝ) := by
+    exact_mod_cast linear w W pos
+  have fixed := le_mul_of_one_le_right (by positivity : 0 ≤ (a : ℝ)*V) one
+  exact bound.trans ((add_le_add fixed (mul_le_mul_of_nonneg_left core
+    (by positivity : 0 ≤ ((13*(tapes+5) : ℕ) : ℝ)))).trans_eq (by dsimp only [width]; ring))
+
 open Cover in
 /-- Run both charged coordinate passes and the physical digit swap on one
 caller row. The program is independent of the precision and spectator count. -/
@@ -468,8 +525,6 @@ theorem runPortPasses [M8.Machine.Net] {before after C D entry exit}
     r 2 = hdr 5 → r 11 = hdr 14 → r 13 = hdr 8 →
     ∃ code, ∀ w W H J, 0 < W → prime^(w+1) < 2^H → W < 2^J →
       let V := (prime^(w+1))^16*W
-      let setupTime := dimensionTime H 1 16 + (4*(16*H+1)+6) + (10*J+12) + (21*(w+1)+12) + 2
-      let runTime := (3808274*V + M8.RevMachine.LeafCore.coreCost V (w+1))*(block.tapes+5)+6
       ∀ (x : Fin V → ZMod 2) u (S : Stacks (T+(24+K)) prime),
       S.R ((source 0).castAdd _) = binSyms (w+1).size (w+1) → S.R ((source 1).castAdd _) = binSyms W.size W →
       S.R (tmp.castAdd _) = [] → S.R (saved.castAdd _) = [] →
@@ -479,7 +534,7 @@ theorem runPortPasses [M8.Machine.Net] {before after C D entry exit}
       (∀ h, readAt blank (S.L (io.castAdd _)) (S.R (io.castAdd _)) h = (portOwner x).tape 0 h) →
       (∀ k : Fin (24+K), S.L (k.natAdd T) = [] ∧ S.R (k.natAdd T) = []) →
       ∃ (y : Fin V → ZMod 2), ∃ z F n, Exec body code (mk u S) n (mk z F) ∧ z.user = u.user ∧
-        CleanupBound S F n (C*V+((1+6*Fast.Main.mnProgPush setup)*setupTime+13*runTime+4*(24+K)+1)+D*V) ∧
+        CleanupBound S F n (portCorrectionTime C D (Fast.Main.mnProgPush setup) block.tapes K w H J V) ∧
         (∀ h, readAt blank (F.L (io.castAdd _)) (F.R (io.castAdd _)) h = (portOwner y).tape 0 h) ∧
         (∀ a j, y (FlatCoordinateLayout.index (exit (w+1) (entry (w+1) a ∘ Equiv.swap 0 15)) j) =
           x (FlatCoordinateLayout.index a j)) ∧
@@ -493,7 +548,7 @@ theorem runPortPasses [M8.Machine.Net] {before after C D entry exit}
   let swap := (setup.seq (embProg bank Empty.elim (foreign (liftQ block.program cap)))).seq
     (clearWorkTapes ((List.finRange (24+K)).map (Fin.natAdd T)))
   refine ⟨(a.seq swap).seq b,?_⟩
-  intro w W H J pos baseFits widthFits V setupTime runTime x u S width count ht hs base unit spectators clock scratch owner fresh
+  intro w W H J pos baseFits widthFits V x u S width count ht hs base unit spectators clock scratch owner fresh
   obtain ⟨y,v,A,l,ea,ua,ca,ya,actA,cleanA,frameA⟩ := start (w+1) W pos x u S width count owner fresh ht hs
   have keep (k : Fin (T+(24+K))) (ne : k ≠ io.castAdd _) : A.R k = S.R k := by
     induction k using Fin.addCases with
@@ -523,6 +578,92 @@ theorem runPortPasses [M8.Machine.Net] {before after C D entry exit}
     exact (actC _ j).trans ((actB _ j).trans (actA coords j))
   · intro k ne
     exact ⟨(frameC k ne).1.trans ((frameB k ne).1.trans (frameA k ne).1),(frameC k ne).2.trans (old k ne)⟩
+
+/-- Embed the canonical swap layout using the worker's existing 35 record
+slots and the first 24 slots of the shared correction workspace. -/
+def workerSwapLayout {T K : ℕ} (record : Fin 35 ↪ Fin T) : Fin 59 ↪ Fin (T+(24+K)) :=
+  (finSumFinEquiv.symm.toEmbedding.trans (record.sumMap (Fin.castAddEmb (n := 24) K))).trans finSumFinEquiv.toEmbedding
+
+/-- The swap reads its modulus, spectator count, unit and shortened clock
+directly from the worker record. Its three outputs land in the shared headers. -/
+theorem workerSwapLayout_ready [M8.Machine.Net] {T K : ℕ} (record : Fin 35 ↪ Fin T)
+    (w W : ℕ) (archive destL destR : List (Fin (prime+4))) (S : Stacks (T+(24+K)) prime) :
+    let small := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+    let seed := moveRecordSeed w W archive destL destR
+    let r := swapSetupPorts.trans (workerSwapLayout (K := K) record)
+    let hdr := swapHeaderPort (T := T) (N := T+(24+K)) (by omega)
+    (∀ i : Fin 35, i ≠ 24 → S.R ((record i).castAdd _) = seed.R (small i)) →
+    (∀ i, r i ≠ (record 24).castAdd _) ∧ r 2 = hdr 5 ∧ r 11 = hdr 14 ∧ r 13 = hdr 8 ∧
+    S.R (r 0) = binSyms (prime^(w+1)).size (prime^(w+1)) ∧ S.R (r 1) = binSyms 1 1 ∧
+    S.R (r 10) = binSyms W.size W ∧ (S.R (r 12)).length = w ∧
+    ∀ k : Fin 14, 3 ≤ k → k < 9 → S.R (r k) = [] := by
+  intro small seed r hdr read
+  have off : ∀ i, swapSetupPorts i ≠ (24 : Fin 59) := by decide
+  refine ⟨fun i => (workerSwapLayout record).injective.ne (off i),rfl,rfl,rfl,
+    read 2 (by decide),read 28 (by decide),read 27 (by decide),?_,?_⟩
+  · change (S.R ((record 33).castAdd _)).length = w
+    rw [read 33 (by decide)]
+    exact List.length_replicate ..
+  · intro k lo hi
+    have cases : k = 3 ∨ k = 4 ∨ k = 5 ∨ k = 6 ∨ k = 7 ∨ k = 8 := (by decide : ∀ j : Fin 14, 3 ≤ j → j < 9 → j = 3 ∨ j = 4 ∨ j = 5 ∨ j = 6 ∨ j = 7 ∨ j = 8) k lo hi
+    rcases cases with h|h|h|h|h|h <;> subst k <;> first | exact read 3 (by decide) | exact read 4 (by decide) | exact read 5 (by decide) | exact read 6 (by decide) | exact read 7 (by decide) | exact read 8 (by decide)
+
+open Cover Matrix AffineFieldCoordinates IntegerMultBounds.Swap.Modular in
+/-- Run a selected inverse port correction on the shared payload of a loaded
+worker record. The archive and destination stacks may already be live. -/
+theorem runWorkerPortCorrection [M8.Machine.Net] (t : Fin 111) (atExit : Bool) :
+    ∃ q k : ℕ, ∀ {P U : Type} {T K Q : ℕ}, q ≤ Q → k ≤ K →
+      ∀ (body : P → Pr P (T+(24+K)) Q prime U) (record : Fin 35 ↪ Fin T) (width : Fin T),
+      (∀ i, width ≠ record i) →
+      ∃ code rate coreRate, ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      let V := M^16*W
+      let small := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+      let io := (record 24).castAdd (24+K)
+      ∀ archive destL destR (x : Fin V → ZMod 2) u (S : Stacks (T+(24+K)) prime),
+      (∀ i : Fin 35, i ≠ 24 → S.R ((record i).castAdd _) = (moveRecordSeed w W archive destL destR).R (small i)) →
+      S.R (width.castAdd _) = binSyms (w+1).size (w+1) →
+      (∀ h, readAt blank (S.L io) (S.R io) h = (portOwner x).tape 0 h) →
+      (∀ j : Fin (24+K), S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
+      ∃ (y : Fin V → ZMod 2), ∃ z F n, Exec body code (mk u S) n (mk z F) ∧ z.user = u.user ∧
+        CleanupBound S F n (rate*V+coreRate*M8.RevMachine.LeafCore.coreCost V (w+1)) ∧
+        (∀ h, readAt blank (F.L io) (F.R io) h = (portOwner y).tape 0 h) ∧
+        (∀ s j, let A := translatedPortProjector (ZMod M) (4:ZMod M)⁻¹ t
+                let B := reduce M (selectedProjector ⟨2+t.val,by omega⟩)
+                let E := reduce M (selectedProjector ⟨525+t.val,by omega⟩)
+                let moved := if atExit then M8.Exchange.exchange E (M8.Exchange.exchange (1-A) s)
+                  else M8.Exchange.exchange A (M8.Exchange.exchange B s)
+                y (FlatCoordinateLayout.index (embed s) j) = x (FlatCoordinateLayout.index (embed moved) j)) ∧
+        (∀ j : Fin (24+K), F.L (j.natAdd T) = [] ∧ F.R (j.natAdd T) = []) ∧
+        ∀ j : Fin T, j ≠ record 24 → F.L (j.castAdd _) = S.L (j.castAdd _) ∧ F.R (j.castAdd _) = S.R (j.castAdd _) := by
+  obtain ⟨a,b,C,D,entry,exit,left,right,correct⟩ := inversePortCorrection_passes t atExit
+  let block := LabelSwap.program (0 : Fin 1)
+  refine ⟨stateCount (FlatCoordinateCleanSchedule.program a)+stateCount (FlatCoordinateCleanSchedule.program b)+block.states,
+    FlatCoordinateCleanSchedule.tapeCount a+FlatCoordinateCleanSchedule.tapeCount b+block.tapes,?_⟩
+  intro P U T K Q states tapes body record width outside
+  let r := swapSetupPorts.trans (workerSwapLayout (K := K) record)
+  let source : Fin 2 → Fin T := ![width,record 27]
+  have regs (i : Fin 2) : [source i,record 0,record 1,record 24].Nodup := by
+    fin_cases i <;> simp [source,List.nodup_cons,outside,record.injective.eq_iff]
+  have away (i) : r i ≠ (record 24).castAdd _ :=
+    (workerSwapLayout record).injective.ne ((by decide : ∀ i, swapSetupPorts i ≠ (24 : Fin 59)) i)
+  obtain ⟨code,run⟩ := runPortPasses left right body (record 24) (record 0) (record 1) source r regs away
+    (by omega) (by omega) (by omega) (by omega) (by change block.states ≤ Q; omega)
+    (by change block.tapes ≤ _; omega) rfl rfl rfl
+  let setup : Pr P (T+(24+K)) Q prime U := (swapRuntimeHeaders r 16).seq
+    ((writeSwapConstants (T := T) (by omega) 16 (0 : Fin 16) 15).seq (markSwapHeaders (T := T) (by omega)))
+  obtain ⟨rate,bound⟩ := portCorrectionTime_bound C D (Fast.Main.mnProgPush setup) block.tapes K
+  refine ⟨code,rate,13*(block.tapes+5),?_⟩
+  intro w W pos M V small io archive destL destR x u S read atom owner fresh
+  obtain ⟨_,_,_,_,base,unit,count,clock,scratch⟩ := workerSwapLayout_ready record w W archive destL destR S read
+  obtain ⟨y,z,F,n,e,user,paid,out,act,clean,frame⟩ := run w W M.size W.size pos (Nat.lt_size_self M)
+    (Nat.lt_size_self W) x u S atom count (read 0 (by decide)) (read 1 (by decide))
+    base unit count clock scratch owner fresh
+  refine ⟨y,z,F,n,e,user,(fun js nd => (paid js nd).trans (Nat.add_le_add_left (bound w W pos) _)),
+    out,?_,clean,frame⟩
+  intro s j A B E moved
+  have h := act (embed moved) j
+  rwa [correct (w+1) s] at h
 
 /-- Initialize both directions of a worker's basis change using the same
 two source words and the same copy scratch. -/
