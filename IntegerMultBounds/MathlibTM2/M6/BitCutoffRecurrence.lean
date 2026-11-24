@@ -43,6 +43,46 @@ private theorem stopped_treeBudget [M8.Machine.Net] (D rate : ℝ) (cutoff fuel 
     ⌊rate*(v.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime v⌋₊ := by
   cases fuel <;> simp [cutoffTreeBudget,Nat.not_lt_of_ge stop]
 
+/-- Increasing the stopped-leaf allowance preserves every active subtree budget. -/
+theorem cutoffTreeBudget_leaf_mono [M8.Machine.Net] (D : ℝ) {a b : ℝ} (rates : a ≤ b)
+    (cutoff fuel : ℕ) (v : Descriptor) :
+    cutoffTreeBudget D a cutoff fuel v ≤ cutoffTreeBudget D b cutoff fuel v := by
+  have leaf (x : Descriptor) := Nat.floor_mono (mul_le_mul_of_nonneg_right
+    (mul_le_mul_of_nonneg_right rates (Real.rpow_nonneg (Nat.cast_nonneg x.width) M8.Machine.BudgetBound.tau))
+    (Nat.cast_nonneg (volume prime x)))
+  induction fuel generalizing v with
+  | zero => exact leaf v
+  | succ fuel ih =>
+    simp only [cutoffTreeBudget]
+    split
+    · exact Nat.add_le_add_left (Finset.sum_le_sum (fun k _ => ih (scheduledChild prime v k))) _
+    · exact leaf v
+
+/-- A parent can use different stopped rates inside a child and at the dispatch
+boundary. One common upper rate pays both, once per directory entry. -/
+theorem cutoffDirectoryCharge_le [M8.Machine.Net] (v : CutoffNodeInput)
+    (localCost : ℕ) (D childRate dispatchRate rate : ℝ) (fuel : ℕ)
+    (active : v.cutoff < v.node.width) (child : childRate ≤ rate) (dispatch : dispatchRate ≤ rate)
+    (localBound : (localCost : ℝ) ≤ D*((volume prime v.node : ℝ)*(v.node.width : ℝ)^M8.Machine.BudgetBound.tau)) :
+    let next := fun i => if h : i < nodeChildren5.length then
+      cutoffTreeBudget D childRate v.cutoff fuel (scheduledChild prime v.node ⟨i,h⟩) else 0
+    localCost + ∑ k : Fin nodeChildren5.length, stageBranchTime v.node v.cutoff dispatchRate next k.val ≤
+      cutoffTreeBudget D rate v.cutoff (fuel+1) v.node := by
+  intro next
+  rw [cutoffTreeBudget,ite_eq_left active]
+  apply Nat.add_le_add (Nat.le_floor localBound)
+  apply Finset.sum_le_sum
+  intro k _
+  let d := scheduledChild prime v.node k
+  simp only [stageBranchTime,next,dite_eq_left k.isLt]
+  split
+  · exact cutoffTreeBudget_leaf_mono D child _ _ d
+  · rename_i stopped
+    rw [stopped_treeBudget D rate v.cutoff fuel _ (Nat.le_of_not_gt stopped)]
+    exact Nat.floor_mono (mul_le_mul_of_nonneg_right
+      (mul_le_mul_of_nonneg_right dispatch (Real.rpow_nonneg (Nat.cast_nonneg d.width) _))
+      (Nat.cast_nonneg (volume prime d)))
+
 /-- The exact node bill fits the tree budget when each active worker receives
 its child's budget. Stopped children already have that price in the tree. -/
 theorem cutoffNodeCharge_le [M8.Machine.Net] (v : CutoffNodeInput) (work : Fin 9 → ℕ → ℕ → ℕ)
@@ -52,17 +92,8 @@ theorem cutoffNodeCharge_le [M8.Machine.Net] (v : CutoffNodeInput) (work : Fin 9
     let next := fun i => if h : i < nodeChildren5.length then
       cutoffTreeBudget D rate v.cutoff fuel (scheduledChild prime v.node ⟨i,h⟩) else 0
     (v.localCharge work assemble+reserve) + ∑ k : Fin nodeChildren5.length, stageBranchTime v.node v.cutoff rate next k.val ≤
-      cutoffTreeBudget D rate v.cutoff (fuel+1) v.node := by
-  intro next
-  rw [cutoffTreeBudget,ite_eq_left active]
-  apply Nat.add_le_add (Nat.le_floor localBound)
-  apply Finset.sum_le_sum
-  intro k _
-  simp only [stageBranchTime,next,dite_eq_left k.isLt]
-  split
-  · rfl
-  · rename_i stopped
-    exact (stopped_treeBudget D rate v.cutoff fuel _ (Nat.le_of_not_gt stopped)).symm.le
+      cutoffTreeBudget D rate v.cutoff (fuel+1) v.node :=
+  cutoffDirectoryCharge_le v _ D rate rate rate fuel active le_rfl le_rfl localBound
 
 /-- The scheduled PR589 moment bounds the same integral budget used by the
 packed node, including the stopped price at the bottom of every path. -/
