@@ -71,21 +71,14 @@ private theorem treeLocal_mono [M8.Machine.Net] {a b : ℝ} (ab : a ≤ b) (rate
         (Finset.sum_le_sum (fun k _ => ih (scheduledChild prime v k)))
     · rfl
 
-/-- Install a record family already priced by a fixed tree. Increasing the parent
-coefficient pays for the entry and leaves every descendant's allowance available. -/
-theorem recordFamilyOfTreeBound [M8.Machine.Net] {Config P U : Type} {T Q : ℕ}
-    {input : Config → CutoffNodeInput} {body : P → Pr P T Q prime U} {dst} {price : Config → ℕ}
-    (family : SplitRecordChildFamily input body dst price) (A rate : ℝ)
-    (bound : ∀ x, let p := input x
-      p.cutoff < p.node.width → price x ≤ cutoffTreeBudget A rate p.cutoff (p.depth-p.path.length) p.node) :
-    RecordTreeFamily input body dst rate (fun _ _ _ => True) := by
-  obtain ⟨entry,install⟩ := family
-  let minimum := max 0 A+((entry+21 : ℕ) : ℝ)
-  refine ⟨minimum,by dsimp [minimum]; positivity,?_⟩
-  intro K live record apart H
-  obtain ⟨bank,host,program,placed,frame,exec⟩ := install live record apart
-  refine ⟨bank,host,program,placed,frame,?_⟩
-  intro D enough x p active fuel _
+/-- Increasing the local coefficient pays for the record entry, the split
+owners and the two call steps while preserving the child allowances. -/
+theorem cutoffRecordEntry_le [M8.Machine.Net] (p : CutoffNodeInput) (entry price : ℕ) (A D rate : ℝ)
+    (active : p.cutoff < p.node.width) (enough : max 0 A+((entry+21 : ℕ) : ℝ) ≤ D)
+    (core : price ≤ cutoffTreeBudget A rate p.cutoff (p.depth-p.path.length) p.node) :
+    entry*p.cells+(142081*(10*p.cells+10)+1+price)+2 ≤
+      cutoffTreeBudget D rate p.cutoff (p.depth-p.path.length) p.node := by
+  let fuel := p.depth-(p.path.length+1)
   have depth : p.depth-p.path.length = fuel+1 := p.remainingDepth_eq active
   let scale := (volume prime p.node : ℝ)*(p.node.width : ℝ)^M8.Machine.BudgetBound.tau
   have nonneg : 0 ≤ scale := by dsimp [scale]; positivity
@@ -108,14 +101,30 @@ theorem recordFamilyOfTreeBound [M8.Machine.Net] {Config P U : Type} {T Q : ℕ}
   have ab : A ≤ D := (le_max_right 0 A).trans ((le_add_of_nonneg_right (Nat.cast_nonneg (entry+21))).trans enough)
   have child := Finset.sum_le_sum (s := Finset.univ) (fun k _ =>
     treeLocal_mono ab rate p.cutoff fuel (scheduledChild prime p.node k))
-  have core := bound x active
-  change price x ≤ cutoffTreeBudget A rate p.cutoff (p.depth-p.path.length) p.node at core
   rw [depth,cutoffTreeBudget,ite_eq_left active] at core
   rw [depth,cutoffTreeBudget,ite_eq_left active]
-  have fits : entry*p.cells+(142081*(10*p.cells+10)+1+price x)+2 ≤
+  have fits : entry*p.cells+(142081*(10*p.cells+10)+1+price)+2 ≤
       ⌊D*scale⌋₊+∑ k, cutoffTreeBudget D rate p.cutoff fuel (scheduledChild prime p.node k) := by
     dsimp only [reserve,scale] at rootCharge ⊢
     omega
+  exact fits
+
+/-- Install a record family already priced by a fixed tree. Increasing the parent
+coefficient pays for the entry and leaves every descendant's allowance available. -/
+theorem recordFamilyOfTreeBound [M8.Machine.Net] {Config P U : Type} {T Q : ℕ}
+    {input : Config → CutoffNodeInput} {body : P → Pr P T Q prime U} {dst} {price : Config → ℕ}
+    (family : SplitRecordChildFamily input body dst price) (A rate : ℝ)
+    (bound : ∀ x, let p := input x
+      p.cutoff < p.node.width → price x ≤ cutoffTreeBudget A rate p.cutoff (p.depth-p.path.length) p.node) :
+    RecordTreeFamily input body dst rate (fun _ _ _ => True) := by
+  obtain ⟨entry,install⟩ := family
+  let minimum := max 0 A+((entry+21 : ℕ) : ℝ)
+  refine ⟨minimum,by dsimp [minimum]; positivity,?_⟩
+  intro K live record apart H
+  obtain ⟨bank,host,program,placed,frame,exec⟩ := install live record apart
+  refine ⟨bank,host,program,placed,frame,?_⟩
+  intro D enough x p active fuel _
+  have fits := cutoffRecordEntry_le p entry (price x) A D rate active enough (bound x active)
   refine ⟨?_,(exec x).call fits⟩
   intro data u S fan fields cut len scratch bridge vacant
   obtain ⟨z,F,t,y,ran,user,paid,out⟩ := exec x data u S fan fields cut len scratch bridge vacant
