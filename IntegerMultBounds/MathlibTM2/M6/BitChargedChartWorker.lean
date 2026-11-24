@@ -10,12 +10,29 @@ namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover.Fallback M8.RevMachine Fast.Main
 open Shared50ModularControl (prime)
 
-theorem chartWorkerWithCharge {T t Q V : ℕ} {P U : Type}
+/-- A chart move charges growth of the embedded owner frame at twelve units per step. -/
+theorem chartOwnerReserveGrowth {t T k : ℕ} (fan : Fin k ↪ Fin t) (worker : Fin t ↪ Fin T)
+    (S F : Stacks T prime) (time : ℕ) (bill : CleanupBound S F time (13*time)) :
+    tapeCharge cleanupWeight (frameSlots fan) (embStk worker F) ≤
+      tapeCharge cleanupWeight (frameSlots fan) (embStk worker S)+12*time := by
+  let slots := (frameSlots fan).map worker
+  have bound := bill slots ((frameSlots_nodup fan).map worker.injective)
+  have charge (A : Stacks T prime) : tapeCharge cleanupWeight slots A =
+      tapeCharge cleanupWeight (frameSlots fan) (embStk worker A) := by
+    simp [slots,tapeCharge,embStk,Function.comp_def]
+  change time+tapeCharge cleanupWeight slots F ≤ tapeCharge cleanupWeight slots S+13*time at bound
+  rw [charge,charge] at bound
+  omega
+
+theorem chartWorkerWithReserve {T t Q V : ℕ} {P U : Type}
     (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop)
     (fan : Fin (142081+2) ↪ Fin T) (localFan : Fin (142081+2) ↪ Fin t)
     (worker : Fin t ↪ Fin T) (owners : ∀ i, worker (localFan i) = fan i)
     (body : P → Pr P t Q prime U) (code : Pr P t Q prime U) (price : ℕ)
-    (initial : Stacks t prime) :
+    (initial : Stacks t prime)
+    (reserve : Stacks t prime → ℕ) (rate : ℕ)
+    (growth : ∀ (S F : Stacks T prime) (k : ℕ), CleanupBound S F k (13*k) →
+      reserve (embStk worker F) ≤ reserve (embStk worker S)+rate*k) :
     let host := fun f => embProg worker id (body f)
     ∀ (enter leave : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)))
       (a : Fin enter.tapes ↪ Fin T) (b : Fin leave.tapes ↪ Fin T)
@@ -26,14 +43,14 @@ theorem chartWorkerWithCharge {T t Q V : ℕ} {P U : Type}
     (∀ j, (∀ i, leave.slots i ≠ j) → (∀ h, a h ≠ b j) ∧ ∀ h, worker h ≠ b j) →
     (∀ x u S, HelperFan localFan x S →
       (∀ j, (∀ i, localFan i ≠ j) → S.L j = initial.L j ∧ S.R j = initial.R j) →
-      ∃ z F k y, Exec body code (mk u S) k (mk z F) ∧ (∀ js : List _, js.Nodup → k+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price) ∧ z.user = u.user ∧
+      ∃ z F k y, Exec body code (mk u S) k (mk z F) ∧ (∀ js : List _, js.Nodup → k+reserve F+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price+reserve S) ∧ z.user = u.user ∧
         HelperFan localFan y F ∧ effect x y) →
     ∀ x u S, HelperFan fan x S → ChartPrivateReady enter (embStk a S) → ChartPrivateReady leave (embStk b S) →
     (∀ j, (∀ i, localFan i ≠ j) → S.L (worker j) = initial.L j ∧ S.R (worker j) = initial.R j) →
     ∃ z F k y, Exec host ((embProg a Empty.elim (foreign (liftQ enter.program qa))).seq
       ((embProg worker id code).seq (embProg b Empty.elim (foreign (liftQ leave.program qb)))))
-      (mk u S) k (mk z F) ∧ (∀ js : List _, js.Nodup → k+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
-        13*(enter.cost*(enter.tapes+5)+leave.cost*(leave.tapes+5)+12)+price) ∧
+      (mk u S) k (mk z F) ∧ (∀ js : List _, js.Nodup → k+reserve (embStk worker F)+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+        (13+rate)*(enter.cost*(enter.tapes+5)+leave.cost*(leave.tapes+5)+12)+price+reserve (embStk worker S)) ∧
       z.user = u.user ∧ HelperFan fan (leave.transform y) F ∧ effect (enter.transform x) y := by
   intro host enter leave a b qa qb shareA shareB ctrlA ctrlB apart privateB sweep x u S live readyA readyB fresh
   obtain ⟨v,D,i,entry,it,vu,inFan,offA⟩ := ownerStage_fan_exec enter a fan shareA ctrlA qa host x u S readyA live
@@ -65,14 +82,53 @@ theorem chartWorkerWithCharge {T t Q V : ℕ} {P U : Type}
   have after := foreignCleanupBound exit js unique
   change i+tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+13*i at before
   change k+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js D'+13*k at after
-  have recursive := placedCleanup_cost_le worker D D' cleanupWeight j price offW jt js unique
+  have recursive := placedCleanup_cost_le worker D D' cleanupWeight
+    (j+reserve (embStk worker D')) (price+reserve (embStk worker D)) offW
+    (fun ls nd => (jt ls nd).trans_eq (by omega)) js unique
+  have entryReserve := growth S D i (foreignCleanupBound entry)
+  have exitReserve := growth D' F k (foreignCleanupBound exit)
+  have chartTime : i+k ≤ enter.cost*(enter.tapes+5)+leave.cost*(leave.tapes+5)+12 := by omega
+  have chartReserve := Nat.mul_le_mul_left rate chartTime
+  rw [Nat.mul_add] at chartReserve
+  rw [Nat.add_mul]
   omega
+
+theorem chartWorkerWithCharge {T t Q V : ℕ} {P U : Type}
+    (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop)
+    (fan : Fin (142081+2) ↪ Fin T) (localFan : Fin (142081+2) ↪ Fin t)
+    (worker : Fin t ↪ Fin T) (owners : ∀ i, worker (localFan i) = fan i)
+    (body : P → Pr P t Q prime U) (code : Pr P t Q prime U) (price : ℕ)
+    (initial : Stacks t prime) :
+    let host := fun f => embProg worker id (body f)
+    ∀ (enter leave : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)))
+      (a : Fin enter.tapes ↪ Fin T) (b : Fin leave.tapes ↪ Fin T)
+      (qa : enter.states ≤ Q) (qb : leave.states ≤ Q),
+    (∀ i, a (enter.slots i) = fan (i.castAdd 2)) → (∀ i, b (leave.slots i) = fan (i.castAdd 2)) →
+    (∀ j : Fin 2, ∀ i, a i ≠ fan (j.natAdd 142081)) → (∀ j : Fin 2, ∀ i, b i ≠ fan (j.natAdd 142081)) →
+    (∀ j, (∀ i, localFan i ≠ j) → ∀ h, a h ≠ worker j) →
+    (∀ j, (∀ i, leave.slots i ≠ j) → (∀ h, a h ≠ b j) ∧ ∀ h, worker h ≠ b j) →
+    (∀ x u S, HelperFan localFan x S →
+      (∀ j, (∀ i, localFan i ≠ j) → S.L j = initial.L j ∧ S.R j = initial.R j) →
+      ∃ z F k y, Exec body code (mk u S) k (mk z F) ∧ (∀ js : List _, js.Nodup → k+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price) ∧ z.user = u.user ∧
+        HelperFan localFan y F ∧ effect x y) →
+    ∀ x u S, HelperFan fan x S → ChartPrivateReady enter (embStk a S) → ChartPrivateReady leave (embStk b S) →
+    (∀ j, (∀ i, localFan i ≠ j) → S.L (worker j) = initial.L j ∧ S.R (worker j) = initial.R j) →
+    ∃ z F k y, Exec host ((embProg a Empty.elim (foreign (liftQ enter.program qa))).seq
+      ((embProg worker id code).seq (embProg b Empty.elim (foreign (liftQ leave.program qb)))))
+      (mk u S) k (mk z F) ∧ (∀ js : List _, js.Nodup → k+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+        13*(enter.cost*(enter.tapes+5)+leave.cost*(leave.tapes+5)+12)+price) ∧
+      z.user = u.user ∧ HelperFan fan (leave.transform y) F ∧ effect (enter.transform x) y := by
+  simpa only [Nat.add_zero,Nat.zero_add] using chartWorkerWithReserve effect fan localFan worker
+    owners body code price initial (fun _ => 0) 0 (by simp)
 
 /-- An allocated sweep uses a single private-stack seed. Its live fan may
 contain arbitrary owner words independently of that seed. -/
-theorem allocatedChartWorkerWithCharge {t Q : ℕ} {P U : Type}
+theorem allocatedChartWorkerWithReserve {t Q : ℕ} {P U : Type}
     (localFan : Fin (142081+2) ↪ Fin t) (body : P → Pr P t Q prime U) (code : Pr P t Q prime U)
-    (entry ret : SharedBankSkeleton.Skeleton 142081 prime) (qa : entry.states ≤ Q) (qb : ret.states ≤ Q) :
+    (entry ret : SharedBankSkeleton.Skeleton 142081 prime) (qa : entry.states ≤ Q) (qb : ret.states ≤ Q)
+    (reserve : Stacks t prime → ℕ) (rate : ℕ)
+    (growth : ∀ {T} (worker : Fin t ↪ Fin T) (S F : Stacks T prime) (k : ℕ),
+      CleanupBound S F k (13*k) → reserve (embStk worker F) ≤ reserve (embStk worker S)+rate*k) :
     ∃ (T : ℕ) (worker : Fin t ↪ Fin T) (program : Pr P T Q prime U),
     let fan := localFan.trans worker
     ∀ {V : ℕ} (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop) (price : ℕ) (initial : Stacks t prime)
@@ -81,15 +137,15 @@ theorem allocatedChartWorkerWithCharge {t Q : ℕ} {P U : Type}
     (∃ A, ChartPrivateReady enter A) → (∃ B, ChartPrivateReady leave B) →
     (∀ x u S, HelperFan localFan x S →
       (∀ j, (∀ i, localFan i ≠ j) → S.L j = initial.L j ∧ S.R j = initial.R j) →
-      ∃ z F k y, Exec body code (mk u S) k (mk z F) ∧ (∀ js : List _, js.Nodup → k+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price) ∧ z.user = u.user ∧
+      ∃ z F k y, Exec body code (mk u S) k (mk z F) ∧ (∀ js : List _, js.Nodup → k+reserve F+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price+reserve S) ∧ z.user = u.user ∧
         HelperFan localFan y F ∧ effect x y) →
     ∀ X : Stacks 142081 prime, ∃ prepared : Stacks T prime,
       embStk ((Fin.castAddEmb 2).trans fan) prepared = X ∧
       ∀ x u S, HelperFan fan x S →
       (∀ j, (∀ i, fan i ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
       ∃ z F k y, Exec (fun f => embProg worker id (body f)) program (mk u S) k (mk z F) ∧
-        (∀ js : List _, js.Nodup → k+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
-        13*(enter.cost*(enter.tapes+5)+leave.cost*(leave.tapes+5)+12)+price) ∧
+        (∀ js : List _, js.Nodup → k+reserve (embStk worker F)+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+        (13+rate)*(enter.cost*(enter.tapes+5)+leave.cost*(leave.tapes+5)+12)+price+reserve (embStk worker S)) ∧
         z.user = u.user ∧ HelperFan fan (leave.transform y) F ∧ effect (enter.transform x) y := by
   obtain ⟨T,worker,a,b,shareA,shareB,ctrlA,ctrlB,apart,priv,seed⟩ := correctionBanks localFan entry ret
   let fan := localFan.trans worker
@@ -113,13 +169,37 @@ theorem allocatedChartWorkerWithCharge {t Q : ℕ} {P U : Type}
     obtain ⟨sl,sr⟩ := fresh _ away
     obtain ⟨pl,pr⟩ := stock j outside
     simpa only [embStk,Function.comp_apply,sl,pl,sr,pr] using ready j outside h
-  apply chartWorkerWithCharge effect fan localFan worker (fun _ => rfl) body code price initial
-    enter leave a b qa qb shareA shareB ctrlA ctrlB apart priv sweep x u S live
+  apply chartWorkerWithReserve effect fan localFan worker (fun _ => rfl) body code price initial
+    reserve rate (growth worker) enter leave a b qa qb shareA shareB ctrlA ctrlB apart priv sweep x u S live
     (chartReady a A readyA shareA ctrlA sa) (chartReady b L readyL shareB ctrlB sb)
   intro j outside
   have keep := fresh (worker j) (fun i => worker.injective.ne (outside i))
   have stored := base j (fun i => outside (i.castAdd 2))
   exact ⟨keep.1.trans stored.1,keep.2.trans stored.2⟩
+
+theorem allocatedChartWorkerWithCharge {t Q : ℕ} {P U : Type}
+    (localFan : Fin (142081+2) ↪ Fin t) (body : P → Pr P t Q prime U) (code : Pr P t Q prime U)
+    (entry ret : SharedBankSkeleton.Skeleton 142081 prime) (qa : entry.states ≤ Q) (qb : ret.states ≤ Q) :
+    ∃ (T : ℕ) (worker : Fin t ↪ Fin T) (program : Pr P T Q prime U),
+    let fan := localFan.trans worker
+    ∀ {V : ℕ} (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop) (price : ℕ) (initial : Stacks t prime)
+      (enter leave : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V))),
+    SharedBankSkeleton.ofStage enter = entry → SharedBankSkeleton.ofStage leave = ret →
+    (∃ A, ChartPrivateReady enter A) → (∃ B, ChartPrivateReady leave B) →
+    (∀ x u S, HelperFan localFan x S →
+      (∀ j, (∀ i, localFan i ≠ j) → S.L j = initial.L j ∧ S.R j = initial.R j) →
+      ∃ z F k y, Exec body code (mk u S) k (mk z F) ∧ (∀ js : List _, js.Nodup → k+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price) ∧ z.user = u.user ∧
+        HelperFan localFan y F ∧ effect x y) →
+    ∀ X : Stacks 142081 prime, ∃ prepared : Stacks T prime,
+      embStk ((Fin.castAddEmb 2).trans fan) prepared = X ∧
+      ∀ x u S, HelperFan fan x S →
+      (∀ j, (∀ i, fan i ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
+      ∃ z F k y, Exec (fun f => embProg worker id (body f)) program (mk u S) k (mk z F) ∧
+        (∀ js : List _, js.Nodup → k+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+        13*(enter.cost*(enter.tapes+5)+leave.cost*(leave.tapes+5)+12)+price) ∧
+        z.user = u.user ∧ HelperFan fan (leave.transform y) F ∧ effect (enter.transform x) y := by
+  simpa only [Nat.add_zero,Nat.zero_add] using
+    allocatedChartWorkerWithReserve localFan body code entry ret qa qb (fun _ => 0) 0 (by simp)
 
 /-- Apply fixed entry and return charts while preserving the recursive worker budget. -/
 theorem flatChartWorkerWithCharge [M8.Machine.Net] :
@@ -248,6 +328,106 @@ theorem borrowedFlatChartWithCharge [M8.Machine.Net] :
       rw [borrowedStageRead_eq_sweepRoles]
       rfl
     exact (read _).trans ((effect x y action b t g).trans (congrArg (Piece.stage n).run (read x).symm))
+
+private theorem fanChargeSplit {k T : ℕ} (fan : Fin (k+2) ↪ Fin T) (S : Stacks T prime) :
+    tapeCharge cleanupWeight (frameSlots fan) S =
+      (∑ i : Fin k, cleanupWeight (S.L (fan (i.castAdd 2))) (S.R (fan (i.castAdd 2)))) +
+      ∑ i : Fin 2, cleanupWeight (S.L (fan (i.natAdd k))) (S.R (fan (i.natAdd k))) := by
+  simp only [tapeCharge,frameSlots,List.map_reverse,List.sum_reverse,← List.ofFn_id,
+    List.map_ofFn,List.sum_ofFn,Function.comp_apply,id_eq]
+  exact Fin.sum_univ_add _
+
+/-- At a packed boundary all data rows have the same physical length. Only
+the two counter stacks contribute an input-dependent cleanup reserve. -/
+theorem ParentStageWords.frameCharge {T V : ℕ} {fan : Fin (142081+2) ↪ Fin T}
+    {x : Fin 142081 → Fin V → ZMod 2} {S : Stacks T prime}
+    (words : ParentStageWords (fun i => fan (i.castAdd 2)) fan V x S) :
+    tapeCharge cleanupWeight (frameSlots fan) S = 142081*(2*V+4) +
+      ∑ i : Fin 2, cleanupWeight (S.L (fan (i.natAdd 142081))) (S.R (fan (i.natAdd 142081))) := by
+  rw [fanChargeSplit]
+  have cell (i : Fin 142081) : cleanupWeight (S.L (fan (i.castAdd 2))) (S.R (fan (i.castAdd 2))) =
+      2*V+4 := by simp [cleanupWeight,words.left i,words.right i]
+  simp only [cell,Finset.sum_const,Finset.card_univ,Fintype.card_fin,smul_eq_mul]
+
+/-- Passing between two packed banks of the same volume cancels every data
+row in the amortized cost, including when the banks occupy different tapes. -/
+theorem packedFrameBill_iff {T V : ℕ} {src dst : Fin (142081+2) ↪ Fin T}
+    {x y : Fin 142081 → Fin V → ZMod 2} {S F : Stacks T prime}
+    (input : ParentStageWords (fun i => src (i.castAdd 2)) src V x S)
+    (output : ParentStageWords (fun i => dst (i.castAdd 2)) dst V y F)
+    (steps price : ℕ) (js : List (Fin T)) :
+    (steps+tapeCharge cleanupWeight (frameSlots dst) F+tapeCharge cleanupWeight js F ≤
+      tapeCharge cleanupWeight js S+price+tapeCharge cleanupWeight (frameSlots src) S) ↔
+    (steps+(∑ i : Fin 2, cleanupWeight (F.L (dst (i.natAdd 142081))) (F.R (dst (i.natAdd 142081))))+
+      tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price+
+      ∑ i : Fin 2, cleanupWeight (S.L (src (i.natAdd 142081))) (S.R (src (i.natAdd 142081)))) := by
+  rw [input.frameCharge,output.frameCharge]
+  omega
+
+def counterCharge {T : ℕ} (fan : Fin (142081+2) ↪ Fin T) (S : Stacks T prime) : ℕ :=
+  ∑ i : Fin 2, cleanupWeight (S.L (fan (i.natAdd 142081))) (S.R (fan (i.natAdd 142081)))
+
+open SweepFile in
+theorem flatWordStageWithCounterReserve {P U : Type} {T Q : ℕ} (fan : Fin (142081+2) ↪ Fin T)
+    (body : P → Pr P T Q prime U) (worker : Pr P T Q prime U) :
+    let place := Exit.chart 0 T
+    let host := fun f => embProg place id (body f)
+    ∃ code, ∀ {V : ℕ} (seed : Stacks T prime)
+    (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop)
+    (price : ℕ),
+    (∀ x u S, ParentStageWords (fun i => fan (i.castAdd 2)) fan V x S →
+      (∀ j, (∀ i, fan i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
+      ∃ z F k y, Exec body worker (mk u S) k (mk z F) ∧ (∀ js : List (Fin T), js.Nodup → k+tapeCharge cleanupWeight (frameSlots fan) F+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price+tapeCharge cleanupWeight (frameSlots fan) S) ∧
+        z.user = u.user ∧ HelperFan fan y F ∧ effect x y) →
+    ∀ x u S, ParentStageWords (fun i => place (fan (i.castAdd 2))) (fan.trans place) V x S →
+      (∀ j, (∀ i, place (fan i) ≠ j) → S.L j = (flatStageSeed seed).L j ∧ S.R j = (flatStageSeed seed).R j) →
+      ∃ z G k y, Exec host code (mk u S) k (mk z G) ∧
+        (∀ js : List _, js.Nodup → k+counterCharge (returnedFan fan) G+tapeCharge cleanupWeight js G ≤
+          tapeCharge cleanupWeight js S+price+(142081*(12*V+14)+1)+counterCharge (fan.trans place) S) ∧
+        z.user = u.user ∧ ParentStageWords (fun i => returnedFan fan (i.castAdd 2)) (returnedFan fan) V y G ∧ effect x y := by
+  classical
+  intro place host
+  obtain ⟨copy,materialize⟩ := packedResultWordsWithCounters fan host
+  refine ⟨(embProg place id worker).seq copy,?_⟩
+  intro V seed effect price run
+  let prepared := flatStageSeed seed
+  intro x u S words fresh
+  have live : ParentStageWords (fun i => fan (i.castAdd 2)) fan V x (embStk place S) :=
+    ⟨words.left,words.right,words.controls⟩
+  obtain ⟨v,D,m,y,exec,time,user,out,act⟩ := run x (embDn place u) (embStk place S) live (by
+    intro j outside
+    have h := fresh (place j) (fun i => place.injective.ne (outside i))
+    simpa [embStk,prepared,flatStageSeed,Function.comp_apply,place,(Exit.chart 0 T).injective.extend_apply] using h)
+  obtain ⟨v',F,ran,_,same,view,off⟩ := exec_emb (ι := id) (body' := host) place.injective
+    (fun _ => rfl) exec u rfl S rfl
+  have blank j (away : ∀ i, place i ≠ j) : F.L j = [] ∧ F.R j = [] := by
+    have unplaced : ¬ ∃ i, place i = j := by simpa using away
+    change ¬ ∃ i, Exit.chart 0 T i = j at unplaced
+    have h := fresh j (fun i => away (fan i))
+    obtain ⟨left,right⟩ := off j away
+    simpa [prepared,flatStageSeed,Function.extend,unplaced] using And.intro (left.trans h.1) (right.trans h.2)
+  let e := Fintype.equivFin (Exit.Register 0 T)
+  have tmp := blank (Exit.tmp 0 T) (fun i => e.injective.ne (by intro h; cases h))
+  rw [← view] at out time
+  obtain ⟨z,G,l,copied,_,hz,result,keep,paid⟩ := materialize y v' F out tmp.1 tmp.2 (by
+    intro i
+    rw [returnedFan_owner]
+    exact blank _ (fun i => e.injective.ne (by intro h; cases h)))
+  refine ⟨z,G,m+l,y,ran.seq copied,?_,hz.trans (same.trans user),result,act⟩
+  intro js unique
+  have work := placedCleanup_cost_le place S F cleanupWeight
+    (m+tapeCharge cleanupWeight (frameSlots fan) (embStk place F))
+    (price+tapeCharge cleanupWeight (frameSlots fan) (embStk place S)) off
+    (fun ls nd => (time ls nd).trans_eq (by omega)) js unique
+  rw [live.frameCharge,fanChargeSplit] at work
+  have sameCounter : counterCharge (returnedFan fan) G = counterCharge fan (embStk place F) := by
+    unfold counterCharge
+    exact Finset.sum_congr rfl (fun i _ => congrArg₂ cleanupWeight (keep i).1 (keep i).2)
+  rw [sameCounter]
+  change _ + counterCharge fan (embStk place F) + _ ≤ _ + _ + _ + counterCharge fan (embStk place S)
+  unfold counterCharge
+  have copyBill := paid js unique
+  omega
 
 private theorem chartBillCeil {t f s p : ℕ} {c : ℝ}
     (h : (t : ℝ)+f ≤ s+p+c) : t+f ≤ s+(p+⌈c⌉₊) := by

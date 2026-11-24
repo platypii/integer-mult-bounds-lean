@@ -47,7 +47,7 @@ theorem runAfterPackedStage {T N Q V D : ℕ} {P R U : Type}
 
 /-- Copy a represented result to fresh owner words, keeping the two live
 counters on the chart. The cost includes every owner and the spare. -/
-theorem packedResultWordsWithCharge {P U : Type} {T Q : ℕ} (localFan : Fin (142081+2) ↪ Fin T)
+theorem packedResultWordsWithCounters {P U : Type} {T Q : ℕ} (localFan : Fin (142081+2) ↪ Fin T)
     (body : P → Pr P (Exit.size 0 T) Q prime U) :
     let fan := localFan.trans (Exit.chart 0 T)
     let dst := returnedFan localFan
@@ -57,6 +57,8 @@ theorem packedResultWordsWithCharge {P U : Type} {T Q : ℕ} (localFan : Fin (14
       (∀ i : Fin 142081, S.L (dst (i.castAdd 2)) = [] ∧ S.R (dst (i.castAdd 2)) = []) →
       ∃ z G k, Exec body code (mk u S) k (mk z G) ∧ k ≤ 142081*(8*V+10)+1 ∧
         z.user = u.user ∧ ParentStageWords (fun i => dst (i.castAdd 2)) dst V x G ∧
+        (∀ i : Fin 2, G.L (dst (i.natAdd 142081)) = S.L (fan (i.natAdd 142081)) ∧
+          G.R (dst (i.natAdd 142081)) = S.R (fan (i.natAdd 142081))) ∧
         ∀ js : List (Fin (Exit.size 0 T)), js.Nodup → k+tapeCharge cleanupWeight js G ≤
           tapeCharge cleanupWeight js S+(142081*(10*V+10)+1) := by
   intro fan dst tmp
@@ -81,14 +83,18 @@ theorem packedResultWordsWithCharge {P U : Type} {T Q : ℕ} (localFan : Fin (14
     rw [encodedOwnerCell,sub_zero] at h
     simpa only [source,Function.Embedding.trans_apply,Fin.castAddEmb_apply,phaseOwners,embStk,
       Function.comp_apply,sub_zero] using h.symm) tl tr (fun i => (empty i).2)
-  refine ⟨z,_,k,run,paid,user,⟨fun i => (empty i).1,words,?_⟩,?_⟩
+  have counters (j : Fin 2) : R (dst (j.natAdd 142081)) = S.R (fan (j.natAdd 142081)) := by
+    rw [off (dst (j.natAdd 142081)) (fun i => dst.injective.ne (by
+      intro eq; have h := congrArg Fin.val eq; change i.val = 142081+j.val at h; omega))]
+    rw [show dst (j.natAdd 142081) = fan (j.natAdd 142081) from returnedFan_counter localFan j]
+  refine ⟨z,_,k,run,paid,user,⟨fun i => (empty i).1,words,?_⟩,?_,?_⟩
   · intro j z
-    have keep := off (dst (j.natAdd 142081)) (fun i => dst.injective.ne (by
-      intro eq; have h := congrArg Fin.val eq; change i.val = 142081+j.val at h; omega))
     change _ = readAt blank (S.L _) (R _) _
-    rw [keep,show dst (j.natAdd 142081) = fan (j.natAdd 142081) from returnedFan_counter localFan j]
+    rw [counters,show dst (j.natAdd 142081) = fan (j.natAdd 142081) from returnedFan_counter localFan j]
     simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,CountedLoopReuseAlphabet.controls,
       ite_self,embStk,Function.comp_apply] using live (j.natAdd 142081) z
+  · intro j
+    exact ⟨congrArg S.L (returnedFan_counter localFan j),counters j⟩
   · intro js distinct
     apply placedCleanup_cost_le dest S {S with R := R} cleanupWeight k _ (fun j away => ⟨rfl,off j away⟩) _ js distinct
     intro is unique
@@ -105,6 +111,24 @@ theorem packedResultWordsWithCharge {P U : Type} {T Q : ℕ} (localFan : Fin (14
     have count : is.length ≤ 142081 := by simpa only [Fintype.card_fin] using unique.length_le_card
     have bound := Nat.mul_le_mul_right (2*V) count
     omega
+
+theorem packedResultWordsWithCharge {P U : Type} {T Q : ℕ} (localFan : Fin (142081+2) ↪ Fin T)
+    (body : P → Pr P (Exit.size 0 T) Q prime U) :
+    let fan := localFan.trans (Exit.chart 0 T)
+    let dst := returnedFan localFan
+    let tmp := Exit.tmp 0 T
+    ∃ code, ∀ {V : ℕ} (x : Fin 142081 → Fin V → ZMod 2) u S,
+      HelperFan fan x S → S.L tmp = [] → S.R tmp = [] →
+      (∀ i : Fin 142081, S.L (dst (i.castAdd 2)) = [] ∧ S.R (dst (i.castAdd 2)) = []) →
+      ∃ z G k, Exec body code (mk u S) k (mk z G) ∧ k ≤ 142081*(8*V+10)+1 ∧
+        z.user = u.user ∧ ParentStageWords (fun i => dst (i.castAdd 2)) dst V x G ∧
+        ∀ js : List (Fin (Exit.size 0 T)), js.Nodup → k+tapeCharge cleanupWeight js G ≤
+          tapeCharge cleanupWeight js S+(142081*(10*V+10)+1) := by
+  obtain ⟨code,copy⟩ := packedResultWordsWithCounters localFan body
+  refine ⟨code,?_⟩
+  intro V x u S live tl tr empty
+  obtain ⟨z,G,k,run,time,user,words,_,bill⟩ := copy x u S live tl tr empty
+  exact ⟨z,G,k,run,time,user,words,bill⟩
 
 /-- Copy a represented result to fresh owner words, keeping the two live
 counters on the chart. The cost includes every owner and the spare. -/

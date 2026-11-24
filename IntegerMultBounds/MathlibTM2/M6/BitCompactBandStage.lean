@@ -75,6 +75,12 @@ private theorem bandStageBill [M8.Machine.Net] (c : CutoffNodeInput) (fits : c.w
   push_cast at rounded
   linarith only [rounded,upper,one,child,mul_le_mul_of_nonneg_left cells (Nat.cast_nonneg localRate : (0 : ℝ) ≤ localRate)]
 
+private theorem placedFrameCharge {k t h : ℕ} (fan : Fin k ↪ Fin t) (bank : Fin t ↪ Fin h)
+    (S : Stacks h prime) :
+    tapeCharge cleanupWeight (frameSlots fan) (embStk bank S) =
+      tapeCharge cleanupWeight (frameSlots (fan.trans bank)) S := by
+  simp [tapeCharge,frameSlots,List.map_reverse,Function.comp_def,embStk]
+
 /-- In the seven-atom stopping band the compact stage executes on its fixed
 tapes with no recursive worker supplied by the caller. -/
 theorem compactBandStage [M8.Machine.Net] (n : Fin 9) :
@@ -87,6 +93,7 @@ theorem compactBandStage [M8.Machine.Net] (n : Fin 9) :
     let place := Fin.castAddEmb 37 (n := H)
     let outer := Fin.castAddEmb 7 (n := H+37)
     let ext := Fin.natAddEmb (H+37) (m := 7)
+    let liveFan := (((fan.trans owner).trans stage).trans place).trans outer
     ∃ (host : Label → Pr Label ((H+37)+7) Q prime U) (code : Pr Label ((H+37)+7) Q prime U) (stageRate : ℝ),
     ∀ c : CutoffNodeInput, 7*(c.w+1) ≤ c.cutoff →
       let w := c.w
@@ -103,16 +110,16 @@ theorem compactBandStage [M8.Machine.Net] (n : Fin 9) :
       ∃ z F t y, Exec host code (mk u S) t (mk z F) ∧ z.user = u.user ∧ HelperFan ((fan.trans owner).trans stage) y (embStk place (embStk outer F)) ∧
         RestoredBorrowedStage n (w+1) c.B c.stageFactor x y ∧
         ∀ (σ : ℝ), 0 ≤ σ → ∀ js : List (Fin ((H+37)+7)), js.Nodup →
-          t+tapeCharge cleanupWeight (frameSlots fan) (embStk (owner.trans stage) (embStk place (embStk outer F)))+tapeCharge cleanupWeight js F ≤
+          t+tapeCharge cleanupWeight (frameSlots liveFan) F+tapeCharge cleanupWeight js F ≤
             tapeCharge cleanupWeight js S+⌊stageRate*((c.node.width : ℝ)^σ*(c.cutoff : ℝ)^(M8.Machine.BudgetBound.tau-σ)*c.cells)⌋₊+
-            tapeCharge cleanupWeight (frameSlots fan) (embStk (owner.trans stage) (embStk place (embStk outer S))) := by
+            tapeCharge cleanupWeight (frameSlots liveFan) S := by
   obtain ⟨C,tapes,regs,T,states,fan,build⟩ := compactInitializedStage n
   refine ⟨T,states,fan,?_⟩
   intro U Q cap
   obtain ⟨body,_,host,code,localRate,packRate,run⟩ := build (P := Unit) (U := U) cap
     (fun _ _ _ _ => .act .done) (fun _ _ _ => ())
   refine ⟨Σ _ : Fin 32 × Fin 5, (Σ j, Fin (invocationCounts (selectedPhaseSchedule false).1.length (selectedPhaseSchedule true).1.length j) × Option (WorkerLabel Unit)),?_⟩
-  intro scratch owner stage H place outer ext
+  intro scratch owner stage H place outer ext liveFan
   let calls := (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length
   refine ⟨host,code,max 0 packRate+1+localRate+calls*max 0 C,?_⟩
   intro c band w W V
@@ -139,7 +146,13 @@ theorem compactBandStage [M8.Machine.Net] (n : Fin 9) :
   have children := stoppedDirectoryCost c C (List.range' (stageChildStart n) calls)
   rw [List.length_range'] at children
   have total := bandStageBill c (by omega) packRate C localRate calls
+  have charge (A : Stacks ((H+37)+7) prime) :
+      tapeCharge cleanupWeight (frameSlots fan) (embStk (owner.trans stage) (embStk place (embStk outer A))) =
+        tapeCharge cleanupWeight (frameSlots liveFan) A := by
+    simp only [placedFrameCharge]
+    rfl
   have h := bill js nd
+  rw [charge,charge] at h
   rw [show (prime^(c.w+1))^16*c.stageWidth = c.cells from c.stageCells] at h
   dsimp only [calls] at children total ⊢
   dsimp only [owner,stage,scratch,outer,place,H] at *
