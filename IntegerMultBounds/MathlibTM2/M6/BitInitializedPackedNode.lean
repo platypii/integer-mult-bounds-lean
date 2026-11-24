@@ -159,4 +159,107 @@ theorem initializedPackedNode [M8.Machine.Net] (P U Config : Type) :
   dsimp only [work,overhead,V,W,CutoffNodeInput.cells] at bill charged ⊢
   omega
 
+/-- Configurations in which every scheduled child has reached the cutoff. -/
+abbrev TerminalNodeInput := {p : CutoffNodeInput // 42*(p.w+1) ≤ p.cutoff}
+
+private theorem terminalChildren (c : TerminalNodeInput) (i : Fin nodeChildren5.length) :
+    (scheduledChild prime c.val.node i).width ≤ c.val.cutoff := by
+  change nodeChildren5[i.val]*(c.val.node.width/64) ≤ _
+  rw [c.val.width,Nat.mul_div_cancel_left _ (by decide)]
+  exact (Nat.mul_le_mul_right _ (nodeChildren5_bounds i).2).trans c.property
+
+/-- The last active level supplies a fixed record machine with zero recursive allowances. -/
+theorem terminalPackedTree [M8.Machine.Net] (U : Type) :
+    ∃ states : ℕ, ∀ {Q : ℕ}, states ≤ Q →
+    ∃ (T : ℕ) (P : Type) (table : P → Pr P T Q prime U) (dst : Fin (142081+2) ↪ Fin T) (rate : ℝ),
+      SplitRecordTreeFamily (Config := TerminalNodeInput) Subtype.val table dst rate (fun _ _ => 0) := by
+  obtain ⟨pre,post,ts,states,ports,build⟩ := initializedPackedNode Unit U TerminalNodeInput
+  refine ⟨states,?_⟩
+  intro Q enough
+  obtain ⟨N,rate,build⟩ := build enough
+  obtain ⟨body,idle,_,_,work,assemble,_,run⟩ :=
+    build (fun _ _ _ => .act .done) (fun _ _ => ()) (fun _ => .act .done) (fun _ => ())
+  obtain ⟨position,_,execute⟩ := run Subtype.val
+  obtain ⟨P,T,table,code,src,dst,seed,load,fromRecord,child,family,_⟩ :=
+    execute (fun _ _ => 0) rate le_rfl (fun c n i active => False.elim ((terminalChildren c _).not_gt active))
+      (fun c n j active => False.elim ((terminalChildren c _).not_gt active))
+  exact ⟨T,P,table,dst,rate,family⟩
+
+private theorem terminalBudget [M8.Machine.Net] (D rate : ℝ) (c : TerminalNodeInput)
+    (active : c.val.cutoff < c.val.node.width) :
+    let p := c.val
+    cutoffTreeBudget D rate p.cutoff (p.depth-p.path.length) p.node = cutoffTreeBudget D rate p.cutoff 1 p.node := by
+  intro p
+  have remaining : 0 < p.depth-p.path.length := by
+    have shrink : p.root.width*42^p.depth ≤ p.cutoff*64^p.depth := by
+      rw [p.rootWidth]
+      simpa only [Nat.mul_comm,Nat.mul_left_comm,Nat.mul_assoc] using Nat.mul_le_mul_right (64^p.depth) p.stop
+    have := scheduledPath_length_lt prime p.root p.depth p.cutoff shrink p.path active
+    omega
+  obtain ⟨fuel,h⟩ := Nat.exists_eq_succ_of_ne_zero remaining.ne'
+  rw [h,cutoffTreeBudget,cutoffTreeBudget,ite_eq_left active,ite_eq_left active]
+  apply congrArg (_ + ·)
+  apply Finset.sum_congr rfl
+  intro k _
+  have stop : ¬ p.cutoff < (scheduledChild prime p.node k).width := (terminalChildren c k).not_gt
+  cases fuel <;> simp only [cutoffTreeBudget,ite_eq_right stop]
+
+/-- Install the first active idle call above the terminal level. Its recursive
+entry and its return to the physical owner tape are both supplied here. -/
+theorem terminalIdleRecord [M8.Machine.Net] (U : Type) :
+    ∃ states : ℕ, ∀ {Q : ℕ}, states ≤ Q →
+    ∃ (N : ℕ) (P : Type) (leafRate : ℝ), ∀ {T : ℕ}
+      (i : Fin 9) (j : Fin idleCopies.length) (board : Fin 113 ↪ Fin T)
+      (splitter : Fin intervalSplitTapes ↪ Fin T) (apart : ∀ r k, splitter r ≠ board k),
+    let raw := (Fin.castLEEmb (by decide : 72 ≤ 113)).trans board
+    let fields := idleRolePorts.trans board
+    let src := raw 24
+    let caller := (Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)
+    let embed := caller.trans (intervalExtend T N)
+    ∃ minimum : ℝ, 0 ≤ minimum ∧
+      ∃ table : Option (Empty ⊕ P) → Pr (Option (Empty ⊕ P)) (intervalHostSize T N) Q prime U,
+      let work := idleCallerWork (((Fin.castAddEmb 35 (n := 78)).trans board).trans embed)
+      ∃ (code : Pr (Option (Empty ⊕ P)) (intervalHostSize T N) Q prime U) (fixed base swaps : ℕ),
+      ∀ D : ℝ, minimum ≤ D → ∀ (p : CutoffNodeInput) (blocks : ℕ), p.root.Positive →
+      142080^(p.depth+1) ∣ p.root.rows → p.root.beforeH = blocks*prime^(64*p.root.width) →
+      let child := scheduledChild prime p.node (idleDirectoryIndex (i,j))
+      p.cutoff < child.width → 42*(child.width/64) ≤ p.cutoff →
+      let budget := cutoffTreeBudget D leafRate p.cutoff 1 child
+      let e := idleInterval i idleCopies[j.val].2
+      let lane := phaseIntervalChild (e.1+1) (e.2+1) (p.w+1) p.idleWidth 64
+      let wide := {lane with afterD := lane.afterD*142080}
+      ∀ (word : Fin (volume prime wide) → ZMod 2) u S,
+        RecordPayload (embed src) (fun _ => blank) 0 word S →
+        IdleDispatchReady (raw.trans embed) p.w p.idleWidth p.root.width.size p.cutoff S →
+        (∀ t ∈ work, S.L t = [] ∧ S.R t = []) →
+        (∀ k, S.R (embed (fields k)) = (Routines.hdr (role p.node 142080) k).map bitSymbol) →
+        ∃ z F n, Exec table code (mk u S) n (mk z F) ∧ z.user = u.user ∧
+          CleanupBound S F n (fixed*p.cells+
+            (base+swaps*(@swapVolumeRate BinaryRadixEqualShared.supplierNet p.w))*(volume prime lane)+budget) ∧
+          RecordPayload (embed src) (fun _ => blank) 0
+            (Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word) F ∧
+          ∀ t, t ≠ embed src → F.L t = S.L t ∧ F.R t = S.R t := by
+  obtain ⟨q,build⟩ := terminalPackedTree U
+  let merge := 7+(CyclicRowCycle.states 142080+5)+4
+  let swap := (@rowSwapBlock BinaryRadixEqualShared.supplierNet).states
+  refine ⟨max q (max swap (merge+merge)),?_⟩
+  intro Q fits
+  obtain ⟨N,P,table,dst,leafRate,family⟩ := build ((Nat.le_max_left ..).trans fits)
+  refine ⟨N,P,leafRate,?_⟩
+  intro T i j board splitter apart raw fields src caller embed
+  have room := (Nat.le_max_right ..).trans fits
+  obtain ⟨minimum,nonneg,host,code,fixed,base,swaps,run⟩ := compiledIdleRecord family
+    ((Nat.le_max_left ..).trans room) ((Nat.le_max_right ..).trans room) i j board splitter apart
+  refine ⟨minimum,nonneg,host,code,fixed,base,swaps,?_⟩
+  intro D enough p blocks positive rows label child active last budget e lane wide word u S payload ready fresh roles
+  obtain ⟨c,node,root,path,cut,remaining,_,_,_,_,cells⟩ := activeIdleCutoffInput p blocks positive rows label i j active
+  have live : c.cutoff < c.node.width := by simpa only [cut,node] using active
+  have width : c.node.width/64 = c.w+1 := by rw [c.width,Nat.mul_div_cancel_left _ (by decide)]
+  let x : TerminalNodeInput := ⟨c,by simpa only [← width,node,cut] using last⟩
+  have result := run D enough p x node live (fun _ _ => Nat.zero_le _) word u S payload
+    (by simpa only [x,root,cut] using ready) fresh roles
+  have cost : cutoffTreeBudget D leafRate c.cutoff (c.depth-c.path.length) c.node = budget :=
+    (terminalBudget D leafRate x live).trans (by simp only [x,cut,node,budget,child])
+  simpa only [x,cost,← cells] using result
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
