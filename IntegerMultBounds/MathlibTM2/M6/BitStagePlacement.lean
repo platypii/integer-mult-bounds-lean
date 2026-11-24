@@ -62,24 +62,24 @@ private theorem adjacentStageStacks_left {m n A : ℕ} (L : Stacks m A) (R : Sta
 
 /-- Compose the two placed programs and add their time and tape budgets.
 The intermediate tape charge cancels even on the shared ports. -/
-theorem runAdjacentStagesWithCharge {P R U : Type} {k m n q A : ℕ}
+theorem runAdjacentStagesWithReserve {P R U : Type} {k m n q A : ℕ}
     (out : Fin k ↪ Fin m) (input : Fin k ↪ Fin n) :
     ∃ bank : Fin n ↪ Fin (m+n), (∀ i, bank (input i) = (out i).castAdd n) ∧ (∀ j, (∀ i, out i ≠ j) → ∀ h, bank h ≠ j.castAdd n) ∧ ∀ (left : P → Pr P m q A U) (right : R → Pr R n q A U) a b,
     let leftBank := Fin.castAdd n (n := m)
     let body := Sum.elim (fun g => embProg leftBank Sum.inl (left g))
       (fun g => embProg bank Sum.inr (right g))
-    ∀ (u : HS (m+n) q A U) (L : Stacks m A) (R₀ : Stacks n A) v F t (setup budget : ℕ)
+    ∀ (u : HS (m+n) q A U) (L : Stacks m A) (R₀ : Stacks n A) v F t (setup budget initial shared : ℕ) (final : Stacks n A → ℕ)
       (weight : List (Fin (A+4)) → List (Fin (A+4)) → ℕ)
       (post : U → Stacks n A → Prop),
       Exec left a (mk (embDn leftBank u) L) t (mk v F) →
-      (∀ (js : List _), js.Nodup → t+tapeCharge weight js F ≤ tapeCharge weight js L+setup) →
+      (∀ (js : List _), js.Nodup → t+shared+tapeCharge weight js F ≤ tapeCharge weight js L+(setup+initial)) →
       (∀ w D, w.user = v.user →
         (∀ i, D.L (input i) = F.L (out i) ∧ D.R (input i) = F.R (out i)) →
         (∀ j, (∀ i, input i ≠ j) → D.L j = R₀.L j ∧ D.R j = R₀.R j) →
-        ∃ z B s, Exec right b (mk w D) s (mk z B) ∧ (∀ (js : List _), js.Nodup → s+tapeCharge weight js B ≤ tapeCharge weight js D+budget) ∧ post z.user B) →
+        ∃ z B s, Exec right b (mk w D) s (mk z B) ∧ (∀ (js : List _), js.Nodup → s+final B+tapeCharge weight js B ≤ tapeCharge weight js D+(budget+shared)) ∧ post z.user B) →
       ∃ z B steps, Exec body ((embProg leftBank Sum.inl a).seq (embProg bank Sum.inr b))
         (mk u (adjacentStageStacks L R₀)) steps (mk z B) ∧ (∀ (js : List _), js.Nodup →
-          steps+tapeCharge weight js B ≤ tapeCharge weight js (adjacentStageStacks L R₀)+(setup+budget)) ∧ post z.user (embStk bank B) ∧
+          steps+final (embStk bank B)+tapeCharge weight js B ≤ tapeCharge weight js (adjacentStageStacks L R₀)+(setup+budget)+initial) ∧ post z.user (embStk bank B) ∧
         ∀ j, (∀ i, out i ≠ j) → B.L (leftBank j) = F.L j ∧ B.R (leftBank j) = F.R j := by
   obtain ⟨bank, shared, privateTape⟩ := adjacentStagePlacement out input
   have disjoint (j : Fin m) (outside : ∀ i, out i ≠ j) : ∀ h, bank h ≠ j.castAdd n := by
@@ -94,7 +94,7 @@ theorem runAdjacentStagesWithCharge {P R U : Type} {k m n q A : ℕ}
       change m+h.val = j.val at e
       omega
   refine ⟨bank,shared,disjoint,?_⟩
-  intro left right a b leftBank body u L R₀ v F t setup budget weight post exec setupBill next
+  intro left right a b leftBank body u L R₀ v F t setup budget initial middle final weight post exec setupBill next
   obtain ⟨w,D,ran,_,user,view,frame⟩ := exec_emb (ι := Sum.inl) (body' := body)
     (Fin.castAddEmb n (n := m)).injective (fun _ => rfl) exec u rfl (adjacentStageStacks L R₀) (adjacentStageStacks_left L R₀)
   obtain ⟨z,B,s,ranNext,paid,result⟩ := next (embDn bank w) (embStk bank D) user (by
@@ -114,19 +114,45 @@ theorem runAdjacentStagesWithCharge {P R U : Type} {k m n q A : ℕ}
   obtain ⟨z',B',placed,_,same,endView,preserved⟩ := exec_emb (ι := Sum.inr) (body' := body)
     bank.injective (fun _ => rfl) ranNext w rfl D rfl
   have entry : embStk (Fin.castAddEmb n (n := m)) (adjacentStageStacks L R₀) = L := adjacentStageStacks_left L R₀
-  have leftBill := placedCleanup_cost_le (Fin.castAddEmb n (n := m)) (adjacentStageStacks L R₀) D weight t setup frame
+  have leftBill := placedCleanup_cost_le (Fin.castAddEmb n (n := m)) (adjacentStageStacks L R₀) D weight (t+middle) (setup+initial) frame
     (by simpa only [Fin.castAddEmb_apply,view,entry] using setupBill)
-  have rightBill := placedCleanup_cost_le bank D B' weight s budget preserved (by
+  have rightBill := placedCleanup_cost_le bank D B' weight (s+final B) (budget+middle) preserved (by
     rw [endView]
     exact paid)
   refine ⟨z',B',t+s,Exec.seq ran placed,?_,same ▸ endView ▸ result,?_⟩
   · intro js distinct
+    rw [endView]
     have setupBound := leftBill js distinct
     have childBound := rightBill js distinct
     omega
   · intro j outside
     obtain ⟨hl,hr⟩ := preserved _ (disjoint j outside)
     exact ⟨hl.trans (congrArg (fun C => C.L j) view),hr.trans (congrArg (fun C => C.R j) view)⟩
+
+theorem runAdjacentStagesWithCharge {P R U : Type} {k m n q A : ℕ}
+    (out : Fin k ↪ Fin m) (input : Fin k ↪ Fin n) :
+    ∃ bank : Fin n ↪ Fin (m+n), (∀ i, bank (input i) = (out i).castAdd n) ∧ (∀ j, (∀ i, out i ≠ j) → ∀ h, bank h ≠ j.castAdd n) ∧ ∀ (left : P → Pr P m q A U) (right : R → Pr R n q A U) a b,
+    let leftBank := Fin.castAdd n (n := m)
+    let body := Sum.elim (fun g => embProg leftBank Sum.inl (left g))
+      (fun g => embProg bank Sum.inr (right g))
+    ∀ (u : HS (m+n) q A U) (L : Stacks m A) (R₀ : Stacks n A) v F t (setup budget : ℕ)
+      (weight : List (Fin (A+4)) → List (Fin (A+4)) → ℕ)
+      (post : U → Stacks n A → Prop),
+      Exec left a (mk (embDn leftBank u) L) t (mk v F) →
+      (∀ (js : List _), js.Nodup → t+tapeCharge weight js F ≤ tapeCharge weight js L+setup) →
+      (∀ w D, w.user = v.user →
+        (∀ i, D.L (input i) = F.L (out i) ∧ D.R (input i) = F.R (out i)) →
+        (∀ j, (∀ i, input i ≠ j) → D.L j = R₀.L j ∧ D.R j = R₀.R j) →
+        ∃ z B s, Exec right b (mk w D) s (mk z B) ∧ (∀ (js : List _), js.Nodup → s+tapeCharge weight js B ≤ tapeCharge weight js D+budget) ∧ post z.user B) →
+      ∃ z B steps, Exec body ((embProg leftBank Sum.inl a).seq (embProg bank Sum.inr b))
+        (mk u (adjacentStageStacks L R₀)) steps (mk z B) ∧ (∀ (js : List _), js.Nodup →
+          steps+tapeCharge weight js B ≤ tapeCharge weight js (adjacentStageStacks L R₀)+(setup+budget)) ∧ post z.user (embStk bank B) ∧
+        ∀ j, (∀ i, out i ≠ j) → B.L (leftBank j) = F.L j ∧ B.R (leftBank j) = F.R j := by
+  obtain ⟨bank,share,apart,run⟩ := runAdjacentStagesWithReserve (P := P) (R := R) (U := U) (q := q) (A := A) out input
+  refine ⟨bank,share,apart,?_⟩
+  intro left right a b leftBank body u L seed v F t setup budget weight post
+  simpa only [Nat.add_zero] using
+    run left right a b u L seed v F t setup budget 0 0 (fun _ => 0) weight post
 
 /-- Sequence two separately allocated programs. The second receives the first
 program's output on their common bank and its original private workspace.

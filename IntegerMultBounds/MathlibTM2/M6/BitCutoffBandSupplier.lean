@@ -50,12 +50,9 @@ private theorem bandRecords (U : Type) (height : ℕ) :
       BandNode.positive BandNode.rows BandNode.label (by
         intro x i j p active c node root path cut depth live
         let k := idleDirectoryIndex (i,j)
-        have smaller : (scheduledChild prime p.node k).width ≤ p.node.width := by
-          change nodeChildren5[k.val]*(p.node.width/64) ≤ _
-          rw [p.width,Nat.mul_div_cancel_left _ (by decide : 0 < 64)]
-          exact Nat.mul_le_mul_right _ ((nodeChildren5_bounds k).2.trans (by decide : 42 ≤ 64))
         have atoms : c.w+1 ≤ p.w+1 := by
-          rw [← node,c.width,p.width] at smaller
+          have width := (activeIdleRecordWidth p i j x.band active).2
+          rw [← node,c.width] at width
           omega
         let y : BandNode h := ⟨c,x.blocks,root ▸ x.positive,by simpa only [root,depth] using x.rows,
           root ▸ x.label,live,by rw [cut]; exact (Nat.mul_le_mul_left 7 atoms).trans x.band,by

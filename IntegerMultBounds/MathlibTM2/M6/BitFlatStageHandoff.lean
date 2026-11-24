@@ -99,8 +99,9 @@ theorem uniformWordStageHandoff {P U : Type} {T Q : ℕ} (fan : Fin (142081+2) �
   obtain ⟨code,run⟩ := uniformWordStageSeedHandoff fan body worker
   exact ⟨code,fun seed effect price exec => ⟨flatStageSeed seed,run seed effect price exec⟩⟩
 
-theorem flatWordStageWithSeedCharge {P U : Type} {T Q : ℕ} (fan : Fin (142081+2) ↪ Fin T)
-    (body : P → Pr P T Q prime U) (worker : Pr P T Q prime U) :
+theorem flatWordStageWithPreservedReserve {P U : Type} {T Q : ℕ} (fan : Fin (142081+2) ↪ Fin T)
+    (body : P → Pr P T Q prime U) (worker : Pr P T Q prime U)
+    (reserve : (Fin 2 → List (Fin (prime+4))) → (Fin 2 → List (Fin (prime+4))) → ℕ) :
     let place := Exit.chart 0 T
     let host := fun f => embProg place id (body f)
     ∃ code, ∀ {V : ℕ} (seed : Stacks T prime)
@@ -109,19 +110,21 @@ theorem flatWordStageWithSeedCharge {P U : Type} {T Q : ℕ} (fan : Fin (142081+
     (∀ x u S, ParentStageWords (fun i => fan (i.castAdd 2)) fan V x S →
       (∀ j, (∀ i, fan i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
       ∃ z F k y, Exec body worker (mk u S) k (mk z F) ∧ (∀ js : List (Fin T), js.Nodup → k+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price) ∧
-        z.user = u.user ∧ HelperFan fan y F ∧ effect x y) →
-    PackedPieceHandoffWithCharge cleanupWeight V effect host code (fan.trans place) (returnedFan fan)
+        z.user = u.user ∧ HelperFan fan y F ∧
+        reserve (fun j => F.L (fan (j.natAdd 142081))) (fun j => F.R (fan (j.natAdd 142081))) =
+          reserve (fun j => S.L (fan (j.natAdd 142081))) (fun j => S.R (fan (j.natAdd 142081))) ∧ effect x y) →
+    PackedPieceHandoffWithReserve cleanupWeight reserve V effect host code (fan.trans place) (returnedFan fan)
       (flatStageSeed seed) (price+(142081*(10*V+10)+1)) := by
   classical
   intro place host
-  obtain ⟨copy,materialize⟩ := packedResultWordsWithCharge fan host
+  obtain ⟨copy,materialize⟩ := packedResultWordsWithCounters fan host
   refine ⟨(embProg place id worker).seq copy,?_⟩
   intro V seed effect price run
   let prepared := flatStageSeed seed
   intro x u S words fresh
   have live : ParentStageWords (fun i => fan (i.castAdd 2)) fan V x (embStk place S) :=
     ⟨words.left,words.right,words.controls⟩
-  obtain ⟨v,D,m,y,exec,time,user,out,act⟩ := run x (embDn place u) (embStk place S) live (by
+  obtain ⟨v,D,m,y,exec,time,user,out,preserved,act⟩ := run x (embDn place u) (embStk place S) live (by
     intro j outside
     have h := fresh (place j) (fun i => place.injective.ne (outside i))
     simpa [embStk,prepared,flatStageSeed,Function.comp_apply,place,(Exit.chart 0 T).injective.extend_apply] using h)
@@ -135,8 +138,8 @@ theorem flatWordStageWithSeedCharge {P U : Type} {T Q : ℕ} (fan : Fin (142081+
     simpa [prepared,flatStageSeed,Function.extend,unplaced] using And.intro (left.trans h.1) (right.trans h.2)
   let e := Fintype.equivFin (Exit.Register 0 T)
   have tmp := blank (Exit.tmp 0 T) (fun i => e.injective.ne (by intro h; cases h))
-  rw [← view] at out time
-  obtain ⟨z,G,l,copied,_,hz,result,paid⟩ := materialize y v' F out tmp.1 tmp.2 (by
+  rw [← view] at out time preserved
+  obtain ⟨z,G,l,copied,_,hz,result,counters,paid⟩ := materialize y v' F out tmp.1 tmp.2 (by
     intro i
     rw [returnedFan_owner]
     exact blank _ (fun i => e.injective.ne (by intro h; cases h)))
@@ -144,7 +147,30 @@ theorem flatWordStageWithSeedCharge {P U : Type} {T Q : ℕ} (fan : Fin (142081+
   intro js unique
   have work := placedCleanup_cost_le place S F cleanupWeight m price off time js unique
   have copyBill := paid js unique
+  have left := funext (fun j => (counters j).1)
+  have right := funext (fun j => (counters j).2)
+  rw [left,right]
+  change reserve _ _ = reserve _ _ at preserved
+  change _ + reserve (fun j => F.L (place (fan (j.natAdd 142081)))) (fun j => F.R (place (fan (j.natAdd 142081)))) + _ ≤ _
+  rw [show reserve (fun j => F.L (place (fan (j.natAdd 142081)))) (fun j => F.R (place (fan (j.natAdd 142081)))) =
+    reserve (fun j => S.L ((fan.trans place) (j.natAdd 142081))) (fun j => S.R ((fan.trans place) (j.natAdd 142081))) from preserved]
   omega
+
+theorem flatWordStageWithSeedCharge {P U : Type} {T Q : ℕ} (fan : Fin (142081+2) ↪ Fin T)
+    (body : P → Pr P T Q prime U) (worker : Pr P T Q prime U) :
+    let place := Exit.chart 0 T
+    let host := fun f => embProg place id (body f)
+    ∃ code, ∀ {V : ℕ} (seed : Stacks T prime)
+    (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop)
+    (price : ℕ),
+    (∀ x u S, ParentStageWords (fun i => fan (i.castAdd 2)) fan V x S →
+      (∀ j, (∀ i, fan i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
+      ∃ z F k y, Exec body worker (mk u S) k (mk z F) ∧ (∀ js : List (Fin T), js.Nodup → k+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price) ∧
+        z.user = u.user ∧ HelperFan fan y F ∧ effect x y) →
+    PackedPieceHandoffWithCharge cleanupWeight V effect host code (fan.trans place) (returnedFan fan)
+      (flatStageSeed seed) (price+(142081*(10*V+10)+1)) := by
+  simpa only [PackedPieceHandoffWithReserve,PackedPieceHandoffWithCharge,Nat.add_zero,true_and,eq_self] using
+    flatWordStageWithPreservedReserve fan body worker (fun _ _ => 0)
 
 theorem uniformWordStageWithCharge {P U : Type} {T Q : ℕ} (fan : Fin (142081+2) ↪ Fin T)
     (body : P → Pr P T Q prime U) (worker : Pr P T Q prime U) :

@@ -133,6 +133,12 @@ theorem placeIdleOwner_exec {P R U : Type} {T H Q c V : ℕ}
   change Cover.Fallback.RecordPayload slot (fun _ => blank) 0 y (embStk place F)
   rwa [view]
 
+private theorem counter_ne_owner {n k : ℕ} (j : Fin k) (r : Fin n) : j.natAdd n ≠ r.castAdd k := by
+  intro eq
+  have v := congrArg Fin.val eq
+  change n+j.val = r.val at v
+  omega
+
 /-- Schedule disjoint copy workspaces. Each local execution starts with
 exactly its original register stacks, even when earlier copies leave their
 private workspaces occupied. -/
@@ -156,13 +162,17 @@ theorem placedIdleWindowWithCharge {H Q V : ℕ} {R U : Type} (i : Fin 9)
         effect k (x (idleTape i k)) y) →
     ∃ y F z n, Exec host (Prog.seqList (idleCopies.map fun k => embProg (place k) (label k) (code k)))
       (mk u S) n (mk z F) ∧ (∀ js : List (Fin H), js.Nodup → n+tapeCharge weight js F ≤ tapeCharge weight js S+(idleCopies.map price).sum+1) ∧ z.user = u.user ∧ HelperFan fan y F ∧
+      (∀ j : Fin 2, let port := fan (j.natAdd 142081)
+        F.L port = S.L port ∧ F.R port = S.R port) ∧
       (∀ k, effect k (x (idleTape i k)) (y (idleTape i k))) ∧
       ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j := by
   intro Job T P place slot inner label code price effect shared outside apart calls run
   let prepared := fun (k : Job) (_ : List Job) (D : Stacks H prime) =>
     ∀ j, D.L (place k j) = S.L (place k j) ∧ D.R (place k j) = S.R (place k j)
   let ready := fun (past : List Job) (y : Fin 142081 → Fin V → ZMod 2) (D : Stacks H prime) =>
-    HelperFan fan y D ∧ ∀ k, k ∉ past → y (idleTape i k) = x (idleTape i k)
+    HelperFan fan y D ∧ (∀ k, k ∉ past → y (idleTape i k) = x (idleTape i k)) ∧
+      ∀ j : Fin 2, let port := fan (j.natAdd 142081)
+        D.L port = S.L port ∧ D.R port = S.R port
   obtain ⟨y,F,z,n,exec,paid,user,final,acts,off⟩ := idleCopiesWithPotential i host _
     (fun k => (price k : ℝ)) prepared ready effect
     (fun (js : {l : List (Fin H) // l.Nodup}) D => (tapeCharge weight js.val D : ℝ)) (by
@@ -173,20 +183,23 @@ theorem placedIdleWindowWithCharge {H Q V : ℕ} {R U : Type} (i : Fin 9)
       obtain ⟨a,E,placed,user,owners,view,keep⟩ := placeIdleOwner_exec (place k) (slot k) fan (idleTape i k)
         (shared k) (outside k) (inner k) host (label k) (calls k) (code k) v D data state.1 b G m word ran payload
       refine ⟨Function.update data (idleTape i k) word,E,a,m,placed,?_,
-        user.trans same,⟨owners,?_⟩,?_,?_,fun t ne => Function.update_of_ne ne ..⟩
+        user.trans same,⟨owners,?_,?_⟩,?_,?_,fun t ne => Function.update_of_ne ne ..⟩
       · intro js
         rw [← view] at cost
         exact_mod_cast placedCleanup_cost_le (place k) D E weight m (price k) keep cost js.val js.property
       · intro l hl
         simp only [List.mem_append,List.mem_singleton,not_or] at hl
         rw [Function.update_of_ne ((idleTape_injective i).ne hl.2)]
-        exact state.2 l hl.1
+        exact state.2.1 l hl.1
+      · intro j
+        have frame := keep _ (outside k (j.natAdd 142081) (counter_ne_owner j (idleTape i k)))
+        exact ⟨frame.1.trans (state.2.2 j).1,frame.2.trans (state.2.2 j).2⟩
       · intro l ne old j
         have frame := keep _ (fun h => apart k l ne.symm h j)
         exact ⟨frame.1.trans (old j).1,frame.2.trans (old j).2⟩
-      · simpa only [Function.update_self,state.2 k newJob] using act)
-    x S u ⟨live,fun _ _ => rfl⟩ (fun _ _ => ⟨rfl,rfl⟩)
-  refine ⟨y,F,z,n,exec,?_,user,final.1,acts,off⟩
+      · simpa only [Function.update_self,state.2.1 k newJob] using act)
+    x S u ⟨live,fun _ _ => rfl,fun _ => ⟨rfl,rfl⟩⟩ (fun _ _ => ⟨rfl,rfl⟩)
+  refine ⟨y,F,z,n,exec,?_,user,final.1,final.2.2,acts,off⟩
   intro js unique
   specialize paid ⟨js,unique⟩
   apply (Nat.cast_le (α := ℝ)).mp

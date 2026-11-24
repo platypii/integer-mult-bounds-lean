@@ -163,6 +163,15 @@ theorem ParentStageWords.helperFan {T V : ℕ} {fan : Fin (142081+2) ↪ Fin T}
     simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,CountedLoopReuseAlphabet.controls,
       ite_self,embStk,Function.comp_apply] using words.controls j z
 
+def PackedPieceHandoffWithReserve {P U : Type} {t q : ℕ} (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ) (reserve : (Fin 2 → List (Fin (prime+4))) → (Fin 2 → List (Fin (prime+4))) → ℕ) (V : ℕ)
+    (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop)
+    (body : P → Pr P t q prime U) (code : Pr P t q prime U)
+    (src dst : Fin (142081+2) ↪ Fin t) (prepared : Stacks t prime) (price : ℕ) : Prop :=
+  ∀ x u S, ParentStageWords (fun i => src (i.castAdd 2)) src V x S →
+    (∀ j, (∀ i, src i ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
+    ∃ z F steps y, Exec body code (mk u S) steps (mk z F) ∧ (∀ js : List (Fin t), js.Nodup → steps+reserve (fun i => F.L (dst (i.natAdd 142081))) (fun i => F.R (dst (i.natAdd 142081)))+tapeCharge weight js F ≤ tapeCharge weight js S+(price+reserve (fun i => S.L (src (i.natAdd 142081))) (fun i => S.R (src (i.natAdd 142081))))) ∧ z.user = u.user ∧
+      ParentStageWords (fun i => dst (i.castAdd 2)) dst V y F ∧ effect x y
+
 def PackedPieceHandoffWithCharge {P U : Type} {t q : ℕ} (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ) (V : ℕ)
     (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop)
     (body : P → Pr P t q prime U) (code : Pr P t q prime U)
@@ -175,7 +184,7 @@ def PackedPieceHandoffWithCharge {P U : Type} {t q : ℕ} (weight : List (Fin (p
 /-- Execute a scheduled bridge and materialize the entire output bank. -/
 private theorem packedBridgeProgram (d s : ℕ) (scheduled : Piece.bridge d s ∈ nodeProgram) :
     ∃ states : ℕ, ∀ {q : ℕ} {U : Type}, states ≤ q →
-      ∃ (t : ℕ) (code : Pr Empty t q prime U), ∃ src dst prepared, ∀ {V : ℕ}, 0 < V →
+      ∃ (t : ℕ) (code : Pr Empty t q prime U), ∃ (src dst : Fin (142081+2) ↪ Fin t) (prepared : Stacks t prime), (∀ j : Fin 2, dst (j.natAdd 142081) = src (j.natAdd 142081)) ∧ ∀ {V : ℕ}, 0 < V →
         PackedPieceHandoff V (fun x y => y = fun j z => bridgeColumn d s (fun l => x l z) j)
           Empty.elim code src dst prepared (2*(76*17760*V*(142081+7)+6)+1 + (142081*(8*V+10)+1)) := by
   obtain ⟨states,bridge⟩ := bridgeColumns_exec d s scheduled
@@ -188,7 +197,7 @@ private theorem packedBridgeProgram (d s : ℕ) (scheduled : Piece.bridge d s �
   let body : Empty → Pr Empty (Exit.size 0 (142081+2)) q prime U := Empty.elim
   obtain ⟨code,run⟩ := bridge fan body room
   obtain ⟨copy,materialize⟩ := packedResultWords_exec idFan body
-  refine ⟨_,code.seq copy,fan,dst,⟨[],[],fun _ => [],fun _ => []⟩,?_⟩
+  refine ⟨_,code.seq copy,fan,dst,⟨[],[],fun _ => [],fun _ => []⟩,returnedFan_counter idFan,?_⟩
   intro V pos x u S words fresh
   have live := words.helperFan
   obtain ⟨v,D,k,ran,bill,user,ready,off⟩ := run pos x u S live
@@ -211,7 +220,7 @@ theorem packedBridgeHandoff (d s : ℕ) (scheduled : Piece.bridge d s ∈ nodePr
   obtain ⟨states,build⟩ := packedBridgeProgram d s scheduled
   refine ⟨states,?_⟩
   intro q V U fits pos
-  obtain ⟨t,code,src,dst,seed,run⟩ := build (U := U) fits
+  obtain ⟨t,code,src,dst,seed,_,run⟩ := build (U := U) fits
   exact ⟨t,code,src,dst,seed,run pos⟩
 
 /-- The bridge program is fixed before the volume. Its tape growth therefore
@@ -225,7 +234,7 @@ theorem packedBridgeWithCharge (d s : ℕ) (scheduled : Piece.bridge d s ∈ nod
   obtain ⟨states,build⟩ := packedBridgeProgram d s scheduled
   refine ⟨states,?_⟩
   intro q U fits
-  obtain ⟨t,code,src,dst,seed,run⟩ := build (U := U) fits
+  obtain ⟨t,code,src,dst,seed,_,run⟩ := build (U := U) fits
   let push := Fast.Main.mnProgPush code
   let rate := 2*(76*17760*(142081+7)+6)+1+(142081*(8+10)+1)
   refine ⟨(1+6*push)*rate,t,code,src,dst,seed,?_⟩
@@ -241,9 +250,44 @@ theorem packedBridgeWithCharge (d s : ℕ) (scheduled : Piece.bridge d s ∈ nod
   simp only [Nat.add_mul,Nat.one_mul,Nat.mul_assoc] at bound ⊢
   omega
 
+theorem packedBridgeWithCounterReserve (d s : ℕ) (scheduled : Piece.bridge d s ∈ nodeProgram) :
+    ∃ states : ℕ, ∀ {q : ℕ} {U : Type}, states ≤ q →
+      ∃ (rate t : ℕ) (code : Pr Empty t q prime U), ∃ src dst seed, ∀ {V : ℕ}, 0 < V →
+        PackedPieceHandoffWithReserve cleanupWeight (fun l r => ∑ j, cleanupWeight (l j) (r j)) V
+          (fun x y => y = fun j z => bridgeColumn d s (fun l => x l z) j)
+          Empty.elim code src dst seed (rate*V) := by
+  obtain ⟨states,build⟩ := packedBridgeProgram d s scheduled
+  refine ⟨states,?_⟩
+  intro q U fits
+  obtain ⟨t,code,src,dst,seed,shared,run⟩ := build (U := U) fits
+  let push := Fast.Main.mnProgPush code
+  let rate := 2*(76*17760*(142081+7)+6)+1+(142081*(8+10)+1)
+  refine ⟨(1+12*push)*rate,t,code,src,dst,seed,?_⟩
+  intro V positive x u S words fresh
+  obtain ⟨z,F,n,y,exec,paid,user,out,changed⟩ := run positive x u S words fresh
+  refine ⟨z,F,n,y,exec,?_,user,out,changed⟩
+  intro js distinct
+  have growth := Cover.Fallback.recordCleanup_cost_le js distinct exec (c := push) le_rfl (fun e => nomatch e)
+  change tapeCharge cleanupWeight js F+1 ≤ tapeCharge cleanupWeight js S+1+6*(push*n) at growth
+  let ports := (Fin.natAddEmb 142081 (m := 2)).trans src
+  have counters := Cover.Fallback.recordCleanup_cost_le (frameSlots ports) (frameSlots_nodup ports) exec
+    (c := push) le_rfl (fun e => nomatch e)
+  have charge (A : Stacks t prime) : tapeCharge cleanupWeight (frameSlots ports) A =
+      ∑ j : Fin 2, cleanupWeight (A.L (src (j.natAdd 142081))) (A.R (src (j.natAdd 142081))) := by
+    simp [tapeCharge,frameSlots,List.map_reverse,Function.comp_def,List.finRange,List.sum_ofFn,ports]
+    exact Nat.add_comm ..
+  change tapeCharge cleanupWeight (frameSlots ports) F+1 ≤ tapeCharge cleanupWeight (frameSlots ports) S+1+6*(push*n) at counters
+  rw [charge,charge] at counters
+  simp only [shared]
+  have time : n ≤ rate*V := by dsimp [rate]; omega
+  have bound := Nat.mul_le_mul_left (1+12*push) time
+  rw [← Nat.mul_assoc] at bound
+  simp only [Nat.add_mul,Nat.one_mul,Nat.mul_assoc] at bound ⊢
+  omega
+
 /-- Assemble one program for every runtime configuration. Widths, seed words
 and budgets may vary while the procedure labels and tape placements stay fixed. -/
-theorem packedHandoffFamilyWithSeed {Job U Config : Type} {q : ℕ} (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ) (volume : Config → ℕ)
+theorem packedHandoffFamilyWithReserve {Job U Config : Type} {q : ℕ} (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ) (reserve : (Fin 2 → List (Fin (prime+4))) → (Fin 2 → List (Fin (prime+4))) → ℕ) (volume : Config → ℕ)
     (effect : ∀ c, Job → (Fin 142081 → Fin (volume c) → ZMod 2) → (Fin 142081 → Fin (volume c) → ZMod 2) → Prop)
     (price : Config → Job → ℕ) (stages : List Job) (last : Job)
     (admissible : ∀ {t : ℕ}, (Config → Stacks t prime) → Prop)
@@ -251,10 +295,10 @@ theorem packedHandoffFamilyWithSeed {Job U Config : Type} {q : ℕ} (weight : Li
       admissible L → admissible D → admissible (fun c => adjacentStageStacks (L c) (D c)))
     (available : ∀ i ∈ stages++[last], ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U) (code : Pr P t q prime U)
       (src dst : Fin (142081+2) ↪ Fin t) (prepared : Config → Stacks t prime), admissible prepared ∧ ∀ c,
-      PackedPieceHandoffWithCharge weight (volume c) (effect c i) body code src dst (prepared c) (price c i)) :
+      PackedPieceHandoffWithReserve weight reserve (volume c) (effect c i) body code src dst (prepared c) (price c i)) :
     ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U) (code : Pr P t q prime U)
       (src dst : Fin (142081+2) ↪ Fin t) (prepared : Config → Stacks t prime), admissible prepared ∧ ∀ c,
-      PackedPieceHandoffWithCharge weight (volume c) (fun x y => (stages++[last]).foldr
+      PackedPieceHandoffWithReserve weight reserve (volume c) (fun x y => (stages++[last]).foldr
         (fun i cont a => ∃ b, effect c i a b ∧ cont b) (fun a => a = y) x)
         body code src dst (prepared c) ((stages++[last]).map (price c)).sum := by
   induction stages with
@@ -267,7 +311,7 @@ theorem packedHandoffFamilyWithSeed {Job U Config : Type} {q : ℕ} (weight : Li
   | cons i stages ih =>
     obtain ⟨P,m,left,a,src,mid,L,leftSeed,firstRun⟩ := available i (by simp)
     obtain ⟨R,n,right,b,input,dst,D,rightSeed,nextRun⟩ := ih (fun j hj => available j (List.mem_cons_of_mem _ hj))
-    obtain ⟨bank,_,_,compose⟩ := runAdjacentStagesWithCharge (P := P) (R := R) (U := U) (q := q)
+    obtain ⟨bank,_,_,compose⟩ := runAdjacentStagesWithReserve (P := P) (R := R) (U := U) (q := q)
       (A := prime) mid input
     let front := Fin.castAddEmb n (n := m)
     refine ⟨P ⊕ R,m+n,Sum.elim (fun g => embProg front Sum.inl (left g)) (fun g => embProg bank Sum.inr (right g)),
@@ -282,7 +326,11 @@ theorem packedHandoffFamilyWithSeed {Job U Config : Type} {q : ℕ} (weight : Li
       ∃ z, ParentStageWords (fun i => dst (i.castAdd 2)) dst (volume c) z F ∧ (stages++[last]).foldr (fun i cont a => ∃ b, effect c i a b ∧ cont b) (fun a => a = z) y
     obtain ⟨z,F,steps,done,bill,⟨user,r,rep,rest⟩,_⟩ :=
       compose left right a b u (embStk front S) (embStk (Fin.natAdd m) S) v C t
-        (price c i) ((stages++[last]).map (price c)).sum weight post ran paid (by
+        (price c i) ((stages++[last]).map (price c)).sum
+        (reserve (fun j => S.L (front (src (j.natAdd 142081)))) (fun j => S.R (front (src (j.natAdd 142081)))))
+        (reserve (fun j => C.L (mid (j.natAdd 142081))) (fun j => C.R (mid (j.natAdd 142081))))
+        (fun B => reserve (fun j => B.L (dst (j.natAdd 142081))) (fun j => B.R (dst (j.natAdd 142081))))
+        weight post ran paid (by
           intro v' C' user shared frame'
           have live : ParentStageWords (fun i => input (i.castAdd 2)) input (volume c) y C' := by
             refine ⟨fun i => (shared _).1.trans (ready.left i),fun i => (shared _).2.trans (ready.right i),?_⟩
@@ -299,11 +347,34 @@ theorem packedHandoffFamilyWithSeed {Job U Config : Type} {q : ℕ} (weight : Li
             have atJ := frame (j.natAdd m) outside
             simp only [adjacentStageStacks,Fin.addCases_right] at atJ
             exact ⟨(frame' j off).1.trans atJ.1,(frame' j off).2.trans atJ.2⟩)
+          have left : (fun j : Fin 2 => C'.L (input (j.natAdd 142081))) = (fun j => C.L (mid (j.natAdd 142081))) :=
+            funext (fun j => (shared _).1)
+          have right : (fun j : Fin 2 => C'.R (input (j.natAdd 142081))) = (fun j => C.R (mid (j.natAdd 142081))) :=
+            funext (fun j => (shared _).2)
+          simp only [left,right] at cost
           exact ⟨z,F,s,run,cost,preserved.trans (user.trans same),r,rep,rest⟩)
     have split : adjacentStageStacks (embStk front S) (embStk (Fin.natAdd m) S) = S := splitStacks S
     rw [split] at done bill
-    exact ⟨z,F,steps,r,done,bill,user,⟨rep.left,rep.right,rep.controls⟩,y,trace,rest⟩
+    exact ⟨z,F,steps,r,done,(fun js nd => (bill js nd).trans_eq (by simp only [List.cons_append,List.map_cons,List.sum_cons,Nat.add_assoc,Function.Embedding.trans_apply])),user,⟨rep.left,rep.right,rep.controls⟩,y,trace,rest⟩
 
+
+theorem packedHandoffFamilyWithSeed {Job U Config : Type} {q : ℕ} (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ) (volume : Config → ℕ)
+    (effect : ∀ c, Job → (Fin 142081 → Fin (volume c) → ZMod 2) → (Fin 142081 → Fin (volume c) → ZMod 2) → Prop)
+    (price : Config → Job → ℕ) (stages : List Job) (last : Job)
+    (admissible : ∀ {t : ℕ}, (Config → Stacks t prime) → Prop)
+    (join : ∀ {m n} (L : Config → Stacks m prime) (D : Config → Stacks n prime),
+      admissible L → admissible D → admissible (fun c => adjacentStageStacks (L c) (D c)))
+    (available : ∀ i ∈ stages++[last], ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U) (code : Pr P t q prime U)
+      (src dst : Fin (142081+2) ↪ Fin t) (prepared : Config → Stacks t prime), admissible prepared ∧ ∀ c,
+      PackedPieceHandoffWithCharge weight (volume c) (effect c i) body code src dst (prepared c) (price c i)) :
+    ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U) (code : Pr P t q prime U)
+      (src dst : Fin (142081+2) ↪ Fin t) (prepared : Config → Stacks t prime), admissible prepared ∧ ∀ c,
+      PackedPieceHandoffWithCharge weight (volume c) (fun x y => (stages++[last]).foldr
+        (fun i cont a => ∃ b, effect c i a b ∧ cont b) (fun a => a = y) x)
+        body code src dst (prepared c) ((stages++[last]).map (price c)).sum := by
+  have run := packedHandoffFamilyWithReserve (U := U) (q := q) weight (fun _ _ => 0) volume effect price stages last admissible join
+  simpa only [PackedPieceHandoffWithReserve,PackedPieceHandoffWithCharge,Nat.add_zero] using run (by
+    simpa only [PackedPieceHandoffWithReserve,PackedPieceHandoffWithCharge,Nat.add_zero] using available)
 
 theorem packedHandoffFamilyWithCharge {Job U Config : Type} {q : ℕ} (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ) (volume : Config → ℕ)
     (effect : ∀ c, Job → (Fin 142081 → Fin (volume c) → ZMod 2) → (Fin 142081 → Fin (volume c) → ZMod 2) → Prop)
@@ -345,14 +416,18 @@ theorem packedHandoffListWithCharge {Job U : Type} {q : ℕ} (weight : List (Fin
 -- The time-only list specialization can be restored from 30c56adf.
 
 /-- Relabel the output ports of a physical owner bank in one host instruction. -/
-private theorem permutedPiece {U : Type} {q : ℕ} (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ) (p : Equiv.Perm (Fin 142081)) :
+private theorem permutedPiece {U : Type} {q : ℕ} (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ) (reserve : (Fin 2 → List (Fin (prime+4))) → (Fin 2 → List (Fin (prime+4))) → ℕ) (p : Equiv.Perm (Fin 142081)) :
     ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst prepared, ∀ V,
-      PackedPieceHandoffWithCharge weight V (fun x y => y = x ∘ p) body code src dst prepared 1 := by
+      PackedPieceHandoffWithReserve weight reserve V (fun x y => y = x ∘ p) body code src dst prepared 1 := by
   let dst := (extendPermutation p 2).toEmbedding
   refine ⟨Empty,142081+2,Empty.elim,.act .done,Function.Embedding.refl _,dst,
     ⟨[],[],fun _ => [],fun _ => []⟩,?_⟩
   intro V x u S live _
-  refine ⟨u,S,1,x ∘ p,Exec.act .done _,by intro js _; omega,rfl,?_,rfl⟩
+  refine ⟨u,S,1,x ∘ p,Exec.act .done _,by
+    intro js _
+    change 1+reserve (fun i => S.L (extendPermutation p 2 (i.natAdd 142081))) (fun i => S.R (extendPermutation p 2 (i.natAdd 142081)))+_ ≤ _
+    simp only [extendRight,Function.Embedding.refl_apply]
+    omega,rfl,?_,rfl⟩
   constructor
   · intro i
     exact (congrArg S.L (extendLeft p i)).trans (live.left (p i))
@@ -365,6 +440,42 @@ private theorem permutedPiece {U : Type} {q : ℕ} (weight : List (Fin (prime+4)
 
 /-- In the PR589 node, changing the runtime dimensions changes the seed and
 the charges while the finite program and its owner tapes stay fixed. -/
+theorem packedNodeFamilyWithReserve {Config U : Type} {q : ℕ}
+    (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ)
+    (reserve : (Fin 2 → List (Fin (prime+4))) → (Fin 2 → List (Fin (prime+4))) → ℕ)
+    (w B W : Config → ℕ)
+    (idle stage : ∀ c, Fin 9 → OwnerArray (w c) (B c) (W c) → OwnerArray (w c) (B c) (W c) → Prop)
+    (price : Config → Piece → ℕ)
+    (admissible : ∀ {t : ℕ}, (Config → Stacks t prime) → Prop)
+    (fixed : ∀ {t} (S : Stacks t prime), admissible (fun _ => S))
+    (join : ∀ {m n} (L : Config → Stacks m prime) (D : Config → Stacks n prime),
+      admissible L → admissible D → admissible (fun c => adjacentStageStacks (L c) (D c))) :
+    let V := fun c => (prime^(w c))^16*(B c*((prime^(w c))^112*W c))
+    let effect := fun c => nodePieceEffect (w c) (B c) (W c) (idle c) (stage c)
+    let cost := fun c => Function.update (Function.update (price c) (.remainder 9) 1) .exchangeSides 1
+    (∀ i ∈ nodeProgram, i ≠ .exchangeSides → i ≠ .remainder 9 →
+      ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst, ∃ seed : Config → Stacks t prime, admissible seed ∧
+        ∀ c, PackedPieceHandoffWithReserve weight reserve (V c) (effect c i) body code src dst (seed c) (price c i)) →
+    ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst, ∃ seed : Config → Stacks t prime, admissible seed ∧
+      ∀ c, PackedPieceHandoffWithReserve weight reserve (V c) (fun x y => nodeProgram.foldr
+        (fun i cont a => ∃ b, effect c i a b ∧ cont b) (fun a => a = y) x) body code src dst (seed c)
+          (nodeProgram.map (cost c)).sum := by
+  intro V effect cost available
+  have schedule : nodeProgram = nodeProgram.dropLast ++ [.exchangeSides] := by decide +kernel
+  rw [schedule]
+  apply packedHandoffFamilyWithReserve (admissible := @admissible) (join := join)
+  intro i mem
+  rw [← schedule] at mem
+  by_cases exchange : i = .exchangeSides
+  · subst i
+    obtain ⟨P,t,body,code,src,dst,seed,run⟩ := permutedPiece (U := U) (q := q) weight reserve exchangeOwner
+    exact ⟨P,t,body,code,src,dst,fun _ => seed,fixed seed,fun c => by simpa [cost,effect,nodePieceEffect] using run (V c)⟩
+  by_cases terminal : i = .remainder 9
+  · subst i
+    obtain ⟨P,t,body,code,src,dst,seed,run⟩ := permutedPiece (U := U) (q := q) weight reserve (Equiv.refl _)
+    exact ⟨P,t,body,code,src,dst,fun _ => seed,fixed seed,fun c => by simpa [cost,effect,nodePieceEffect] using run (V c)⟩
+  simpa only [cost,Function.update_of_ne exchange,Function.update_of_ne terminal] using available i mem exchange terminal
+
 theorem packedNodeFamilyWithSeed {Config U : Type} {q : ℕ}
     (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ)
     (w B W : Config → ℕ)
@@ -384,21 +495,8 @@ theorem packedNodeFamilyWithSeed {Config U : Type} {q : ℕ}
       ∀ c, PackedPieceHandoffWithCharge weight (V c) (fun x y => nodeProgram.foldr
         (fun i cont a => ∃ b, effect c i a b ∧ cont b) (fun a => a = y) x) body code src dst (seed c)
           (nodeProgram.map (cost c)).sum := by
-  intro V effect cost available
-  have schedule : nodeProgram = nodeProgram.dropLast ++ [.exchangeSides] := by decide +kernel
-  rw [schedule]
-  apply packedHandoffFamilyWithSeed (admissible := @admissible) (join := join)
-  intro i mem
-  rw [← schedule] at mem
-  by_cases exchange : i = .exchangeSides
-  · subst i
-    obtain ⟨P,t,body,code,src,dst,seed,run⟩ := permutedPiece (U := U) (q := q) weight exchangeOwner
-    exact ⟨P,t,body,code,src,dst,fun _ => seed,fixed seed,fun c => by simpa [cost,effect,nodePieceEffect] using run (V c)⟩
-  by_cases terminal : i = .remainder 9
-  · subst i
-    obtain ⟨P,t,body,code,src,dst,seed,run⟩ := permutedPiece (U := U) (q := q) weight (Equiv.refl _)
-    exact ⟨P,t,body,code,src,dst,fun _ => seed,fixed seed,fun c => by simpa [cost,effect,nodePieceEffect] using run (V c)⟩
-  simpa only [cost,Function.update_of_ne exchange,Function.update_of_ne terminal] using available i mem exchange terminal
+  simpa only [PackedPieceHandoffWithReserve,PackedPieceHandoffWithCharge,Nat.add_zero] using
+    packedNodeFamilyWithReserve (U := U) (q := q) weight (fun _ _ => 0) w B W idle stage price (@admissible) fixed join
 
 theorem packedNodeFamilyWithCharge {Config U : Type} {q : ℕ}
     (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ)
@@ -491,7 +589,12 @@ private theorem bridgeCount : nodeProgram.countP isBridge = 9 := by decide +kern
 
 /-- Compile every bridge once, before the runtime dimensions are chosen.
 The bridge coefficient sums the individual linear tariffs in schedule order. -/
-theorem assembledPackedNodeFamilyWithSeed {U Config : Type} :
+theorem assembledPackedNodeFamilyWithReserve {U Config : Type} (reserve : (Fin 2 → List (Fin (prime+4))) → (Fin 2 → List (Fin (prime+4))) → ℕ)
+    (bridges : ∀ d s, Piece.bridge d s ∈ nodeProgram → ∃ states : ℕ, ∀ {q : ℕ}, states ≤ q →
+      ∃ (rate t : ℕ) (code : Pr Empty t q prime U), ∃ src dst seed, ∀ {V : ℕ}, 0 < V →
+        PackedPieceHandoffWithReserve cleanupWeight reserve V
+          (fun x y => y = fun j z => bridgeColumn d s (fun l => x l z) j)
+          Empty.elim code src dst seed (rate*V)) :
     ∃ states : ℕ, ∀ {q : ℕ}, states ≤ q → ∃ bridgeRate : ℕ, ∀
     (admissible : ∀ {t : ℕ}, (Config → Stacks t prime) → Prop)
     (fixed : ∀ {t} (S : Stacks t prime), admissible (fun _ => S))
@@ -502,22 +605,22 @@ theorem assembledPackedNodeFamilyWithSeed {U Config : Type} :
     ∀ (stage idle : ∀ c, Fin 9 → OwnerArray (w c) (B c) (tail c) → OwnerArray (w c) (B c) (tail c) → Prop)
       (sweepCost idleCost : Config → Fin 9 → ℕ),
     (∀ i, ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst, ∃ seed : Config → Stacks t prime, admissible seed ∧
-      ∀ c, PackedPieceHandoffWithCharge cleanupWeight (V c) (stage c i) body code src dst (seed c) (sweepCost c i)) →
+      ∀ c, PackedPieceHandoffWithReserve cleanupWeight reserve (V c) (stage c i) body code src dst (seed c) (sweepCost c i)) →
     (∀ i, ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst, ∃ seed : Config → Stacks t prime, admissible seed ∧
-      ∀ c, PackedPieceHandoffWithCharge cleanupWeight (V c) (idle c i) body code src dst (seed c) (idleCost c i)) →
+      ∀ c, PackedPieceHandoffWithReserve cleanupWeight reserve (V c) (idle c i) body code src dst (seed c) (idleCost c i)) →
     ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst, ∃ seed : Config → Stacks t prime, admissible seed ∧
-      ∀ c, PackedPieceHandoffWithCharge cleanupWeight (V c) (fun x y => nodeProgram.foldr
+      ∀ c, PackedPieceHandoffWithReserve cleanupWeight reserve (V c) (fun x y => nodeProgram.foldr
         (fun i cont a => ∃ b, nodePieceEffect (w c) (B c) (tail c) (idle c) (stage c) i a b ∧ cont b)
         (fun a => a = y) x) body code src dst (seed c)
           ((∑ i, sweepCost c i)+(∑ i, idleCost c i)+bridgeRate*V c+2) := by
   classical
   let states : Piece → ℕ
-    | .bridge d s => if h : Piece.bridge d s ∈ nodeProgram then (packedBridgeWithCharge d s h).choose else 0
+    | .bridge d s => if h : Piece.bridge d s ∈ nodeProgram then (bridges d s h).choose else 0
     | _ => 0
   refine ⟨(nodeProgram.map states).sum,?_⟩
   intro q fits
   have bridge d s (mem : Piece.bridge d s ∈ nodeProgram) :=
-    (packedBridgeWithCharge d s mem).choose_spec (U := U) (q := q) (by
+    (bridges d s mem).choose_spec (q := q) (by
       have h := (List.le_sum_of_mem (List.mem_map_of_mem (f := states) mem)).trans fits
       simpa only [states,dite_eq_left mem] using h)
   let rate : Piece → ℕ
@@ -532,7 +635,7 @@ theorem assembledPackedNodeFamilyWithSeed {U Config : Type} :
     | .bridge .. => 0
     | .exchangeSides => 1
   let price c p := base c p + rate p * V c
-  obtain ⟨P,t,body,code,src,dst,seed,valid,run⟩ := packedNodeFamilyWithSeed cleanupWeight w B tail idle stage price (@admissible) fixed join (by
+  obtain ⟨P,t,body,code,src,dst,seed,valid,run⟩ := packedNodeFamilyWithReserve cleanupWeight reserve w B tail idle stage price (@admissible) fixed join (by
     intro p mem exchange terminal
     cases p with
     | stage i => simpa [price,base,rate,nodePieceEffect] using sweep i
@@ -570,6 +673,56 @@ theorem assembledPackedNodeFamilyWithSeed {U Config : Type} :
       ranks,List.map_const',List.sum_replicate,nsmul_zero]
     omega
   simpa only [same,sum,baseSum,bridgeRate,Nat.add_right_comm _ 2] using run c
+
+/-- Assemble the nine compact stages and nine remainders with the actual
+bridge programs. Only the initial and final counter reserves enter the bill. -/
+theorem assembledPackedNodeWithCounters {U Config : Type} :
+    ∃ states : ℕ, ∀ {q : ℕ}, states ≤ q → ∃ bridgeRate : ℕ, ∀
+    (admissible : ∀ {t : ℕ}, (Config → Stacks t prime) → Prop)
+    (fixed : ∀ {t} (S : Stacks t prime), admissible (fun _ => S))
+    (join : ∀ {m n} (L : Config → Stacks m prime) (D : Config → Stacks n prime),
+      admissible L → admissible D → admissible (fun c => adjacentStageStacks (L c) (D c))), ∀ w B tail : Config → ℕ,
+    let V := fun c => (prime^(w c))^16*(B c*((prime^(w c))^112*tail c))
+    (∀ c, 0 < V c) →
+    ∀ (stage idle : ∀ c, Fin 9 → OwnerArray (w c) (B c) (tail c) → OwnerArray (w c) (B c) (tail c) → Prop)
+      (sweepCost idleCost : Config → Fin 9 → ℕ),
+    (∀ i, ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst, ∃ seed : Config → Stacks t prime, admissible seed ∧
+      ∀ c, PackedPieceHandoffWithReserve cleanupWeight (fun l r => ∑ j, cleanupWeight (l j) (r j)) (V c) (stage c i) body code src dst (seed c) (sweepCost c i)) →
+    (∀ i, ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst, ∃ seed : Config → Stacks t prime, admissible seed ∧
+      ∀ c, PackedPieceHandoffWithReserve cleanupWeight (fun l r => ∑ j, cleanupWeight (l j) (r j)) (V c) (idle c i) body code src dst (seed c) (idleCost c i)) →
+    ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst, ∃ seed : Config → Stacks t prime, admissible seed ∧
+      ∀ c, PackedPieceHandoffWithReserve cleanupWeight (fun l r => ∑ j, cleanupWeight (l j) (r j)) (V c) (fun x y => nodeProgram.foldr
+        (fun i cont a => ∃ b, nodePieceEffect (w c) (B c) (tail c) (idle c) (stage c) i a b ∧ cont b)
+        (fun a => a = y) x) body code src dst (seed c)
+          ((∑ i, sweepCost c i)+(∑ i, idleCost c i)+bridgeRate*V c+2) := by
+  apply assembledPackedNodeFamilyWithReserve
+  intro d s mem
+  obtain ⟨q,build⟩ := packedBridgeWithCounterReserve d s mem
+  exact ⟨q,fun fits => build (U := U) fits⟩
+
+theorem assembledPackedNodeFamilyWithSeed {U Config : Type} :
+    ∃ states : ℕ, ∀ {q : ℕ}, states ≤ q → ∃ bridgeRate : ℕ, ∀
+    (admissible : ∀ {t : ℕ}, (Config → Stacks t prime) → Prop)
+    (fixed : ∀ {t} (S : Stacks t prime), admissible (fun _ => S))
+    (join : ∀ {m n} (L : Config → Stacks m prime) (D : Config → Stacks n prime),
+      admissible L → admissible D → admissible (fun c => adjacentStageStacks (L c) (D c))), ∀ w B tail : Config → ℕ,
+    let V := fun c => (prime^(w c))^16*(B c*((prime^(w c))^112*tail c))
+    (∀ c, 0 < V c) →
+    ∀ (stage idle : ∀ c, Fin 9 → OwnerArray (w c) (B c) (tail c) → OwnerArray (w c) (B c) (tail c) → Prop)
+      (sweepCost idleCost : Config → Fin 9 → ℕ),
+    (∀ i, ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst, ∃ seed : Config → Stacks t prime, admissible seed ∧
+      ∀ c, PackedPieceHandoffWithCharge cleanupWeight (V c) (stage c i) body code src dst (seed c) (sweepCost c i)) →
+    (∀ i, ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst, ∃ seed : Config → Stacks t prime, admissible seed ∧
+      ∀ c, PackedPieceHandoffWithCharge cleanupWeight (V c) (idle c i) body code src dst (seed c) (idleCost c i)) →
+    ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst, ∃ seed : Config → Stacks t prime, admissible seed ∧
+      ∀ c, PackedPieceHandoffWithCharge cleanupWeight (V c) (fun x y => nodeProgram.foldr
+        (fun i cont a => ∃ b, nodePieceEffect (w c) (B c) (tail c) (idle c) (stage c) i a b ∧ cont b)
+        (fun a => a = y) x) body code src dst (seed c)
+          ((∑ i, sweepCost c i)+(∑ i, idleCost c i)+bridgeRate*V c+2) := by
+  apply assembledPackedNodeFamilyWithReserve (reserve := fun _ _ => 0)
+  intro d s mem
+  obtain ⟨q,build⟩ := packedBridgeWithCharge d s mem
+  exact ⟨q,fun fits => build (U := U) fits⟩
 
 theorem assembledPackedNodeFamily {U Config : Type} :
     ∃ states : ℕ, ∀ {q : ℕ}, states ≤ q → ∃ bridgeRate : ℕ, ∀ w B tail : Config → ℕ,

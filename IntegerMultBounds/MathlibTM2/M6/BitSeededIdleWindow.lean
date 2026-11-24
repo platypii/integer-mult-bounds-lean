@@ -10,14 +10,14 @@ open RecursiveInterchangeLayout
 
 /-- A fixed packed remainder program with an initializer composable by the
 nine-stage parent. Runtime division touches only the shared archive. -/
-theorem seededIdleWindow [M8.Machine.Net] {P U : Type} {N Q : ℕ}
+theorem seededIdleWindowWithReserve [M8.Machine.Net] {P U : Type} {N Q : ℕ}
     {body : P → Pr P N Q prime U} {dst : Fin (142081+2) ↪ Fin N} {leafRate : ℝ}
     {Child : Type} {childInput : Child → CutoffNodeInput} {permits : Child → ℕ → ℕ → Prop}
     (family : RecordTreeFamily childInput body dst leafRate permits)
     (column : columnCapacity ≤ Q) (swapCap : (@rowSwapBlock BinaryRadixEqualShared.supplierNet).states ≤ Q)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
     (headerCap : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q)
-    (i : Fin 9) :
+    (i : Fin 9) (reserve : (Fin 2 → List (Fin (prime+4))) → (Fin 2 → List (Fin (prime+4))) → ℕ) :
     let Job := Fin idleCopies.length
     let Label := (Job ⊕ (Σ _ : Job, Option (Empty ⊕ P))) ⊕ Job
     ∃ (T : ℕ) (table : Label → Pr Label T Q prime U) (code : Pr Label T Q prime U) (src dst : Fin (142081+2) ↪ Fin T)
@@ -31,7 +31,7 @@ theorem seededIdleWindow [M8.Machine.Net] {P U : Type} {N Q : ℕ}
       let branch j := if p.cutoff < (child j).width then idleRecordOverhead p fixed base swaps+
         cutoffTreeBudget D leafRate p.cutoff fuel (child j)
         else ⌊C*((child j).width : ℝ)^M8.Machine.BudgetBound.tau*volume prime (child j)⌋₊
-      PackedPieceHandoffWithCharge cleanupWeight p.cells
+      PackedPieceHandoffWithReserve cleanupWeight reserve p.cells
         (fun x y => ∀ j : Fin (p.idleWidth*142080),
           let addr := fun v => flatWindowEquiv (p.w+1) (p.idleWidth*142080) (windowState (p.w+1) v,j)
           readRoles addr y = (Piece.remainder i.val).run (readRoles addr x))
@@ -59,7 +59,7 @@ theorem seededIdleWindow [M8.Machine.Net] {P U : Type} {N Q : ℕ}
   let prepared p := flatStageSeed (adjacentStageStacks (saved p) (blankSeed 2))
   have blanks (t : ℕ) := LoadsPackedSeed.fixed nodeSeedWords CutoffNodeInput.cells (fun p =>
     Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) (Nat.mul_pos p.idlePositive (by decide))) (blankSeed t)
-  obtain ⟨packed,pack⟩ := packedOwnerTraversal owners table worker
+  obtain ⟨packed,pack⟩ := packedOwnerTraversalWithReserve owners table worker reserve
   refine ⟨_,fun f => embProg place id (embProg extra id (table f)),packed,(stageFan owners).trans place,returnedFan (stageFan owners),prepared,init,fixed,base,swaps,minimum,C,
     (((loader.join (blanks X)).join (blanks K)).join (blanks 2)).flatStage,nonneg,pos,?_⟩
   intro D enough p blocks positive rows align child fuel children branch
@@ -126,5 +126,33 @@ theorem seededIdleWindow [M8.Machine.Net] {P U : Type} {N Q : ℕ}
         And.intro (h.1.trans (g.1.trans old.1)) (h.2.trans (g.2.trans old.2)))
   rw [show (∑ j, price j) = 735*p.cells+∑ j, branch j from dispatchIdleWindowBill p branch] at cost
   exact ⟨y,F,z,m+n,lifted.seq run,(CleanupBound.place hostBank off paid).seq cost,last.trans (same.trans user),out,action⟩
+
+theorem seededIdleWindow [M8.Machine.Net] {P U : Type} {N Q : ℕ}
+    {body : P → Pr P N Q prime U} {dst : Fin (142081+2) ↪ Fin N} {leafRate : ℝ}
+    {Child : Type} {childInput : Child → CutoffNodeInput} {permits : Child → ℕ → ℕ → Prop}
+    (family : RecordTreeFamily childInput body dst leafRate permits)
+    (column : columnCapacity ≤ Q) (swapCap : (@rowSwapBlock BinaryRadixEqualShared.supplierNet).states ≤ Q)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
+    (headerCap : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q)
+    (i : Fin 9) :
+    let Job := Fin idleCopies.length
+    let Label := (Job ⊕ (Σ _ : Job, Option (Empty ⊕ P))) ⊕ Job
+    ∃ (T : ℕ) (table : Label → Pr Label T Q prime U) (code : Pr Label T Q prime U) (src dst : Fin (142081+2) ↪ Fin T)
+      (seed : CutoffNodeInput → Stacks T prime) (init fixed base swaps : ℕ) (minimum C : ℝ),
+      LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells seed ∧ 0 ≤ minimum ∧ 0 ≤ C ∧
+      ∀ D, minimum ≤ D → ∀ (p : CutoffNodeInput) blocks, p.root.Positive → 142080^(p.depth+1) ∣ p.root.rows →
+      p.root.beforeH = blocks*prime^(64*p.root.width) →
+      let child j := scheduledChild prime p.node (idleDirectoryIndex (i,j))
+      let fuel := p.depth-(p.path.length+1)
+      (∀ j, p.cutoff < (child j).width → ChildRecordAt childInput permits D leafRate p (idleDirectoryIndex (i,j))) →
+      let branch j := if p.cutoff < (child j).width then idleRecordOverhead p fixed base swaps+
+        cutoffTreeBudget D leafRate p.cutoff fuel (child j)
+        else ⌊C*((child j).width : ℝ)^M8.Machine.BudgetBound.tau*volume prime (child j)⌋₊
+      PackedPieceHandoffWithCharge cleanupWeight p.cells
+        (fun x y => ∀ j : Fin (p.idleWidth*142080),
+          let addr := fun v => flatWindowEquiv (p.w+1) (p.idleWidth*142080) (windowState (p.w+1) v,j)
+          readRoles addr y = (Piece.remainder i.val).run (readRoles addr x))
+        table code src dst (seed p) ((init*p.cells+(735*p.cells+(∑ j, branch j)+1))+(142081*(10*p.cells+10)+1)) := by
+  exact seededIdleWindowWithReserve family column swapCap capacity headerCap i (fun _ _ => 0)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

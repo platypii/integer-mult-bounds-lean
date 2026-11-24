@@ -25,6 +25,30 @@ private theorem largeRemainders (i : Fin 9) :
   revert i
   decide +kernel
 
+/-- An individual live idle record in the stopping band belongs to window
+six and uses exactly 42 parent atoms. -/
+theorem activeIdleRecordWidth (p : CutoffNodeInput) (i : Fin 9) (j : Fin idleCopies.length)
+    (band : 7*(p.w+1) ≤ p.cutoff)
+    (active : p.cutoff < (scheduledChild prime p.node (idleDirectoryIndex (i,j))).width) :
+    i = 6 ∧ (scheduledChild prime p.node (idleDirectoryIndex (i,j))).width = 42*(p.w+1) := by
+  let rank := nodeChildren5[(idleDirectoryIndex (i,j)).val]
+  have width : (scheduledChild prime p.node (idleDirectoryIndex (i,j))).width = rank*(p.w+1) := by
+    change rank*(p.node.width/64) = _
+    rw [p.width,Nat.mul_div_cancel_left _ (by decide : 0 < 64)]
+  have large : 7 < rank := Nat.lt_of_not_ge fun small =>
+    active.not_ge ((width.trans_le (Nat.mul_le_mul_right _ small)).trans band)
+  have member : rank ∈ (Piece.remainder i.val).children := by
+    rw [← idleCopies_ranks]
+    exact List.mem_map.mpr ⟨idleCopies[j.val],List.getElem_mem j.isLt,(idleDirectoryIndex_rank i j).symm⟩
+  obtain ⟨rs,h,hr⟩ := List.mem_flatten.mp member
+  obtain ⟨_,_,rfl⟩ := List.mem_map.mp h
+  have selected : rank ∈ (remainderRanks i).filter (7 < ·) := List.mem_filter.mpr ⟨hr,decide_eq_true large⟩
+  rw [largeRemainders] at selected
+  split at selected
+  · rename_i eq
+    exact ⟨eq,by rw [width,(List.mem_replicate.mp selected).2]⟩
+  · contradiction
+
 /-- In the cutoff band the only possible active idle calls are the nine rank-42
 owners per replica and class. Above the band every idle call is stopped. -/
 theorem idleWindowCutoffCharge (p : CutoffNodeInput) (i : Fin 9) (charge : ℕ)

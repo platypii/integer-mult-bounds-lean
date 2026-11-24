@@ -33,7 +33,8 @@ theorem sumIndexed {α : Type} (xs : List α) (index : α → Fin xs.length)
 
 /-- Compile the physical remainder once from its single-owner workers. At
 each runtime width the budget follows the actual idle directory indices. -/
-theorem uniformRemainderWindow {U : Type} {Q : ℕ} (i : Fin 9) :
+theorem uniformRemainderWindowWithReserve {U : Type} {Q : ℕ} (i : Fin 9)
+    (reserve : (Fin 2 → List (Fin (prime+4))) → (Fin 2 → List (Fin (prime+4))) → ℕ) :
     let Job := (Fin 32 × Fin 5) × Fin 222
     ∀ (T : Job → ℕ) (P : Job → Type) (slot : ∀ k, Fin (T k))
       (inner : ∀ k, P k → Pr (P k) (T k) Q prime U) (code : ∀ k, Pr (P k) (T k) Q prime U),
@@ -50,14 +51,14 @@ theorem uniformRemainderWindow {U : Type} {Q : ℕ} (i : Fin 9) :
             budget (idleDirectoryIndex (i,idleCopyIndex k))) ∧ z.user = v.user ∧
           Fallback.RecordPayload (slot k) (fun _ => blank) 0 y F ∧ parentIntervalRead i k.2 w W word y) →
       let prepared := idleWindowSeed origin seed
-      PackedPieceHandoffWithCharge cleanupWeight V (fun x y => ∀ j : Fin W,
+      PackedPieceHandoffWithReserve cleanupWeight reserve V (fun x y => ∀ j : Fin W,
         let addr := fun z => flatWindowEquiv w W (windowState w z,j)
         readRoles addr y = (Piece.remainder i.val).run (readRoles addr x))
         host worker src dst prepared
           ((∑ j : Fin idleCopies.length, budget (idleDirectoryIndex (i,j)))+1+(142081*(10*V+10)+1)) := by
   intro Job T P slot inner code
   obtain ⟨H,fan,host,program,source,allocate⟩ := uniformIdleWindowWithCharge i cleanupWeight T P slot inner code
-  obtain ⟨worker,pack⟩ := flatWordStageWithSeedCharge fan host program
+  obtain ⟨worker,pack⟩ := flatWordStageWithPreservedReserve fan host program reserve
   let place := SweepFile.Exit.chart 0 H
   classical
   let origin := Function.extend place source (fun _ => none)
@@ -94,10 +95,35 @@ theorem uniformRemainderWindow {U : Type} {Q : ℕ} (i : Fin 9) :
   rw [prepared]
   apply pack initial
   intro x u S words fresh
-  obtain ⟨F,z,n,y,ran,paid,user,out,acts,off⟩ := run x S u words.helperFan
+  obtain ⟨F,z,n,y,ran,paid,user,out,counters,acts,off⟩ := run x S u words.helperFan
     (fun k => ⟨words.left (idleTape i k),words.right (idleTape i k)⟩) fresh
   exact ⟨z,F,n,y,ran,fun js unique => by simpa only [Nat.add_assoc] using paid js unique,
-    user,out,parentIdleWindow_read i w W x y acts off⟩
+    user,out,congrArg₂ reserve (funext (fun j => (counters j).1)) (funext (fun j => (counters j).2)),parentIdleWindow_read i w W x y acts off⟩
+
+theorem uniformRemainderWindow {U : Type} {Q : ℕ} (i : Fin 9) :
+    let Job := (Fin 32 × Fin 5) × Fin 222
+    ∀ (T : Job → ℕ) (P : Job → Type) (slot : ∀ k, Fin (T k))
+      (inner : ∀ k, P k → Pr (P k) (T k) Q prime U) (code : ∀ k, Pr (P k) (T k) Q prime U),
+    ∃ (H : ℕ) (host : (Σ k, P k) → Pr (Σ k, P k) H Q prime U) (worker : Pr (Σ k, P k) H Q prime U)
+      (src dst : Fin (142081+2) ↪ Fin H) (origin : Fin H → Option (Σ k, Fin (T k))),
+    (∃ a b, a ≠ b ∧ origin a = none ∧ origin b = none) ∧
+    ∀ w W, let V := (prime^w)^128*W
+      ∀ (seed : ∀ k, Stacks (T k) prime) (budget : Fin nodeChildren5.length → ℕ),
+      (∀ k (word : Fin V → ZMod 2) v (D : Stacks (T k) prime), D.L (slot k) = [] →
+        D.R (slot k) = List.ofFn (fun j => SparseRoleCircuit.encode (word j)) →
+        (∀ j, j ≠ slot k → D.L j = (seed k).L j ∧ D.R j = (seed k).R j) →
+        ∃ z F n y, Exec (inner k) (code k) (mk v D) n (mk z F) ∧
+          (∀ js : List _, js.Nodup → n+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js D+
+            budget (idleDirectoryIndex (i,idleCopyIndex k))) ∧ z.user = v.user ∧
+          Fallback.RecordPayload (slot k) (fun _ => blank) 0 y F ∧ parentIntervalRead i k.2 w W word y) →
+      let prepared := idleWindowSeed origin seed
+      PackedPieceHandoffWithCharge cleanupWeight V (fun x y => ∀ j : Fin W,
+        let addr := fun z => flatWindowEquiv w W (windowState w z,j)
+        readRoles addr y = (Piece.remainder i.val).run (readRoles addr x))
+        host worker src dst prepared
+          ((∑ j : Fin idleCopies.length, budget (idleDirectoryIndex (i,j)))+1+(142081*(10*V+10)+1)) := by
+  simpa only [PackedPieceHandoffWithReserve,PackedPieceHandoffWithCharge,Nat.add_zero] using
+    uniformRemainderWindowWithReserve (U := U) (Q := Q) i (fun _ _ => 0)
 
 /-- A recursive handoff at each selected interval suffices for the complete
 flat remainder in parent coordinates. -/

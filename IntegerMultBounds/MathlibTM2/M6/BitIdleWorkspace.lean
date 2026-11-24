@@ -75,6 +75,8 @@ theorem uniformIdleWindowWithCharge {Q : ℕ} {U : Type} (i : Fin 9)
       (∀ t, (∀ j, fan j ≠ t) → D.L t = initial.L t ∧ D.R t = initial.R t) →
       ∃ F z n y, Exec host program (mk u D) n (mk z F) ∧
         (∀ js : List (Fin H), js.Nodup → n+tapeCharge weight js F ≤ tapeCharge weight js D+(idleCopies.map price).sum+1) ∧ z.user = u.user ∧ HelperFan fan y F ∧
+        (∀ j : Fin 2, let port := fan (j.natAdd 142081)
+          F.L port = D.L port ∧ F.R port = D.R port) ∧
         (∀ k, effect k (x (idleTape i k)) (y (idleTape i k))) ∧
         ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j := by
   intro Job T P slot inner code
@@ -87,7 +89,7 @@ theorem uniformIdleWindowWithCharge {Q : ℕ} {U : Type} (i : Fin 9)
   intro V seed price effect run
   have privateTapes := prepare seed
   intro initial x D u ready words stock
-  obtain ⟨y,F,z,n,exec,paid,user,final,acts,off⟩ := placedIdleWindowWithCharge i weight host fan x D u ready
+  obtain ⟨y,F,z,n,exec,paid,user,final,counters,acts,off⟩ := placedIdleWindowWithCharge i weight host fan x D u ready
     T P place slot inner Sigma.mk code price effect shared outside apart (fun _ _ => rfl) (by
       intro k v E keep
       obtain ⟨left,right⟩ := keep (slot k)
@@ -104,7 +106,7 @@ theorem uniformIdleWindowWithCharge {Q : ℕ} {U : Type} (i : Fin 9)
       obtain ⟨hl,hr⟩ := stock _ free
       exact ⟨(keep j).1.trans (hl.trans (privateTapes k j ne).1),
         (keep j).2.trans (hr.trans (privateTapes k j ne).2)⟩)
-  exact ⟨F,z,n,y,exec,paid,user,final,acts,off⟩
+  exact ⟨F,z,n,y,exec,paid,user,final,counters,acts,off⟩
 
 /-- Allocate the copy programs and their procedure labels together. Starting
 from exact owner words, each program receives its own seed outside its target. -/
@@ -133,7 +135,10 @@ theorem allocatedIdleWindowWithCharge {Q V : ℕ} {U : Type} (i : Fin 9)
         ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j := by
   intro Job T P slot inner code seed price effect run
   obtain ⟨H,fan,host,program,origin,prepare⟩ := uniformIdleWindowWithCharge i weight T P slot inner code
-  exact ⟨H,fan,host,program,idleWindowSeed origin seed,prepare seed price effect run⟩
+  refine ⟨H,fan,host,program,idleWindowSeed origin seed,?_⟩
+  intro x D u live words stock
+  obtain ⟨F,z,n,y,exec,paid,user,out,_,acts,off⟩ := prepare seed price effect run x D u live words stock
+  exact ⟨F,z,n,y,exec,paid,user,out,acts,off⟩
 
 theorem allocatedIdleWindow_exec {Q V : ℕ} {U : Type} (i : Fin 9) :
     let Job := (Fin 32 × Fin 5) × Fin 222

@@ -10,8 +10,9 @@ open RecursiveInterchangeLayout
 
 /-- Give an in-place owner traversal its two volume counters and materialize
 the returned words for the next packed stage. -/
-theorem packedOwnerTraversal {P U : Type} {T Q : ℕ} (owners : Fin 142081 ↪ Fin T)
-    (body : P → Pr P T Q prime U) (worker : Pr P T Q prime U) :
+theorem packedOwnerTraversalWithReserve {P U : Type} {T Q : ℕ} (owners : Fin 142081 ↪ Fin T)
+    (body : P → Pr P T Q prime U) (worker : Pr P T Q prime U)
+    (reserve : (Fin 2 → List (Fin (prime+4))) → (Fin 2 → List (Fin (prime+4))) → ℕ) :
     let bank := Fin.castAddEmb 2 (n := T)
     let fan := stageFan owners
     let place := Exit.chart 0 (T+2)
@@ -23,7 +24,7 @@ theorem packedOwnerTraversal {P U : Type} {T Q : ℕ} (owners : Fin 142081 ↪ F
         (∀ t, (∀ r, owners r ≠ t) → S.L t = prepared.L (place (bank t)) ∧ S.R t = prepared.R (place (bank t))) →
         ∃ y F z n, Exec body worker (mk u S) n (mk z F) ∧ CleanupBound S F n price ∧
           z.user = u.user ∧ (∀ r, RecordPayload (owners r) (fun _ => blank) 0 (y r) F) ∧ effect x y) →
-      PackedPieceHandoffWithCharge cleanupWeight V effect host code (fan.trans place) (returnedFan fan)
+      PackedPieceHandoffWithReserve cleanupWeight reserve V effect host code (fan.trans place) (returnedFan fan)
         prepared
         (price+(142081*(10*V+10)+1)) := by
   intro bank fan place host
@@ -31,7 +32,7 @@ theorem packedOwnerTraversal {P U : Type} {T Q : ℕ} (owners : Fin 142081 ↪ F
     simp [fan,bank,stageFan,@finSumFinEquiv_symm_apply_castAdd 142081 2]
   have counter (j : Fin 2) : fan (j.natAdd 142081) = j.natAdd T := by
     simp [fan,stageFan,@finSumFinEquiv_symm_apply_natAdd 142081 2]
-  obtain ⟨code,pack⟩ := flatWordStageWithSeedCharge fan (fun f => embProg bank id (body f)) (embProg bank id worker)
+  obtain ⟨code,pack⟩ := flatWordStageWithPreservedReserve fan (fun f => embProg bank id (body f)) (embProg bank id worker) reserve
   refine ⟨code,?_⟩
   intro V prepared price effect blankOutside run
   let seed := embStk place prepared
@@ -66,14 +67,34 @@ theorem packedOwnerTraversal {P U : Type} {T Q : ℕ} (owners : Fin 142081 ↪ F
     exact stock _ outside)
   obtain ⟨z,F,lifted,_,same,view,off⟩ := exec_emb (ι := id) (body' := fun f => embProg bank id (body f)) bank.injective (fun _ => rfl) exec u rfl S rfl
   rw [← view] at paid out
-  refine ⟨z,F,n,y,lifted,CleanupBound.place bank off paid,same.trans user,?_,result⟩
+  have preserved (j : Fin 2) : F.L (fan (j.natAdd 142081)) = S.L (fan (j.natAdd 142081)) ∧
+      F.R (fan (j.natAdd 142081)) = S.R (fan (j.natAdd 142081)) := by
+    rw [counter]
+    exact off _ (fun t => (suffixApart j t).symm)
+  refine ⟨z,F,n,y,lifted,CleanupBound.place bank off paid,same.trans user,?_,congrArg₂ reserve (funext (fun j => (preserved j).1)) (funext (fun j => (preserved j).2)),result⟩
   apply helperFan_of_payloads words.helperFan
   · intro r
     rw [shared]
     exact out r
-  · intro j
-    rw [counter]
-    exact off _ (fun t => (suffixApart j t).symm)
+  · exact preserved
+
+theorem packedOwnerTraversal {P U : Type} {T Q : ℕ} (owners : Fin 142081 ↪ Fin T)
+    (body : P → Pr P T Q prime U) (worker : Pr P T Q prime U) :
+    let bank := Fin.castAddEmb 2 (n := T)
+    let fan := stageFan owners
+    let place := Exit.chart 0 (T+2)
+    let host := fun f => embProg place id (embProg bank id (body f))
+    ∃ code, ∀ {V : ℕ} (prepared : Stacks (Exit.size 0 (T+2)) prime) (price : ℕ)
+      (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop),
+      (∀ t, (∀ k, place k ≠ t) → prepared.L t = [] ∧ prepared.R t = []) →
+      (∀ x u S, (∀ r, RecordPayload (owners r) (fun _ => blank) 0 (x r) S) →
+        (∀ t, (∀ r, owners r ≠ t) → S.L t = prepared.L (place (bank t)) ∧ S.R t = prepared.R (place (bank t))) →
+        ∃ y F z n, Exec body worker (mk u S) n (mk z F) ∧ CleanupBound S F n price ∧
+          z.user = u.user ∧ (∀ r, RecordPayload (owners r) (fun _ => blank) 0 (y r) F) ∧ effect x y) →
+      PackedPieceHandoffWithCharge cleanupWeight V effect host code (fan.trans place) (returnedFan fan)
+        prepared
+        (price+(142081*(10*V+10)+1)) := by
+  exact packedOwnerTraversalWithReserve owners body worker (fun _ _ => 0)
 
 /-- Run the cutoff window on a packed stage and return exact owner words and
 volume counters. Setup and handoff execute in the same procedure table. -/
