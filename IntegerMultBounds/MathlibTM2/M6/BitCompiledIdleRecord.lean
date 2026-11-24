@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitBorrowedIntervalDirectory
+public import IntegerMultBounds.MathlibTM2.M6.BitIdleDispatchSeed
 
 public import IntegerMultBounds.MathlibTM2.M6.BitDirectoryIntervalSplit
 
@@ -42,6 +43,11 @@ noncomputable def idleCallerWork {B : ℕ} (protectedPorts : Fin 78 ↪ Fin B) :
 private theorem inCallerWork {B : ℕ} (protectedPorts : Fin 78 ↪ Fin B) (t : Fin B) :
     t ∈ idleCallerWork protectedPorts ↔ ∀ k, protectedPorts k ≠ t := by simp [idleCallerWork]
 
+/-- The owner word occupies tape 24. The remaining ordinary tapes retain
+the seed produced by dispatch. -/
+def IdleDispatchReady {T : ℕ} (raw : Fin 72 ↪ Fin T) (w W L cutoff : ℕ) (S : Stacks T prime) : Prop :=
+  ∀ k, k ≠ 24 → S.L (raw k) = [] ∧ S.R (raw k) = idleDispatchWord w W L cutoff k.val
+
 /-- The installed active child runs on an interleaved word using the shared
 role descriptor and the ordinary dispatch registers. -/
 theorem compiledIdleRecord [M8.Machine.Net] {P U Config : Type} {N T Q : ℕ}
@@ -53,14 +59,8 @@ theorem compiledIdleRecord [M8.Machine.Net] {P U Config : Type} {N T Q : ℕ}
     (i : Fin 9) (j : Fin idleCopies.length) (board : Fin 113 ↪ Fin T)
     (splitter : Fin intervalSplitTapes ↪ Fin T) (apart : ∀ r k, splitter r ≠ board k) :
     let raw := (Fin.castLEEmb (by decide : 72 ≤ 113)).trans board
-    let headers := intervalDirectoryPorts.trans raw
-    let record := idleCallerRecord board splitter apart
     let fields := idleRolePorts.trans board
-    let h := idleHeaderArithmetic.trans board
     let src := raw 24
-    let tmp := raw 62
-    let count := raw 60
-    let saved := raw 61
     let caller := (Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)
     let embed := caller.trans (intervalExtend T N)
     ∃ minimum : ℝ, 0 ≤ minimum ∧ ∀ D : ℝ, minimum ≤ D →
@@ -77,25 +77,22 @@ theorem compiledIdleRecord [M8.Machine.Net] {P U Config : Type} {N T Q : ℕ}
       let wide := {lane with afterD := lane.afterD*142080}
       ∀ (word : Fin (volume prime wide) → ZMod 2) u S,
         RecordPayload (embed src) (fun _ => blank) 0 word S →
-        S.R (embed count) = [] → S.R (embed saved) = [] →
-        S.L (embed tmp) = [] → S.R (embed tmp) = [] →
+        IdleDispatchReady (raw.trans embed) p.w p.idleWidth c.root.width.size c.cutoff S →
         (∀ t ∈ work, S.L t = [] ∧ S.R t = []) →
-        (S.R (embed (h 0))).length = p.w →
-        S.R (embed (h 1)) = binSyms (prime^(p.w+1)).size (prime^(p.w+1)) →
         (∀ k, S.R (embed (fields k)) = (Routines.hdr (role p.node 142080) k).map bitSymbol) →
-        S.R (embed (raw 53)) = binSyms p.idleWidth.size p.idleWidth →
-        S.R (embed (raw 28)) = binSyms 1 1 →
-        (∀ k, S.L (embed (headers (copyRecordSources k))) = []) →
-        (S.R (embed (raw 71))).length = p.w+1 →
-        (∀ k : Fin 72, 59 ≤ k.val → k.val ≤ 65 → S.R (embed (raw k)) = []) →
-        S.R (embed (record 6)) = binSyms c.root.width.size c.cutoff →
         ∃ z F n, Exec table code (mk u S) n (mk z F) ∧ z.user = u.user ∧
           CleanupBound S F n (fixed*p.cells+
             (base+swaps*(@swapVolumeRate BinaryRadixEqualShared.supplierNet p.w))*c.cells+budget) ∧
           RecordPayload (embed src) (fun _ => blank) 0
             (Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word) F ∧
           ∀ t, t ≠ embed src → F.L t = S.L t ∧ F.R t = S.R t := by
-  intro raw headers record fields h src tmp count saved caller embed
+  intro raw fields src caller embed
+  let headers := intervalDirectoryPorts.trans raw
+  let record := idleCallerRecord board splitter apart
+  let h := idleHeaderArithmetic.trans board
+  let tmp := raw 62
+  let count := raw 60
+  let saved := raw 61
   let width := raw 59
   let small := idlePackPorts
   let live := (intervalOwners 142080).trans splitter
@@ -144,7 +141,24 @@ theorem compiledIdleRecord [M8.Machine.Net] {P U Config : Type} {N T Q : ℕ}
   let regs := raw.trans embed
   obtain ⟨wrapped,enter⟩ := withIntervalDirectory table regs code
   refine ⟨wrapped,fixed+4*work.length+41,rate*base,rate*swaps,?_⟩
-  intro p x c scheduled active children budget e lane wide word u S payload hc hs tl tr fresh clock radix inherited suffix unit markers atom blankRegs cut
+  intro p x c scheduled active children budget e lane wide word u S payload ready fresh inherited
+  have wordAt (k : Fin 72) (ne : k ≠ 24) := (ready k ne).2
+  have blankRegs (k : Fin 72) (lo : 59 ≤ k.val) (hi : k.val ≤ 65) : S.R (regs k) = [] := by
+    refine (wordAt k ((by decide : ∀ i : Fin 72, 59 ≤ i.val → i ≠ 24) k lo)).trans ?_
+    simp [idleDispatchWord,show k.val ≠ 2 by omega,show k.val ≠ 28 by omega,
+      show k.val ≠ 53 by omega,show k.val ≠ 71 by omega,show k.val ≠ 5 by omega,show k.val ≠ 6 by omega]
+  have hc := blankRegs 60 (by decide) (by decide)
+  have hs := blankRegs 61 (by decide) (by decide)
+  have tl := (ready 62 (by decide)).1
+  have tr := blankRegs 62 (by decide) (by decide)
+  have clock : (S.R (regs 5)).length = p.w := by rw [wordAt 5 (by decide)]; simp [idleDispatchWord]
+  have radix : S.R (regs 2) = binSyms (prime^(p.w+1)).size (prime^(p.w+1)) := wordAt 2 (by decide)
+  have suffix : S.R (regs 53) = binSyms p.idleWidth.size p.idleWidth := wordAt 53 (by decide)
+  have unit : S.R (regs 28) = binSyms 1 1 := wordAt 28 (by decide)
+  have markers (k : Fin 3) := (ready (intervalDirectoryPorts (copyRecordSources k))
+    ((by decide : ∀ i, intervalDirectoryPorts (copyRecordSources i) ≠ 24) k)).1
+  have atom : (S.R (regs 71)).length = p.w+1 := by rw [wordAt 71 (by decide)]; simp [idleDispatchWord]
+  have cut : S.R (regs 6) = binSyms c.root.width.size c.cutoff := wordAt 6 (by decide)
   let post := fun (l r : List (Fin (prime+4))) => RecordPayload (embed src) (fun _ => blank) 0
     (Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word)
     {S with L := fun _ => l, R := fun _ => r}
