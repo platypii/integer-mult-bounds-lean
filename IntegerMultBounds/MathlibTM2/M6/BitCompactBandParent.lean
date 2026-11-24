@@ -127,7 +127,8 @@ theorem compactBandParentWithRecords [M8.Machine.Net] {U Config : Type} :
   exact ⟨_,T i,table i,program i,src i,out i,seed i ∘ input,loadAtInput input (loader i),fun c =>
     run i D ((bound i).trans enough) (input c) (blocks c) (root c) (rows c) (label c) (children c i)⟩
 
-private structure ActiveBandRecord where
+/-- An aligned active node whose sweep children fit under the cutoff. -/
+structure ActiveBandRecord where
   input : CutoffNodeInput
   blocks : ℕ
   positive : input.root.Positive

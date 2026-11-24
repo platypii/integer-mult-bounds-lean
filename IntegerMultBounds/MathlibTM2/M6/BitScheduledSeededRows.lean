@@ -22,6 +22,43 @@ theorem CutoffNodeInput.packedCells (c : CutoffNodeInput) : volume prime (packed
   simp only [volume,packedDescriptor,one_mul,mul_one] at mass ⊢
   nlinarith only [mass]
 
+/-- Erase the temporary header words after MOVE and restore the caller on every
+tape except the payload. The initial cleanup charge pays for the erasure. -/
+theorem restoreMoveHeaders {P U : Type} {T Q N : ℕ} (table : P → Pr P T Q prime U)
+    {headers move : Pr P T Q prime U} {u a b : HS T Q prime U} {S D G : Stacks T prime}
+    {n m setup price : ℕ} {payload : Fin T} {y : Fin N → ZMod 2} (cleanup : List (Fin T))
+    (nd : cleanup.Nodup) (payloadOff : payload ∉ cleanup)
+    (fresh : ∀ j ∈ cleanup, S.L j = [] ∧ S.R j = [])
+    (prepare : Exec table headers (mk u S) n (mk a D)) (user : a.user = u.user)
+    (paid : CleanupBound S D n setup)
+    (frame : ∀ j, j ∉ cleanup → D.L j = S.L j ∧ D.R j = S.R j)
+    (run : Exec table move (mk a D) m (mk b G)) (same : b.user = a.user)
+    (bill : CleanupBound D G m price) (out : RecordPayload payload (fun _ => blank) 0 y G)
+    (kept : ∀ j, j ≠ payload → G.L j = D.L j ∧ G.R j = D.R j) :
+    ∃ z F t, Exec table ((headers.seq move).seq (clearWorkTapes cleanup)) (mk u S) t (mk z F) ∧
+      z.user = u.user ∧ CleanupBound S F t (setup+price+4*cleanup.length+1) ∧
+      RecordPayload payload (fun _ => blank) 0 y F ∧
+      ∀ j, j ≠ payload → F.L j = S.L j ∧ F.R j = S.R j := by
+  obtain ⟨z,zu,erase⟩ := clearWorkTapes_exec table cleanup nd b G
+  let F := clearSlots cleanup G
+  have clean j (mem : j ∈ cleanup) : F.L j = [] ∧ F.R j = [] := by simp [F,clearSlots,replaceBank,mem]
+  have cost := cleanupBound_clearBank cleanup nd (paid.seq bill) (Nat.le_refl (tapeCharge cleanupWeight cleanup G+1))
+    (F := F) clean (fun j => by by_cases h : j ∈ cleanup <;> simp [F,clearSlots,replaceBank,h])
+  have charge : tapeCharge cleanupWeight cleanup S = 4*cleanup.length := by
+    unfold tapeCharge
+    rw [List.map_congr_left (g := fun _ => 4) (fun j h => congrArg₂ cleanupWeight (fresh j h).1 (fresh j h).2)]
+    simp [List.map_const',Nat.mul_comm]
+  rw [charge] at cost
+  refine ⟨z,F,_,(prepare.seq run).seq erase,zu.trans (same.trans user),cost,?_,?_⟩
+  · intro j
+    simpa only [F,clearSlots,replaceBank,ite_eq_right payloadOff] using out j
+  · intro j ne
+    by_cases mem : j ∈ cleanup
+    · simp [F,clearSlots,replaceBank,mem,(fresh j mem).1,(fresh j mem).2]
+    · have g := kept j ne
+      have d := frame j mem
+      simpa [F,clearSlots,replaceBank,mem] using And.intro (g.1.trans d.1) (g.2.trans d.2)
+
 theorem scheduledSeededRows {P R U : Type} {T H Q scratchCount : ℕ}
     {reserve : (Fin 2 → List (Fin (prime+4))) → (Fin 2 → List (Fin (prime+4))) → ℕ}
     (body : P → Pr P T Q prime U) (entry : P) (src dst : Fin (142081+2) ↪ Fin T)
@@ -92,31 +129,14 @@ theorem scheduledSeededRows {P R U : Type} {T H Q scratchCount : ℕ}
     obtain ⟨k,rfl⟩ := (mem_frameSlots _ _).1 mem
     have eq := frame _ (bankOff k)
     rw [eq.1,eq.2]
-  obtain ⟨z,zu,erase⟩ := clearWorkTapes_exec table cleanup nd b G
-  let F := clearSlots cleanup G
-  have clean j (mem : j ∈ cleanup) : F.L j = [] ∧ F.R j = [] := by simp [F,clearSlots,replaceBank,mem]
-  have cost := cleanupBound_clearBank cleanup nd (paid.seq bill) (Nat.le_refl (tapeCharge cleanupWeight cleanup G+1))
-    (F := F) clean (fun j => by by_cases h : j ∈ cleanup <;> simp [F,clearSlots,replaceBank,h])
-  have charge : tapeCharge cleanupWeight cleanup S = 32 := by
-    unfold tapeCharge
-    rw [List.map_congr_left (g := fun _ => 4) (fun j h => congrArg₂ cleanupWeight (fresh j h).1 (fresh j h).2)]
-    simp [cleanup,moveSeedOutputs]
-  refine ⟨z,F,_,(prepare.seq run).seq erase,zu.trans (same.trans user),?_,?_,?_⟩
-  · rw [charge] at cost
-    apply (workerCost.weaken (charged := true) cost)
-    change 512022*p.cells+(nodeHeaderSetupRate+25)*c.cells+28+
-      (rate*c.cells+4*scratchCount+1+(price+1000000034*volume prime wide+49)+4*slots.length+1+
-      (prime+8)*(slots.map (fun j => (D.L j).length+(D.R j).length+2)).sum)+32+1 ≤ _
-    rw [sameMass,size]
-    simp only [Nat.add_mul,Nat.mul_add]
-    omega
-  · intro j
-    simpa only [F,clearSlots,replaceBank,ite_eq_right payloadOff] using out j
-  · intro j ne
-    by_cases mem : j ∈ cleanup
-    · simp [F,clearSlots,replaceBank,mem,(fresh j mem).1,(fresh j mem).2]
-    · have g := kept j ne
-      have d := frame j mem
-      simpa [F,clearSlots,replaceBank,mem] using And.intro (g.1.trans d.1) (g.2.trans d.2)
+  obtain ⟨z,F,t,exec,user,cost,result,restored⟩ := restoreMoveHeaders table cleanup nd payloadOff
+    fresh prepare user paid frame run same bill out kept
+  refine ⟨z,F,t,exec,user,workerCost.weaken (charged := true) cost ?_,result,restored⟩
+  change 512022*p.cells+(nodeHeaderSetupRate+25)*c.cells+28+
+    (rate*c.cells+4*scratchCount+1+(price+1000000034*volume prime wide+49)+4*slots.length+1+
+    (prime+8)*(slots.map (fun j => (D.L j).length+(D.R j).length+2)).sum)+32+1 ≤ _
+  rw [sameMass,size]
+  simp only [Nat.add_mul,Nat.mul_add]
+  omega
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
