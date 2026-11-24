@@ -332,10 +332,10 @@ theorem correctedBorrowedPortReads (n : Fin 9) (w B K : ℕ)
 
 /-- Execute entry, the embedded restored sweep and exit on one host. The two
 passes reuse the same swap scratch and read the same caller words. -/
-theorem correctedFanWorker [M8.Machine.Net] (stage : Fin 9) :
+theorem correctedFanWorkerWithReserve [M8.Machine.Net] (stage : Fin 9) :
     ∃ states space : ℕ, ∀ {P U : Type} {t T K Q : ℕ}
       (body : P → Pr P t Q prime U) (worker : Pr P t Q prime U)
-      (localFan : Fin (142081+2) ↪ Fin t) (mid : Fin t ↪ Fin T)
+      (localFan : Fin (142081+2) ↪ Fin t) (slots : List (Fin t)) (_ : slots.Nodup) (mid : Fin t ↪ Fin T)
       (entry ret : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (caller : Fin 6 ↪ Fin T),
       let outer := mid.trans (Fin.castAddEmb (24+K))
       let host := fun f => embProg outer id (body f)
@@ -349,7 +349,8 @@ theorem correctedFanWorker [M8.Machine.Net] (stage : Fin 9) :
       (∀ (x : Fin 142081 → Fin V → ZMod 2) u S, HelperFan localFan x S →
         (∀ j, (∀ i, localFan i ≠ j) → S.L j = initial.L j ∧ S.R j = initial.R j) →
         ∃ z F m y, Exec body worker (mk u S) m (mk z F) ∧ z.user = u.user ∧
-          CleanupBound S F m price ∧ HelperFan localFan y F ∧ RestoredBorrowedStage stage (w+1) B K' x y) →
+          (∀ js, js.Nodup → m+tapeCharge cleanupWeight slots F+tapeCharge cleanupWeight js F ≤
+            tapeCharge cleanupWeight js S+price+tapeCharge cleanupWeight slots S) ∧ HelperFan localFan y F ∧ RestoredBorrowedStage stage (w+1) B K' x y) →
       ∀ (x : Fin 142081 → Fin V → ZMod 2) u S, HelperFan (localFan.trans outer) x S →
       (∀ j, (∀ i, localFan i ≠ j) → S.L (outer j) = initial.L j ∧ S.R (outer j) = initial.R j) →
       S.R ((caller 0).castAdd _) = binSyms M.size M → S.R ((caller 1).castAdd _) = binSyms W.size W →
@@ -359,19 +360,21 @@ theorem correctedFanWorker [M8.Machine.Net] (stage : Fin 9) :
       (∀ i, i.val ≠ 24 → S.L ((ret i).castAdd _) = [] ∧ S.R ((ret i).castAdd _) = []) →
       (∀ j : Fin (24+K), S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
       ∃ z F m y, Exec host code (mk u S) m (mk z F) ∧ z.user = u.user ∧
-        CleanupBound S F m (rate*V+coreRate*M8.RevMachine.LeafCore.coreCost V (w+1)+price) ∧
+        (∀ js, js.Nodup → m+tapeCharge cleanupWeight (slots.map outer) F+tapeCharge cleanupWeight js F ≤
+          tapeCharge cleanupWeight js S+(rate*V+coreRate*M8.RevMachine.LeafCore.coreCost V (w+1)+price)+
+            tapeCharge cleanupWeight (slots.map outer) S) ∧
         HelperFan (localFan.trans outer) y F ∧
         ∀ (b : Fin B) (t : Fin K') (g : LabelPadding.Label 64 (w+1)), borrowedStageRead stage b t g y = (Piece.stage stage).run (borrowedStageRead stage b t g x) := by
   obtain ⟨a,b,enter⟩ := correctionFan stage false
   obtain ⟨c,d,leave⟩ := correctionFan stage true
   refine ⟨max a c,max b d,?_⟩
-  intro P U t T K Q body worker localFan mid entry ret caller outer host cap room ea ra ca ec rc re
+  intro P U t T K Q body worker localFan slots unique mid entry ret caller outer host cap room ea ra ca ec rc re
   let fan := localFan.trans mid
   obtain ⟨A,e,f,beginRun⟩ := enter host entry fan caller ((le_max_left ..).trans cap)
     ((le_max_left ..).trans room) ec (fun i j => ea i _) (fun r => ca 3 _)
   obtain ⟨D,g,h,endRun⟩ := leave host ret fan caller ((le_max_right ..).trans cap)
     ((le_max_right ..).trans room) rc (fun i j => ra i _) (fun r => ca 3 _)
-  refine ⟨(A.seq (embProg outer id worker)).seq D,e+g,f+h,?_⟩
+  refine ⟨(A.seq (embProg outer id worker)).seq D,2*(e+g),2*(f+h),?_⟩
   intro w B K' M W V pos price initial execute x u S live stock modulus count unit prec tmp saved vacant fresh free
   obtain ⟨p,v,E,i,start,user,paid,inFan,inAct,inOff,empty,_,frame⟩ :=
     beginRun w W pos x u S modulus count unit prec tmp saved vacant live free
@@ -410,7 +413,62 @@ theorem correctedFanWorker [M8.Machine.Net] (stage : Fin 9) :
         (fun r => inOff _ (fun l => source_ne_target stage l r))
         (fun r => outOff _ (fun l => (source_ne_target stage r l).symm)) action.1)⟩
   rw [← project] at bill
-  have total := (paid.seq (CleanupBound.place outer off bill)).seq cost
-  simpa only [Nat.add_mul,Nat.add_assoc,Nat.add_comm,Nat.add_left_comm] using total
+  let reserve (A : Stacks (T+(24+K)) prime) := tapeCharge cleanupWeight (slots.map outer) A
+  have view (A : Stacks (T+(24+K)) prime) : tapeCharge cleanupWeight slots (embStk outer A) = reserve A := by
+    simp [reserve,tapeCharge,embStk,Function.comp_def]
+  have midBill := placedCleanup_cost_le outer E G cleanupWeight (j+reserve G) (price+reserve E) off
+    (fun is nd => by simpa only [view,Nat.add_assoc] using bill is nd)
+  intro js nd
+  have first := paid js nd
+  have lastCost := cost js nd
+  have before := paid (slots.map outer) (unique.map outer.injective)
+  have after := cost (slots.map outer) (unique.map outer.injective)
+  have middleCost := midBill js nd
+  change i+tapeCharge cleanupWeight js E ≤ tapeCharge cleanupWeight js S+_ at first
+  change k+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js G+_ at lastCost
+  change i+reserve E ≤ reserve S+_ at before
+  change k+reserve F ≤ reserve G+_ at after
+  change i+j+k+reserve F+_ ≤ _+_+reserve S
+  simp only [V,M,Nat.add_mul,Nat.mul_assoc] at *
+  omega
+
+theorem correctedFanWorker [M8.Machine.Net] (stage : Fin 9) :
+    ∃ states space : ℕ, ∀ {P U : Type} {t T K Q : ℕ}
+      (body : P → Pr P t Q prime U) (worker : Pr P t Q prime U)
+      (localFan : Fin (142081+2) ↪ Fin t) (mid : Fin t ↪ Fin T)
+      (entry ret : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (caller : Fin 6 ↪ Fin T),
+      let outer := mid.trans (Fin.castAddEmb (24+K))
+      let host := fun f => embProg outer id (body f)
+      states ≤ Q → space ≤ K → (∀ i j, entry i ≠ mid j) → (∀ i j, ret i ≠ mid j) →
+      (∀ i j, caller i ≠ mid j) → (∀ i j, entry i ≠ caller j) →
+      (∀ i j, ret i ≠ caller j) → (∀ i j, ret i ≠ entry j) →
+      ∃ code rate coreRate, ∀ w B K', let M := prime^(w+1)
+      let W := (M^112*B)*prime^(64*((w+1)*64))*K'
+      let V := M^16*W
+      0 < W → ∀ price (initial : Stacks t prime),
+      (∀ (x : Fin 142081 → Fin V → ZMod 2) u S, HelperFan localFan x S →
+        (∀ j, (∀ i, localFan i ≠ j) → S.L j = initial.L j ∧ S.R j = initial.R j) →
+        ∃ z F m y, Exec body worker (mk u S) m (mk z F) ∧ z.user = u.user ∧
+          CleanupBound S F m price ∧ HelperFan localFan y F ∧ RestoredBorrowedStage stage (w+1) B K' x y) →
+      ∀ (x : Fin 142081 → Fin V → ZMod 2) u S, HelperFan (localFan.trans outer) x S →
+      (∀ j, (∀ i, localFan i ≠ j) → S.L (outer j) = initial.L j ∧ S.R (outer j) = initial.R j) →
+      S.R ((caller 0).castAdd _) = binSyms M.size M → S.R ((caller 1).castAdd _) = binSyms W.size W →
+      S.R ((caller 2).castAdd _) = binSyms 1 1 → S.R ((caller 3).castAdd _) = binSyms (w+1).size (w+1) →
+      S.R ((caller 4).castAdd _) = [] → S.R ((caller 5).castAdd _) = [] →
+      (∀ i, i.val ≠ 24 → S.L ((entry i).castAdd _) = [] ∧ S.R ((entry i).castAdd _) = []) →
+      (∀ i, i.val ≠ 24 → S.L ((ret i).castAdd _) = [] ∧ S.R ((ret i).castAdd _) = []) →
+      (∀ j : Fin (24+K), S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
+      ∃ z F m y, Exec host code (mk u S) m (mk z F) ∧ z.user = u.user ∧
+        CleanupBound S F m (rate*V+coreRate*M8.RevMachine.LeafCore.coreCost V (w+1)+price) ∧
+        HelperFan (localFan.trans outer) y F ∧
+        ∀ (b : Fin B) (t : Fin K') (g : LabelPadding.Label 64 (w+1)), borrowedStageRead stage b t g y = (Piece.stage stage).run (borrowedStageRead stage b t g x) := by
+  obtain ⟨q,k,build⟩ := correctedFanWorkerWithReserve stage
+  refine ⟨q,k,?_⟩
+  intro P U t T K Q body worker fan mid entry ret caller outer host cap room ea ra ca ec rc re
+  obtain ⟨code,rate,coreRate,run⟩ := build body worker fan [] (by simp) mid entry ret caller cap room ea ra ca ec rc re
+  refine ⟨code,rate,coreRate,?_⟩
+  intro w B K' M W V pos price initial execute
+  simpa only [List.map_nil,tapeCharge,List.sum_nil,Nat.add_zero,CleanupBound,cleanupWeight,V,M,W] using
+    run w B K' pos price initial (by simpa only [tapeCharge,List.map_nil,List.sum_nil,Nat.add_zero,CleanupBound,cleanupWeight,V,M,W] using execute)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

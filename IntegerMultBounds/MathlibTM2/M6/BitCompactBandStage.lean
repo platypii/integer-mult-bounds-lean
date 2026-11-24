@@ -627,6 +627,63 @@ private theorem correctedSweepRead {w B K : ℕ} (n : Fin 9)
     rfl
   exact (read y).trans ((action b t g).trans (congrArg (Piece.stage n).run (read x).symm))
 
+/-- Run both port corrections from the six prepared dimension tapes, retaining the
+inner worker's record loader and the live-frame allowance. -/
+theorem placedCorrectedCompactStage [M8.Machine.Net] (n : Fin 9) :
+    ∃ (t states space : ℕ) (fan : Fin (142081+2) ↪ Fin t), ∀ {U : Type} {Q : ℕ}, states ≤ Q →
+      ∃ (P : Type) (body : P → Pr P t Q prime U) (seed : CutoffNodeInput → Stacks t prime),
+      LoadsPackedSeed nodeSeedWords CutoffNodeInput.cells seed ∧
+      ∀ {T K : ℕ} (mid : Fin t ↪ Fin T) (entry ret : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (caller : Fin 6 ↪ Fin T),
+      let outer := mid.trans (Fin.castAddEmb (24+K))
+      let live := fan.trans outer
+      space ≤ K → (∀ i j, entry i ≠ mid j) → (∀ i j, ret i ≠ mid j) →
+      (∀ i j, caller i ≠ mid j) → (∀ i j, entry i ≠ caller j) →
+      (∀ i j, ret i ≠ caller j) → (∀ i j, ret i ≠ entry j) →
+      ∃ (code : Pr P (T+(24+K)) Q prime U) (rate coreRate : ℕ) (stageRate : ℝ),
+      ∀ (c : CutoffNodeInput), 7*(c.w+1) ≤ c.cutoff → ∀ σ : ℝ, 0 ≤ σ →
+      ∀ (x : Fin 142081 → Fin ((prime^(c.w+1))^16*c.stageWidth) → ZMod 2) u S, HelperFan live x S →
+      (∀ j, (∀ i, fan i ≠ j) → S.L (outer j) = (seed c).L j ∧ S.R (outer j) = (seed c).R j) →
+      (∀ i : Fin 6, S.R ((caller i).castAdd _) = (compactDimensionSeed c).R (i.castAdd 1)) →
+      (∀ i, i.val ≠ 24 → S.L ((entry i).castAdd _) = [] ∧ S.R ((entry i).castAdd _) = []) →
+      (∀ i, i.val ≠ 24 → S.L ((ret i).castAdd _) = [] ∧ S.R ((ret i).castAdd _) = []) →
+      (∀ j : Fin (24+K), S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
+      ∃ z F m y, Exec (fun f => embProg outer id (body f)) code (mk u S) m (mk z F) ∧
+        z.user = u.user ∧ HelperFan live y F ∧
+        (∀ j, sweepRoles n 0 j (sweepView c.sweepVolume y) = (Piece.stage n).run (sweepRoles n 0 j (sweepView c.sweepVolume x))) ∧
+        ∀ js, js.Nodup → m+tapeCharge cleanupWeight (frameSlots live) F+tapeCharge cleanupWeight js F ≤
+          tapeCharge cleanupWeight js S+(rate*c.cells+coreRate*LeafCore.coreCost c.cells (c.w+1)+
+          ⌊stageRate*((c.node.width : ℝ)^σ*(c.cutoff : ℝ)^(M8.Machine.BudgetBound.tau-σ)*c.cells)⌋₊)+
+          tapeCharge cleanupWeight (frameSlots live) S := by
+  obtain ⟨t,q,fan,build⟩ := seededCompactBandStage n
+  obtain ⟨r,k,charts⟩ := correctedFanWorkerWithReserve n
+  refine ⟨t,max q r,k,fan,?_⟩
+  intro U Q fits
+  obtain ⟨P,body,worker,C,seed,load,stage⟩ := build (U := U) ((le_max_left ..).trans fits)
+  refine ⟨P,body,seed,load,?_⟩
+  intro T K mid entry ret caller outer live room ea ra ca ec rc re
+  obtain ⟨code,rate,coreRate,run⟩ := charts body worker fan (frameSlots fan) (frameSlots_nodup fan) mid entry ret caller
+    ((le_max_right ..).trans fits) room ea ra ca ec rc re
+  refine ⟨code,rate,coreRate,C,?_⟩
+  intro c band σ nonneg x u S ready stock dims vacant fresh free
+  let price := ⌊C*((c.node.width : ℝ)^σ*(c.cutoff : ℝ)^(M8.Machine.BudgetBound.tau-σ)*c.cells)⌋₊
+  have pos : 0 < c.stageWidth := Nat.pos_of_mul_pos_left (c.stageCells ▸
+    (show 0 < c.cells from Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)
+      (Nat.mul_pos c.idlePositive (by decide))))
+  obtain ⟨z,F,m,y,exec,user,bill,out,act⟩ := run c.w c.B c.stageFactor pos price (seed c) (by
+    intro data v D inFan privateTapes
+    obtain ⟨z,F,m,y,exec,user,out,act,cost⟩ := stage c band data v D inFan privateTapes
+    exact ⟨z,F,m,y,exec,user,cost σ nonneg,out,act⟩) x u S ready stock
+    (dims 0) (dims 1) (dims 2) (dims 3) (dims 4) (dims 5) vacant fresh free
+  refine ⟨z,F,m,y,exec,user,out,correctedSweepRead n c.sweepVolume x y act,?_⟩
+  have slots : (frameSlots fan).map outer = frameSlots live := by
+    simp [frameSlots,live,List.map_reverse,Function.comp_def]
+  intro js nd
+  have h := bill js nd
+  change m+_+_ ≤ _+(rate*((prime^(c.w+1))^16*c.stageWidth)+coreRate*LeafCore.coreCost
+    ((prime^(c.w+1))^16*c.stageWidth) (c.w+1)+price)+_ at h
+  dsimp only [outer] at slots
+  simpa only [slots,c.stageCells] using h
+
 /-- Correct the input and output ports of the seeded compact worker. Every
 borrowed spectator now sees the scheduled stage in its own coordinates. -/
 theorem correctedCompactBandStage [M8.Machine.Net] (n : Fin 9) :
