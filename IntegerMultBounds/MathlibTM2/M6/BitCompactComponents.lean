@@ -64,13 +64,13 @@ theorem compactPhaseComponent [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5)
   obtain ⟨C,tapes,regs,T,states,fan,bank,build⟩ := compactPhase n p b
   refine ⟨C,tapes,regs,T,states,fan,bank,?_⟩
   intro P U Q cap large f
-  obtain ⟨body,active,code,rate,run⟩ := build cap large f
+  obtain ⟨body,active,code,rate,_,run⟩ := build cap large f
   refine ⟨body,active,code,rate,?_⟩
   intro c w K blocks W V child
   obtain ⟨pos,size,coords,prepare⟩ := run c
   refine ⟨pos,fun j => ⟨size j,coords j⟩,?_⟩
   intro shared
-  obtain ⟨seed,view,execute⟩ := prepare shared
+  obtain ⟨seed,view,_,execute⟩ := prepare shared
   refine ⟨seed,view,?_⟩
   intro leafRate time enough price recurse x u S ready fresh
   obtain ⟨z,F,t,exec,user,paid,out⟩ := execute leafRate time enough recurse x u S ready fresh

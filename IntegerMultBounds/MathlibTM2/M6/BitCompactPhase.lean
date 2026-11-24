@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitCompactScalarMove
+public import IntegerMultBounds.MathlibTM2.M6.BitCompactWorkerSeeds
 
 /-! Compose one scalar phase of the PR589 invocation on shared owner tapes. -/
 @[expose] public section
@@ -8,6 +9,23 @@ namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover.Fallback
 open M8.RevMachine RecursiveInterchangeLayout Certificates.PR589
 open Shared50ModularControl (prime)
+
+/-- The six dimension and scratch tapes and the cutoff word follow the phase bank. -/
+def PhaseSeedExec {T Q k : ℕ} {P U : Type} (host : P → Pr P T Q prime U)
+    (setup : Pr P (T+7) Q prime U) (fan : Fin k ↪ Fin T) (count : ℕ)
+    (c : CutoffNodeInput) (prepared : Stacks T prime) : Prop :=
+  let place := Fin.castAddEmb 7 (n := T)
+  let ext := Fin.natAddEmb T (m := 7)
+  let M := prime^(c.w+1)
+  let W := c.stageWidth
+  ∀ u S, S.R (ext 0) = binSyms M.size M → S.R (ext 1) = binSyms W.size W →
+    S.R (ext 2) = binSyms 1 1 → S.R (ext 3) = binSyms (c.w+1).size (c.w+1) →
+    S.R (ext 4) = [] → S.R (ext 5) = [] → S.R (ext 6) = binSyms c.root.width.size c.cutoff →
+    (∀ j, (∀ h, fan h ≠ j) → S.L (place j) = [] ∧ S.R (place j) = []) →
+    ∃ z F t, Exec (fun g => embProg place id (host g)) setup (mk u S) t (mk z F) ∧ z.user = u.user ∧
+      CleanupBound S F t (178*count*c.cells+count*(8*(S.R (ext 6)).length+6)+2) ∧
+      (∀ j, (∀ h, fan h ≠ j) → F.L (place j) = prepared.L j ∧ F.R (place j) = prepared.R j) ∧
+      ∀ h, F.L (place (fan h)) = S.L (place (fan h)) ∧ F.R (place (fan h)) = S.R (place (fan h))
 
 /-- Each MOVE runs once in phase order. All local work has a fixed linear
 bound, and the owner charge at intermediate states cancels. -/
@@ -26,7 +44,7 @@ theorem compactPhase [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (afterCo
       ∃ body : ∀ j, Option (WorkerLabel P) → Pr (Option (WorkerLabel P)) (tapes j) Q prime U,
       (∀ j g, body j (some (.active g)) = large j g) ∧
       let host := fun g : J × Option (WorkerLabel P) => embProg (bank g.1) (Prod.mk g.1) (body g.1 g.2)
-      ∃ (code : Pr (J × Option (WorkerLabel P)) T Q prime U) (localRate : ℕ), ∀ c : CutoffNodeInput,
+      ∃ (code : Pr (J × Option (WorkerLabel P)) T Q prime U) (localRate : ℕ) (setup : Pr (J × Option (WorkerLabel P)) (T+7) Q prime U), ∀ c : CutoffNodeInput,
       let W := c.stageWidth
       let V := (prime^(c.w+1))^16*W
       let child := fun j : J => scheduledChild prime c.node (phaseChildPositions.choose (n,p,index j))
@@ -34,6 +52,7 @@ theorem compactPhase [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (afterCo
       ∃ (pos : ∀ j, Fin (volume prime (child j)) ≃ Fin V) (size : ∀ j, volume prime (lane j) = V),
       (∀ j, InheritedIntervalPositions (child j) (lane j) (size j) (pos j)) ∧
       ∀ shared : Stacks (142081+2) prime, ∃ prepared : Stacks T prime, embStk fan prepared = shared ∧
+      PhaseSeedExec host setup fan (selectedPhaseSchedule afterCopy).1.length c prepared ∧
       ∀ (rate : ℝ) (time : J → ℕ), C ≤ rate →
       let price := fun j => if c.cutoff < (child j).width then time j else
         ⌊(rate*((child j).width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime (child j)⌋₊
@@ -47,8 +66,8 @@ theorem compactPhase [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (afterCo
         HelperFan fan (invocationPhaseOutput (w := c.w+1) (W := W) n p afterCopy x) F := by
   classical
   intro J index interval
-  choose C tapes states regs owners basis _ make using cutoffScalarMove n p afterCopy
-  obtain ⟨T,fan,bank,atOwner,_,prepare,apart⟩ := copyWindowBanks tapes owners
+  choose C tapes states regs owners basis owned make using cutoffScalarMove n p afterCopy
+  obtain ⟨T,fan,bank,atOwner,cover,prepare,apart⟩ := copyWindowBanks tapes owners
   let cap := fun j : J => max (states j) (stoppedIntervalMachine (interval j).1 (interval j).2).1
   refine ⟨∑ j, |C j|,tapes,regs,T,Finset.univ.sup cap,fan,bank,?_⟩
   intro P U Q capacity large f
@@ -58,15 +77,41 @@ theorem compactPhase [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (afterCo
   refine ⟨body,active,?_⟩
   intro host
   let placed := fun j => embProg (bank j) (Prod.mk j) (code j)
+  let place := Fin.castAddEmb 7 (n := T)
+  let ext := Fin.natAddEmb T (m := 7)
+  let caller := (Fin.castAddEmb 1 (n := 6)).trans ext
+  have disjoint (i : Fin T) (j : Fin 7) : place i ≠ ext j := by
+    intro eq
+    have h := congrArg Fin.val eq
+    change i.val = T+j.val at h
+    omega
+  obtain ⟨setup,load⟩ := loadCompactWorkerSeeds (fun g => embProg place id (host g)) tapes regs basis
+    (fun j => (bank j).trans place) owners caller (ext 6) (fun i j s => disjoint _ _) (fun i j => disjoint _ _)
+    (ext.injective.ne (by decide)) (ext.injective.ne (by decide)) owned
+    (fun i j off m ne l => place.injective.ne ((apart i j off).2 m ne l))
   refine ⟨(List.finRange _).foldr (fun j tail => (placed j).seq tail) (.act .done),
-    (List.ofFn localRate).sum+1,?_⟩
+    (List.ofFn localRate).sum+1,setup,?_⟩
   intro c W V child lane
   choose pos size coords execute using fun j : J => run j c
   refine ⟨pos,size,coords,?_⟩
   intro shared
   let seed := fun j => (basis j).seed c.w W (binSyms c.root.width.size c.cutoff)
   obtain ⟨prepared,view,initial⟩ := prepare shared seed
-  refine ⟨prepared,view,?_⟩
+  refine ⟨prepared,view,?_,?_⟩
+  · intro u S modulus spectator unit atom ht hs cut blank
+    have pos : 0 < (prime^(c.w+1))^16*W := c.stageCells.symm ▸
+      Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) (Nat.mul_pos c.idlePositive (by decide))
+    obtain ⟨z,F,t,exec,user,bill,stock,frame⟩ := load c.w W u S (Nat.pos_of_mul_pos_left pos)
+      modulus spectator unit atom ht hs (fun i j off => blank _ (apart i j off).1)
+    refine ⟨z,F,t,exec,user,?_,?_,?_⟩
+    · simpa only [← c.stageCells] using bill
+    · intro j off
+      obtain ⟨i,l,priv,rfl⟩ := cover j off
+      have h := stock i l priv
+      rw [cut] at h
+      exact ⟨h.1.trans (initial i l priv).1.symm,h.2.trans (initial i l priv).2.symm⟩
+    · intro h
+      exact frame _ (fun i j off => place.injective.ne (Ne.symm ((apart i j off).1 h)))
   intro rate time enough price recurse x u S ready fresh
   let bill := fun j => price j+localRate j*c.cells
   let saved := fun j (D : Stacks T prime) => ∀ k, (∀ h, owners j h ≠ k) →
