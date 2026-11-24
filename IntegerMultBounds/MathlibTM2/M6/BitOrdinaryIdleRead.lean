@@ -644,32 +644,36 @@ theorem placedHoare_exec {k q T Q b : ℕ} {P U : Type}
   exact ⟨z,F,n,run,time,user,rep,off⟩
 
 open M8.Machine.ArbitraryWidthOriginalRun in
-noncomputable def stoppedCopyMachine [M8.Machine.Net] :
+noncomputable def stoppedIntervalMachine [M8.Machine.Net] (lo hi : ℕ) :
     Σ q, Program (M8.Machine.ArbitraryWidthOriginalZeroBranch.count 25) q prime :=
-  let setup := extendBanks (extend (extend (extend (phaseHeaderProgram 0 7) 1) 16) 19)
+  let setup := extendBanks (extend (extend (extend (phaseHeaderProgram lo hi) 1) 16) 19)
   let leaf := M8.Machine.ArbitraryWidthOriginalTotalRun.program (fun i => (phaseHeaderSlots i).castAdd 1) ((0 : Fin 1).natAdd 24)
   ⟨_,seq setup leaf⟩
 
+noncomputable abbrev stoppedCopyMachine [M8.Machine.Net] := stoppedIntervalMachine 0 7
+
 open M8.Machine.ArbitraryWidthHighExchangeShared in
-noncomputable def copyLeafPayload {w W : ℕ} (x : Fin ((prime^w)^16*W) → ZMod 2) : Tapes 1 prime :=
-  let view := phaseIntervalChild 0 7 w W
-  let size := phaseIntervalChild_volume (by decide : 0 ≤ 7) (by decide : 7 ≤ 8) w W
+noncomputable def intervalLeafPayload {lo hi w W : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8) (x : Fin ((prime^w)^16*W) → ZMod 2) : Tapes 1 prime :=
+  let view := phaseIntervalChild lo hi w W
+  let size := phaseIntervalChild_volume ordered fits w W
   ⟨fun _ => 0,fun _ => sourceWord (v := view) (fun j => x (j.cast size))⟩
 
+noncomputable abbrev copyLeafPayload {w W : ℕ} := @intervalLeafPayload 0 7 w W (by decide) (by decide)
+
 open Cover.Fallback in
-private theorem copyLeafPayload_iff {w W T : ℕ} (x : Fin ((prime^w)^16*W) → ZMod 2)
+private theorem intervalLeafPayload_iff {lo hi w W T : ℕ} (ordered : lo ≤ hi) (within : hi ≤ 8) (x : Fin ((prime^w)^16*W) → ZMod 2)
     (bank : Fin 1 → Fin T) (owner : Fin T) (shared : ∀ i, bank i = owner) (S : Stacks T prime) :
-    RepT (copyLeafPayload x) (S.L ∘ bank) (S.R ∘ bank) ↔ ∀ z,
+    RepT (intervalLeafPayload ordered within x) (S.L ∘ bank) (S.R ∘ bank) ↔ ∀ z,
       RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ x)) z) =
         readAt blank (S.L owner) (S.R owner) (z-0) := by
-  let size := phaseIntervalChild_volume (by decide : 0 ≤ 7) (by decide : 7 ≤ 8) w W
-  have cell (i : Fin 1) (z : ℤ) : (copyLeafPayload x).tape i z =
+  let size := phaseIntervalChild_volume ordered within w W
+  have cell (i : Fin 1) (z : ℤ) : (intervalLeafPayload ordered within x).tape i z =
       RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ x)) z) := by
-    change M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord (v := phaseIntervalChild 0 7 w W) (fun j => x (j.cast size)) z = _
+    change M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord (v := phaseIntervalChild lo hi w W) (fun j => x (j.cast size)) z = _
     rw [swap_source_word]
     congr 2
     exact List.ofFn_congr size _
-  have head (i : Fin 1) : (copyLeafPayload x).head i = 0 := rfl
+  have head (i : Fin 1) : (intervalLeafPayload ordered within x).head i = 0 := rfl
   constructor
   · intro rep z
     simpa only [cell,head,Function.comp_apply,shared] using rep 0 z
@@ -678,26 +682,26 @@ private theorem copyLeafPayload_iff {w W T : ℕ} (x : Fin ((prime^w)^16*W) → 
 
 open M8.Machine.ArbitraryWidthOriginalRun M8.Machine.ArbitraryWidthHighExchangeShared
   M8.RevMachine SharedPlacementAlphabet RecursiveInterchangeLayout in
-/-- Build the rank-seven interval headers beside the payload and run the
+/-- Build the interval headers beside the payload and run the
 stopped child in place, preserving its inherited physical order. -/
-private theorem inheritedCopyLeaf_runs [M8.Machine.Net] {w W : ℕ} {child : Descriptor}
+theorem inheritedIntervalLeaf_runs [M8.Machine.Net] {lo hi w W : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8) {child : Descriptor}
     {position : Fin (volume prime child) ≃ Fin ((prime^w)^16*W)}
-    (coords : CopyIntervalPositions child w W position) (width : child.width = 7*w)
+    (coords : InheritedIntervalPositions child (phaseIntervalChild lo hi w W) (phaseIntervalChild_volume ordered fits w W) position) (width : child.width = (hi-lo)*w)
     (hw : 0 < w) (hW : 0 < W) (word : Fin ((prime^w)^16*W) → ZMod 2) :
-    let view := phaseIntervalChild 0 7 w W
-    let size := phaseIntervalChild_volume (by decide : 0 ≤ 7) (by decide : 7 ≤ 8) w W
-    let payload := @copyLeafPayload w W
+    let view := phaseIntervalChild lo hi w W
+    let size := phaseIntervalChild_volume ordered fits w W
+    let payload := @intervalLeafPayload lo hi w W ordered fits
     let V := (prime^w)^16*W
-    ∃ changed : Fin V → ZMod 2, HoareTime stoppedCopyMachine.2
-      (fun z => z = input ((phaseHeaderInput 0 7 w W).append (payload word)))
-      (fun z => z = input ((phaseHeaderOutput 0 7 w W).append (payload changed)))
+    ∃ changed : Fin V → ZMod 2, HoareTime (stoppedIntervalMachine lo hi).2
+      (fun z => z = input ((phaseHeaderInput lo hi w W).append (payload word)))
+      (fun z => z = input ((phaseHeaderOutput lo hi w W).append (payload changed)))
       (1300*V+1+LeafCore.coreCost V child.width) ∧
       ∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) k := by
   intro view size payload V
-  let setup := extendBanks (extend (extend (extend (phaseHeaderProgram 0 7) 1) 16) 19)
-  let initial := (phaseHeaderInput 0 7 w W).append (payload word)
-  let caller := (phaseHeaderOutput 0 7 w W).append (payload word)
-  obtain ⟨build,valid,fields⟩ := phaseHeader_runs (by decide : 0 ≤ 7) (by decide : 7 ≤ 8) hw hW
+  let setup := extendBanks (extend (extend (extend (phaseHeaderProgram lo hi) 1) 16) 19)
+  let initial := (phaseHeaderInput lo hi w W).append (payload word)
+  let caller := (phaseHeaderOutput lo hi w W).append (payload word)
+  obtain ⟨build,valid,fields⟩ := phaseHeader_runs ordered fits hw hW
   have prepare := extend_banks_hoare (hoare_extend_eq (hoare_extend_eq (hoare_extend_eq build (payload word))
     (FixedHeaderBankCopy.empty 16)) M8.Machine.ArbitraryWidthHighPrepareShared.privateInput)
   change HoareTime setup (fun z => z = input initial) (fun z => z = input caller) (1300*V) at prepare
@@ -710,12 +714,12 @@ private theorem inheritedCopyLeaf_runs [M8.Machine.Net] {w W : ℕ} {child : Des
     (by simp only [caller, owner, Tapes.append, Fin.addCases_right]; rfl)
   let changed := fun k : Fin V => Shared50RecursiveNodeRows.transpose (one_dvd view.rows) x (k.cast size.symm)
   have update : setTape caller owner (sourceWord (Shared50RecursiveNodeRows.transpose (one_dvd view.rows) x)) 0 =
-      (phaseHeaderOutput 0 7 w W).append (payload changed) := by
+      (phaseHeaderOutput lo hi w W).append (payload changed) := by
     unfold caller owner
     rw [setTape_append_right]
     congr 1
     apply congrArg₂ Tapes.mk <;> funext i <;> obtain rfl := Subsingleton.elim i (0 : Fin 1) <;>
-      simp [payload,copyLeafPayload,changed,x]
+      simp [payload,intervalLeafPayload,changed,x]
   rw [update] at run
   have sameWidth : view.width = child.width := width.symm
   have price := LeafCore.cost_le pos
@@ -1784,18 +1788,18 @@ theorem recordBasisStacks_banks {t m n T a : ℕ} (p : Fin t ↪ Fin T) (q : Fin
     simp [embExt_off _ _ (fun i => pr i j),embExt_off _ _ (fun i => qr i j),embExt_apply r.injective]
 
 /-- Marked input words for the two dimension banks and the product bank. -/
-def copyLeafHeader (w W : ℕ) (i : Fin 24) : Option (List Bool) :=
+def copyLeafHeader (w W : ℕ) (i : Fin 24) (rank : ℕ := 7) : Option (List Bool) :=
   match i.val with
   | 2 | 11 | 21 => some (FlatCoordinateSchedule.bits w)
   | 3 => some (FlatCoordinateSchedule.bits W)
   | 12 => some (FlatCoordinateSchedule.bits 1)
-  | 23 => some (FlatCoordinateSchedule.bits 7)
+  | 23 => some (FlatCoordinateSchedule.bits rank)
   | _ => none
 
 open Cover.Fallback in
-theorem copyLeafHeader_rep (w W : ℕ) :
-    let header := copyLeafHeader w W
-    RepT (phaseHeaderInput 0 7 w W)
+theorem copyLeafHeader_rep (w W : ℕ) (lo : ℕ := 0) (hi : ℕ := 7) :
+    let header := fun i => copyLeafHeader w W i (hi-lo)
+    RepT (phaseHeaderInput lo hi w W)
       (fun i => ((header i).toList.map fun _ => separator))
       (fun i => (header i).elim [] (List.map bitSymbol)) := by
   intro header i z
@@ -1838,38 +1842,37 @@ theorem copyLeafVariableHeaders_exec {T Q : ℕ} {P U : Type} (body : P → Pr P
 
 open Cover.Fallback in
 /-- Constants and separators for the stopping leaf fit in one fixed host action. -/
-noncomputable def markCopyLeafHeaders {T Q : ℕ} {U : Type} (bank : Fin 24 ↪ Fin T) : Act T Q prime U :=
+noncomputable def markCopyLeafHeaders {T Q : ℕ} {U : Type} (bank : Fin 24 ↪ Fin T) (rank : ℕ := 7) : Act T Q prime U :=
   LabelCycle.pushWord (bank 12) ((FlatCoordinateSchedule.bits 1).map bitSymbol)
-    (LabelCycle.pushWord (bank 23) ((FlatCoordinateSchedule.bits 7).map bitSymbol)
+    (LabelCycle.pushWord (bank 23) ((FlatCoordinateSchedule.bits rank).map bitSymbol)
       (pushMarkers (([2,3,11,12,21,23] : List (Fin 24)).map bank)))
 
 open Cover.Fallback in
 theorem markCopyLeafHeaders_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
-    (bank : Fin 24 ↪ Fin T) (w W : ℕ) (u : HS T Q prime U) (S : Stacks T prime)
+    (bank : Fin 24 ↪ Fin T) (w W : ℕ) (u : HS T Q prime U) (S : Stacks T prime) (lo : ℕ := 0) (hi : ℕ := 7)
     (left : ∀ i, S.L (bank i) = [])
     (right : ∀ i, S.R (bank i) = if i = 12 ∨ i = 23 then []
-      else (copyLeafHeader w W i).elim [] (List.map bitSymbol)) :
-    ∃ F, Exec body (.act (markCopyLeafHeaders bank)) (mk u S) 1 (mk u F) ∧
-      RepT (phaseHeaderInput 0 7 w W) (F.L ∘ bank) (F.R ∘ bank) ∧
+      else (copyLeafHeader w W i (hi-lo)).elim [] (List.map bitSymbol)) :
+    ∃ F, Exec body (.act (markCopyLeafHeaders bank (hi-lo))) (mk u S) 1 (mk u F) ∧
+      RepT (phaseHeaderInput lo hi w W) (F.L ∘ bank) (F.R ∘ bank) ∧
       (∀ i, (F.L (bank i)).length+(F.R (bank i)).length ≤
-        (FlatCoordinateSchedule.bits w).length+(FlatCoordinateSchedule.bits W).length+4) ∧
+        (FlatCoordinateSchedule.bits w).length+(FlatCoordinateSchedule.bits W).length+(max 2 (1+(FlatCoordinateSchedule.bits (hi-lo)).length))) ∧
       ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   let slots := ([2,3,11,12,21,23] : List (Fin 24))
-  have mark := Exec.act (body := body) (markCopyLeafHeaders bank) (mk u S)
+  have mark := Exec.act (body := body) (markCopyLeafHeaders bank (hi-lo)) (mk u S)
   unfold markCopyLeafHeaders at mark
   rw [LabelCycle.pushWord_run, LabelCycle.pushWord_run,
     pushMarkers_run _ ((by decide : slots.Nodup).map bank.injective)] at mark
   refine ⟨_,mark,?_,?_,?_⟩
   · intro i z
-    have cell := copyLeafHeader_rep w W i z
+    have cell := copyLeafHeader_rep w W lo hi i z
     simp only [Function.comp_apply, List.mem_map_of_injective bank.injective,
       left, Function.update_apply, bank.injective.eq_iff, right]
     fin_cases i <;> simpa [copyLeafHeader,slots] using cell
   · intro i
     simp only [List.mem_map_of_injective bank.injective,left, Function.update_apply,bank.injective.eq_iff,right]
     have one : (FlatCoordinateSchedule.bits 1).length = 1 := by decide
-    have seven : (FlatCoordinateSchedule.bits 7).length = 3 := by decide
-    fin_cases i <;> simp [copyLeafHeader,slots,one,seven] <;> omega
+    fin_cases i <;> simp [copyLeafHeader,slots,one] <;> omega
   · intro j off
     have outside : j ∉ slots.map bank := fun h => by
       obtain ⟨i,_,eq⟩ := List.mem_map.mp h
@@ -1881,7 +1884,7 @@ open Cover.Fallback in
 /-- Prepare all 24 input tapes from the worker's two binary words and blank workspace. -/
 theorem loadCopyLeafHeaders_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
     (bank : Fin 24 ↪ Fin T) (width suffix tmp aux : Fin T) (w W : ℕ)
-    (u : HS T Q prime U) (S : Stacks T prime) :
+    (u : HS T Q prime U) (S : Stacks T prime) (lo : ℕ := 0) (hi : ℕ := 7) :
     let src := fun i : Fin 4 => if i = 1 then suffix else width
     let dst := copyLeafVariableSlots.trans bank
     let copy := Record.copyLeafHeaders src dst tmp aux (List.finRange 4)
@@ -1889,22 +1892,24 @@ theorem loadCopyLeafHeaders_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q
     S.R width = (FlatCoordinateSchedule.bits w).map bitSymbol →
     S.R suffix = (FlatCoordinateSchedule.bits W).map bitSymbol →
     S.R tmp = [] → S.R aux = [] → (∀ i, S.L (bank i) = [] ∧ S.R (bank i) = []) →
-    ∃ z F, z.user = u.user ∧ Exec body (copy.seq (.act (markCopyLeafHeaders bank)))
+    ∃ z F, z.user = u.user ∧ Exec body (copy.seq (.act (markCopyLeafHeaders bank (hi-lo))))
       (mk u S) (18*(FlatCoordinateSchedule.bits w).length+6*(FlatCoordinateSchedule.bits W).length+26) (mk z F) ∧
-      RepT (phaseHeaderInput 0 7 w W) (F.L ∘ bank) (F.R ∘ bank) ∧
+      RepT (phaseHeaderInput lo hi w W) (F.L ∘ bank) (F.R ∘ bank) ∧
       (∀ i, (F.L (bank i)).length+(F.R (bank i)).length ≤
-        (FlatCoordinateSchedule.bits w).length+(FlatCoordinateSchedule.bits W).length+4) ∧
+        (FlatCoordinateSchedule.bits w).length+(FlatCoordinateSchedule.bits W).length+(max 2 (1+(FlatCoordinateSchedule.bits (hi-lo)).length))) ∧
       ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro src dst copy apart ports hw hW temp scratch empty
   obtain ⟨v,D,user,run,left,loaded,off⟩ := copyLeafVariableHeaders_exec body bank width suffix tmp aux w W u S
     apart ports hw hW temp scratch (fun i => (empty (copyLeafVariableSlots i)).2)
-  obtain ⟨F,mark,rep,size,frame⟩ := markCopyLeafHeaders_exec body bank w W v D
+  obtain ⟨F,mark,rep,size,frame⟩ := markCopyLeafHeaders_exec body bank w W v D lo hi
     (fun i => left ▸ (empty i).1) (by
       intro i
       by_cases hit : ∃ h, copyLeafVariableSlots h = i
       · obtain ⟨h,rfl⟩ := hit
         have different : ∀ h, ¬(copyLeafVariableSlots h = 12 ∨ copyLeafVariableSlots h = 23) := by decide
         rw [ite_eq_right (different h)]
+        have common (j : Fin 4) : copyLeafHeader w W (copyLeafVariableSlots j) = copyLeafHeader w W (copyLeafVariableSlots j) (hi-lo) := by fin_cases j <;> rfl
+        rw [← common]
         exact loaded h
       · rw [off _ (fun h eq => hit ⟨h,bank.injective eq⟩),(empty i).2]
         fin_cases i <;> first | rfl | exact False.elim (hit (by decide)))
@@ -1919,24 +1924,24 @@ def copyLeafClockPorts : Fin 8 ↪ Fin 35 := ⟨![33,0,1,3,4,5,6,7],by decide⟩
 
 open Cover.Fallback in
 noncomputable def loadCopyLeafRecord {T Q : ℕ} {P U : Type}
-    (record : Fin 35 ↪ Fin T) (bank : Fin 24 ↪ Fin T) : Pr P T Q prime U :=
+    (record : Fin 35 ↪ Fin T) (bank : Fin 24 ↪ Fin T) (rank : ℕ := 7) : Pr P T Q prime U :=
   let r := copyLeafClockPorts.trans record
   let src := fun i : Fin 4 => if i = 1 then record 27 else r 1
   let copy := Record.copyLeafHeaders src (copyLeafVariableSlots.trans bank) (r 2) (r 3) (List.finRange 4)
-  ((swapExponent r).seq (copy.seq (.act (markCopyLeafHeaders bank)))).seq (bclear (r 1))
+  ((swapExponent r).seq (copy.seq (.act (markCopyLeafHeaders bank rank)))).seq (bclear (r 1))
 
 open Cover.Fallback in
-private theorem loadCopyLeafRecord_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+theorem loadCopyLeafRecord_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
     (record : Fin 35 ↪ Fin T) (bank : Fin 24 ↪ Fin T) (apart : ∀ i j, record i ≠ bank j)
     (w W : ℕ) (u : HS T Q prime U) (S : Stacks T prime)
     (clock : (S.R (record 33)).length+1 = w) (suffix : S.R (record 27) = binSyms W.size W)
     (scratch : ∀ i ∈ shearWork, S.R (record i) = [])
-    (empty : ∀ i, S.L (bank i) = [] ∧ S.R (bank i) = []) :
-    ∃ z F t, z.user = u.user ∧ Exec body (loadCopyLeafRecord record bank) (mk u S) t (mk z F) ∧
+    (empty : ∀ i, S.L (bank i) = [] ∧ S.R (bank i) = []) (lo : ℕ := 0) (hi : ℕ := 7) :
+    ∃ z F t, z.user = u.user ∧ Exec body (loadCopyLeafRecord record bank (hi-lo)) (mk u S) t (mk z F) ∧
       t ≤ 21*w+20*(FlatCoordinateSchedule.bits w).length+6*(FlatCoordinateSchedule.bits W).length+40 ∧
-      RepT (phaseHeaderInput 0 7 w W) (F.L ∘ bank) (F.R ∘ bank) ∧
+      RepT (phaseHeaderInput lo hi w W) (F.L ∘ bank) (F.R ∘ bank) ∧
       (∀ i, (F.L (bank i)).length+(F.R (bank i)).length ≤
-        (FlatCoordinateSchedule.bits w).length+(FlatCoordinateSchedule.bits W).length+4) ∧
+        (FlatCoordinateSchedule.bits w).length+(FlatCoordinateSchedule.bits W).length+(max 2 (1+(FlatCoordinateSchedule.bits (hi-lo)).length))) ∧
       ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   let r := copyLeafClockPorts.trans record
   have fresh (i : Fin 8) (h : i ≠ 0) : S.R (r i) = [] :=
@@ -1960,7 +1965,7 @@ private theorem loadCopyLeafRecord_exec {T Q : ℕ} {P U : Type} (body : P → P
     by_cases h : i = 1 <;> simp [source,h,apart,away,h2,h3,r.injective.eq_iff]
   have other : record 27 ≠ r 1 := record.injective.ne (by decide : (27 : Fin 35) ≠ copyLeafClockPorts 1)
   obtain ⟨v,B,vu,load,rep,stock,keep⟩ := loadCopyLeafHeaders_exec body bank (r 1) (record 27) (r 2) (r 3)
-    w W a D (fun i j => srcOff i (copyLeafVariableSlots j)) regs (Function.update_self ..)
+    w W a D lo hi (fun i j => srcOff i (copyLeafVariableSlots j)) regs (Function.update_self ..)
     (by simpa [D,Function.update_of_ne other,canonicalBits_symbols] using suffix)
     (by simpa [D,Function.update_of_ne (r.injective.ne (by decide : (2 : Fin 8) ≠ 1))] using fresh 2 (by decide))
     (by simpa [D,Function.update_of_ne (r.injective.ne (by decide : (3 : Fin 8) ≠ 1))] using fresh 3 (by decide))
@@ -1986,12 +1991,12 @@ open Cover.Fallback in
 private theorem loadCopyLeafInput_exec {k T Q : ℕ} (fits : 25 ≤ k) {P U : Type}
     (ports : Fin k ↪ Fin T)
     (body : P → Pr P T Q prime U) (u : HS T Q prime U) (S : Stacks T prime)
-    (w W : ℕ) (payload : Tapes 1 prime) :
+    (lo hi w W : ℕ) (payload : Tapes 1 prime) :
     let slot := Fin.castLEEmb fits
     let bank := slot.trans ports
     let headers := (Fin.castAddEmb (n := 24) 1).trans bank
     ∀ (record : Fin 35 ↪ Fin T),
-    let load := loadCopyLeafRecord record headers
+    let load := loadCopyLeafRecord record headers (hi-lo)
     (∀ i j, record i ≠ headers j) →
     (S.R (record 33)).length+1 = w → S.R (record 27) = binSyms W.size W →
     (∀ i ∈ shearWork, S.R (record i) = []) → (∀ i, S.L (headers i) = [] ∧ S.R (headers i) = []) →
@@ -1999,14 +2004,14 @@ private theorem loadCopyLeafInput_exec {k T Q : ℕ} (fits : 25 ≤ k) {P U : Ty
     (∀ i, 25 ≤ i.val → S.L (ports i) = [] ∧ S.R (ports i) = []) →
     ∃ v D t, v.user = u.user ∧ Exec body load (mk u S) t (mk v D) ∧
       t ≤ 21*w+20*(FlatCoordinateSchedule.bits w).length+6*(FlatCoordinateSchedule.bits W).length+40 ∧
-      RepT (SharedBankStageInput.raw ((phaseHeaderInput 0 7 w W).append payload) k)
+      RepT (SharedBankStageInput.raw ((phaseHeaderInput lo hi w W).append payload) k)
         (embStk ports D).L (embStk ports D).R ∧
       (∀ i : Fin k, i.val ≠ 24 → (D.L (ports i)).length+(D.R (ports i)).length ≤
-        (FlatCoordinateSchedule.bits w).length+(FlatCoordinateSchedule.bits W).length+4) ∧
+        (FlatCoordinateSchedule.bits w).length+(FlatCoordinateSchedule.bits W).length+max 2 (1+(FlatCoordinateSchedule.bits (hi-lo)).length)) ∧
       ∀ j, (∀ i, ports i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j := by
   intro slot bank headers record load apart clock suffix scratch empty owner free
   obtain ⟨v,D,t,userA,start,time,rep,stock,keep⟩ := loadCopyLeafRecord_exec body record headers apart w W u S
-    clock suffix scratch empty
+    clock suffix scratch empty lo hi
   have ownerKeep (i : Fin 1) := keep (bank (i.natAdd 24)) (fun j eq => by
     change bank (j.castAdd 1) = bank (i.natAdd 24) at eq
     have h := congrArg Fin.val (bank.injective eq)
@@ -2061,29 +2066,29 @@ private theorem clearCopyLeaf_exec {k T Q : ℕ} {P U : Type} (ports : Fin k ↪
     simp [absent]
 
 open M8.RevMachine in
-noncomputable def stoppedCopyBudget [M8.Machine.Net] (tapes w W V width : ℕ) : ℕ :=
+noncomputable def stoppedCopyBudget [M8.Machine.Net] (tapes w W V width : ℕ) (headerExtra : ℕ := 4) : ℕ :=
   let h := (FlatCoordinateSchedule.bits w).length
   let s := (FlatCoordinateSchedule.bits W).length
   let cost := 1300*V+1+LeafCore.coreCost V width
-  (21*w+20*h+6*s+40)+(cost*(tapes+5)+6)+(tapes*(4*(h+s+4+2*cost)+4)+1)
+  (21*w+20*h+6*s+40)+(cost*(tapes+5)+6)+(tapes*(4*(h+s+headerExtra+2*cost)+4)+1)
 
 open M8.Machine.ArbitraryWidthOriginalRun M8.Machine.ArbitraryWidthHighExchangeShared
   M8.RevMachine SharedPlacementAlphabet RecursiveInterchangeLayout Cover.Fallback in
-/-- Build the rank-seven interval headers beside the payload and run the
+/-- Build the interval headers beside the payload and run the
 stopped child in place, preserving its inherited physical order. -/
-theorem inheritedCopyLeaf_exec [M8.Machine.Net] {T Q w W : ℕ} {P U : Type} {child : Descriptor}
+theorem inheritedIntervalLeaf_exec [M8.Machine.Net] {lo hi T Q w W : ℕ} (ordered : lo ≤ hi) (within : hi ≤ 8) {P U : Type} {child : Descriptor}
     {position : Fin (volume prime child) ≃ Fin ((prime^w)^16*W)}
-    (coords : CopyIntervalPositions child w W position) (width : child.width = 7*w)
+    (coords : InheritedIntervalPositions child (phaseIntervalChild lo hi w W) (phaseIntervalChild_volume ordered within w W) position) (width : child.width = (hi-lo)*w)
     (hw : 0 < w) (hW : 0 < W) (word : Fin ((prime^w)^16*W) → ZMod 2) :
-    let payload := @copyLeafPayload w W
+    let payload := @intervalLeafPayload lo hi w W ordered within
     let V := (prime^w)^16*W
     let tapes := M8.Machine.ArbitraryWidthOriginalZeroBranch.count 25
-    ∀ (ports : Fin tapes ↪ Fin T) (fits : stoppedCopyMachine.1 ≤ Q) (body : P → Pr P T Q prime U) (u : HS T Q prime U) (S : Stacks T prime),
+    ∀ (ports : Fin tapes ↪ Fin T) (fits : (stoppedIntervalMachine lo hi).1 ≤ Q) (body : P → Pr P T Q prime U) (u : HS T Q prime U) (S : Stacks T prime),
       let slot := (Fin.castLEEmb copyLeafCallerFits)
       let bank := slot.trans ports
       let headers := (Fin.castAddEmb (n := 24) 1).trans bank
       ∀ (record : Fin 35 ↪ Fin T),
-      let load := loadCopyLeafRecord record headers
+      let load := loadCopyLeafRecord record headers (hi-lo)
       (∀ i j, record i ≠ headers j) →
       (S.R (record 33)).length+1 = w → S.R (record 27) = binSyms W.size W →
       (∀ i ∈ shearWork, S.R (record i) = []) → (∀ i, S.L (headers i) = [] ∧ S.R (headers i) = []) →
@@ -2091,20 +2096,20 @@ theorem inheritedCopyLeaf_exec [M8.Machine.Net] {T Q w W : ℕ} {P U : Type} {ch
       (∀ i, 25 ≤ i.val → S.L (ports i) = [] ∧ S.R (ports i) = []) →
       let work := ((List.finRange tapes).filter fun i => i.val ≠ 24).map ports
       let cost := 1300*V+1+LeafCore.coreCost V child.width
-      let headerSize := (FlatCoordinateSchedule.bits w).length+(FlatCoordinateSchedule.bits W).length+4
-      ∃ changed : Fin V → ZMod 2, ∃ z F n, Exec body ((load.seq (embProg ports (Empty.elim : Empty → P) (foreign (liftQ stoppedCopyMachine.2 fits)))).seq (clearWorkTapes work))
-        (mk u S) n (mk z F) ∧ n ≤ stoppedCopyBudget tapes w W V child.width ∧ z.user = u.user ∧
+      let headerSize := (FlatCoordinateSchedule.bits w).length+(FlatCoordinateSchedule.bits W).length+max 2 (1+(FlatCoordinateSchedule.bits (hi-lo)).length)
+      ∃ changed : Fin V → ZMod 2, ∃ z F n, Exec body ((load.seq (embProg ports (Empty.elim : Empty → P) (foreign (liftQ (stoppedIntervalMachine lo hi).2 fits)))).seq (clearWorkTapes work))
+        (mk u S) n (mk z F) ∧ n ≤ stoppedCopyBudget tapes w W V child.width (max 2 (1+(FlatCoordinateSchedule.bits (hi-lo)).length)) ∧ z.user = u.user ∧
         RepT (payload changed) (fun i => F.L (bank (i.natAdd 24))) (fun i => F.R (bank (i.natAdd 24))) ∧
         (∀ i : Fin tapes, i.val ≠ 24 → F.L (ports i) = [] ∧ F.R (ports i) = []) ∧
         (∀ j, (∀ l, ports l ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
         ∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) k := by
   intro payload V tapes ports fits body u S slot bank headers record load
   intro apart clock suffix scratch empty owner free work cost headerSize
-  obtain ⟨v,D,m,userA,start,loadTime,ready,stock,keep⟩ := loadCopyLeafInput_exec copyLeafCallerFits ports body u S w W (payload word)
+  obtain ⟨v,D,m,userA,start,loadTime,ready,stock,keep⟩ := loadCopyLeafInput_exec copyLeafCallerFits ports body u S lo hi w W (payload word)
     record apart clock suffix scratch empty owner free
   rw [← LeafCore.input_eq] at ready
-  obtain ⟨changed,run,action⟩ := inheritedCopyLeaf_runs coords width hw hW word
-  obtain ⟨z,F,n,exec,time,user,done,growth,off⟩ := placedHoare_growth_exec stoppedCopyMachine.2 ports fits body run v D ready
+  obtain ⟨changed,run,action⟩ := inheritedIntervalLeaf_runs ordered within coords width hw hW word
+  obtain ⟨z,F,n,exec,time,user,done,growth,off⟩ := placedHoare_growth_exec (stoppedIntervalMachine lo hi).2 ports fits body run v D ready
   obtain ⟨y,G,l,clear,paid,same,reset,frame⟩ := clearCopyLeaf_exec ports body z F (headerSize+2*cost)
     (fun i ne => (growth i).trans (Nat.add_le_add_right (stock i ne) _))
   have payloadF := copyLeafPayload_rep _ _ ports F done
@@ -3786,8 +3791,8 @@ private theorem copyLeafPlacement_return {k n T : ℕ} (fits : k ≤ n) (hasOwne
       exact ⟨keep.1.trans (free j hj).1,keep.2.trans (free j hj).2⟩
 
 open Cover.Fallback in
-noncomputable def stoppedCopyProgram [M8.Machine.Net] {P U : Type} {T Q : ℕ}
-    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fits : stoppedCopyMachine.1 ≤ Q) : Pr P T Q prime U :=
+noncomputable def stoppedIntervalProgram [M8.Machine.Net] {P U : Type} {T Q : ℕ}
+    (lo hi : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fits : (stoppedIntervalMachine lo hi).1 ≤ Q) : Pr P T Q prime U :=
   let tapes := M8.Machine.ArbitraryWidthOriginalZeroBranch.count 25
   let place := copyLeafPlacement copyLeafFitsRowSwap
   let localBank := place.trans ports
@@ -3795,11 +3800,13 @@ noncomputable def stoppedCopyProgram [M8.Machine.Net] {P U : Type} {T Q : ℕ}
   let headers := (Fin.castAddEmb (n := 24) 1).trans (slot.trans localBank)
   let recBank := scheduledRecordPorts ports
   let work := ((List.finRange tapes).filter fun i => i.val ≠ 24).map localBank
-  (((loadCopyLeafRecord recBank headers).seq
-    (embProg localBank (Empty.elim : Empty → P) (foreign (liftQ stoppedCopyMachine.2 fits)))).seq (clearWorkTapes work))
+  (((loadCopyLeafRecord recBank headers (hi-lo)).seq
+    (embProg localBank (Empty.elim : Empty → P) (foreign (liftQ (stoppedIntervalMachine lo hi).2 fits)))).seq (clearWorkTapes work))
+
+noncomputable abbrev stoppedCopyProgram [M8.Machine.Net] {P U : Type} {T Q : ℕ} := @stoppedIntervalProgram _ P U T Q 0 7
 
 open Cover.Fallback in
-private theorem copyLeafRecord_inputs {k n T w W : ℕ} (fits : k ≤ n) (hasOwner : 25 ≤ k)
+private theorem copyLeafRecord_inputs {lo hi k n T w W : ℕ} (ordered : lo ≤ hi) (within : hi ≤ 8) (fits : k ≤ n) (hasOwner : 25 ≤ k)
     (ports : Fin (n+35) ↪ Fin T) (bank : Fin 35 ↪ Fin T)
     (recordAt : ∀ j, bank j = ports ⟨j.val,by omega⟩)
     (record : List (Fin (prime+4))) (S : Stacks T prime) (word : Fin ((prime^(w+1))^16*W) → ZMod 2) :
@@ -3814,17 +3821,17 @@ private theorem copyLeafRecord_inputs {k n T w W : ℕ} (fits : k ≤ n) (hasOwn
     (∀ i j, bank i ≠ headers j) ∧ (S.R (bank 33)).length+1 = w+1 ∧
       S.R (bank 27) = binSyms W.size W ∧ (∀ i ∈ shearWork, S.R (bank i) = []) ∧
       (∀ i, S.L (headers i) = [] ∧ S.R (headers i) = []) ∧
-      RepT (copyLeafPayload word) (S.L ∘ owner) (S.R ∘ owner) ∧
+      RepT (intervalLeafPayload ordered within word) (S.L ∘ owner) (S.R ∘ owner) ∧
       ∀ i : Fin k, 25 ≤ i.val → S.L (localBank i) = [] ∧ S.R (localBank i) = [] := by
   intro M localBank slot headers owner ready free
   obtain ⟨high,shared,recordsOff⟩ := copyLeafPlacement_layout fits hasOwner ports bank recordAt
   exact ⟨fun j i => recordsOff j _ (copyLeafHeader_ne hasOwner i),congrArg (·+1) ready.clock,ready.width,
     fun i hi => (ready.scratch i hi).2,fun i => free _ (high _ (copyLeafHeader_ne hasOwner i)),
-    (copyLeafPayload_iff word _ _ shared S).2 (fun z => (ready.src z).symm),
+    (intervalLeafPayload_iff ordered within word _ _ shared S).2 (fun z => (ready.src z).symm),
     fun i hi => free _ (high i (Nat.ne_of_gt hi))⟩
 
 open Cover.Fallback in
-private theorem copyLeafRecord_return {k n T w W : ℕ} (fits : k ≤ n) (hasOwner : 25 ≤ k)
+private theorem copyLeafRecord_return {lo hi k n T w W : ℕ} (ordered : lo ≤ hi) (within : hi ≤ 8) (fits : k ≤ n) (hasOwner : 25 ≤ k)
     (ports : Fin (n+35) ↪ Fin T) (bank : Fin 35 ↪ Fin T)
     (recordAt : ∀ j, bank j = ports ⟨j.val,by omega⟩)
     (record : List (Fin (prime+4))) (S F : Stacks T prime)
@@ -3835,14 +3842,42 @@ private theorem copyLeafRecord_return {k n T w W : ℕ} (fits : k ≤ n) (hasOwn
     let clean := fun (D : Stacks T prime) => ∀ j : Fin (n+35), 35 ≤ j.val → D.L (ports j) = [] ∧ D.R (ports j) = []
     let localBank := (copyLeafPlacement fits).trans ports
     let owner := fun i : Fin 1 => localBank (Fin.castLE hasOwner (i.natAdd 24))
-    stored word S → clean S → RepT (copyLeafPayload changed) (F.L ∘ owner) (F.R ∘ owner) →
+    stored word S → clean S → RepT (intervalLeafPayload ordered within changed) (F.L ∘ owner) (F.R ∘ owner) →
     (∀ i : Fin k, i.val ≠ 24 → F.L (localBank i) = [] ∧ F.R (localBank i) = []) →
     (∀ j, (∀ i, localBank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) →
     stored changed F ∧ clean F ∧ ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro M stored clean localBank owner ready free payload reset off
   obtain ⟨_,shared,_⟩ := copyLeafPlacement_layout fits hasOwner ports bank recordAt
   obtain ⟨keep,cleaned,frame⟩ := copyLeafPlacement_return fits hasOwner ports bank recordAt S F free reset off
-  exact ⟨ready.returnPayload keep ((copyLeafPayload_iff changed _ _ shared F).1 payload),cleaned,frame⟩
+  exact ⟨ready.returnPayload keep ((intervalLeafPayload_iff ordered within changed _ _ shared F).1 payload),cleaned,frame⟩
+
+open Cover.Fallback RecursiveInterchangeLayout M8.RevMachine in
+/-- Run the interval stopping procedure on its scheduled record and return the archive. -/
+theorem stoppedIntervalChild_exec [M8.Machine.Net] {P U : Type} {lo hi T Q : ℕ} (ordered : lo ≤ hi) (within : hi ≤ 8)
+    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fits : (stoppedIntervalMachine lo hi).1 ≤ Q)
+    (body : P → Pr P T Q prime U) (f : P) (installed : body f = stoppedIntervalProgram lo hi ports fits)
+    (node desc : Descriptor) (w W : ℕ) (record : List (Fin (prime+4)))
+    (position : Fin (volume prime desc) ≃ Fin ((prime^(w+1))^16*W))
+    (coords : InheritedIntervalPositions desc (phaseIntervalChild lo hi (w+1) W) (phaseIntervalChild_volume ordered within (w+1) W) position) (width : desc.width = (hi-lo)*(w+1)) (pos : 0 < W) :
+    ScheduledChildExec node desc w W ports record position body f
+      (stoppedCopyBudget (M8.Machine.ArbitraryWidthOriginalZeroBranch.count 25) (w+1) W
+        ((prime^(w+1))^16*W) desc.width (max 2 (1+(FlatCoordinateSchedule.bits (hi-lo)).length))) := by
+  let tapes := M8.Machine.ArbitraryWidthOriginalZeroBranch.count 25
+  let place := copyLeafPlacement copyLeafFitsRowSwap
+  let localBank := place.trans ports
+  let slot := Fin.castLEEmb copyLeafCallerFits
+  let recBank := scheduledRecordPorts ports
+  unfold ScheduledChildExec
+  intro bank M stored clean smaller u S word ready free
+  obtain ⟨apart,clock,suffix,scratch,blankHeaders,input,blankWork⟩ := copyLeafRecord_inputs ordered within
+    copyLeafFitsRowSwap copyLeafCallerFits ports recBank (fun _ => rfl) record S word ready free
+  obtain ⟨changed,z,F,t,run,price,user,payload,reset,off,action⟩ := inheritedIntervalLeaf_exec ordered within coords width
+    (Nat.succ_pos _) pos word localBank fits body u S recBank apart clock suffix scratch blankHeaders input blankWork
+  obtain ⟨returned,cleaned,frame⟩ := copyLeafRecord_return ordered within copyLeafFitsRowSwap copyLeafCallerFits ports recBank
+    (fun _ => rfl) record S F word changed ready free payload reset off
+  refine ⟨z,F,t,changed,?_,price,user,returned,cleaned,frame,action⟩
+  rw [installed]
+  exact run
 
 open Cover.Fallback RecursiveInterchangeLayout M8.RevMachine in
 /-- Run the fixed rank-seven stopping procedure on its scheduled record and return the archive. -/
@@ -3855,22 +3890,7 @@ theorem stoppedCopyChild_exec [M8.Machine.Net] {P U : Type} {T Q : ℕ}
     ScheduledChildExec node desc w W ports record position body f
       (stoppedCopyBudget (M8.Machine.ArbitraryWidthOriginalZeroBranch.count 25) (w+1) W
         ((prime^(w+1))^16*W) desc.width) := by
-  let tapes := M8.Machine.ArbitraryWidthOriginalZeroBranch.count 25
-  let place := copyLeafPlacement copyLeafFitsRowSwap
-  let localBank := place.trans ports
-  let slot := Fin.castLEEmb copyLeafCallerFits
-  let recBank := scheduledRecordPorts ports
-  unfold ScheduledChildExec
-  intro bank M stored clean smaller u S word ready free
-  obtain ⟨apart,clock,suffix,scratch,blankHeaders,input,blankWork⟩ := copyLeafRecord_inputs
-    copyLeafFitsRowSwap copyLeafCallerFits ports recBank (fun _ => rfl) record S word ready free
-  obtain ⟨changed,z,F,t,run,price,user,payload,reset,off,action⟩ := inheritedCopyLeaf_exec coords width
-    (Nat.succ_pos _) pos word localBank fits body u S recBank apart clock suffix scratch blankHeaders input blankWork
-  obtain ⟨returned,cleaned,frame⟩ := copyLeafRecord_return copyLeafFitsRowSwap copyLeafCallerFits ports recBank
-    (fun _ => rfl) record S F word changed ready free payload reset off
-  refine ⟨z,F,t,changed,?_,price,user,returned,cleaned,frame,action⟩
-  rw [installed]
-  exact run
+  exact stoppedIntervalChild_exec (by decide : 0 ≤ 7) (by decide : 7 ≤ 8) ports fits body f installed node desc w W record position coords width pos
 
 open Cover.Fallback IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
 /-- Run a class invocation with its allocated MOVE machines. Both MOVE and COPY
