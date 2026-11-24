@@ -238,6 +238,53 @@ theorem childInputFan_outside {T : ℕ} (live : Fin (142080+2) ↪ Fin T) (t : F
 
 /-- Prepare the live rows and execute the child on an adjacent private bank.
 Only the owner words and the two volume counters cross the bank boundary. -/
+theorem prepareRunChildFamily {P U : Type} {T N Q : ℕ} {body : P → Pr P N Q prime U}
+    (code : Pr P N Q prime U) (src dst : Fin (142081+2) ↪ Fin N)
+    (live : Fin (142080+2) ↪ Fin T) (out : Fin (142081+2) ↪ Fin T) (tmp : Fin T)
+    (apart : ∀ (i : Fin 142080) (j : Fin 142081), live (i.castAdd 2) ≠ out (j.castAdd 2))
+    (srcTmp : ∀ i : Fin 142080, live (i.castAdd 2) ≠ tmp)
+    (dstTmp : ∀ i : Fin 142081, out (i.castAdd 2) ≠ tmp)
+    (controls : ∀ j : Fin 2, out (j.natAdd 142081) = live (j.natAdd 142080)) :
+    ∃ (bank : Fin N ↪ Fin (T+N)) (host : Empty ⊕ P → Pr (Empty ⊕ P) (T+N) Q prime U) (program : Pr (Empty ⊕ P) (T+N) Q prime U),
+    (∀ j, (∀ i, out i ≠ j) → ∀ h, bank h ≠ j.castAdd N) ∧ ∀ {V price : ℕ} (seed : Stacks N prime)
+      (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ) (extra : ℕ)
+      (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop),
+      (∀ word : List (Fin (prime+4)), word.length = V → weight [] word ≤ weight [] []+extra) →
+      PackedPieceHandoffWithCharge weight V effect body code src dst seed price →
+      ∀ (data : Fin 142080 → Fin V → ZMod 2) u S,
+      HelperFan live data S →
+      S.L tmp = [] → S.R tmp = [] →
+      (∀ i : Fin 142081, S.L (out (i.castAdd 2)) = [] ∧ S.R (out (i.castAdd 2)) = []) →
+      ∃ z F n y, Exec host program (mk u (adjacentStageStacks S seed)) n (mk z F) ∧
+        (∀ js : List (Fin (T+N)), js.Nodup → n+tapeCharge weight js F ≤
+          tapeCharge weight js (adjacentStageStacks S seed)+(142081*(8*V+10+extra)+1+price)) ∧ z.user = u.user ∧
+        ParentStageWords (fun i => dst (i.castAdd 2)) dst V y (embStk bank F) ∧
+        effect (data ∘ Fin.lastCases 0 id) y ∧
+        ∀ j, (∀ i, out i ≠ j) → F.L (j.castAdd N) = S.L j ∧ F.R (j.castAdd N) = S.R j := by
+  obtain ⟨prep,prepare⟩ := prepareChildOwners_exec (P := Empty) (U := U) (Q := Q)
+    Empty.elim live out tmp apart srcTmp dstTmp
+  obtain ⟨bank,_,disjoint,join⟩ := runAdjacentStagesWithCharge (P := Empty) (R := P) (U := U) (q := Q) (A := prime) out src
+  let left := Fin.castAdd N (n := T)
+  refine ⟨bank,Sum.elim (fun e : Empty => embProg left Sum.inl (Empty.elim e)) (fun p => embProg bank Sum.inr (body p)),(embProg left Sum.inl prep).seq (embProg bank Sum.inr code),disjoint,?_⟩
+  intro V price seed weight extra effect wordCost run data u S rep tl tr empty
+  obtain ⟨v,R,t,loaded,paid,user,words,preparedFrame,copyBill⟩ := prepare _ (embDn left u) S rep controls tl tr empty
+  let row : Fin 142081 → Fin 142080 := Fin.lastCases 0 id
+  let post := fun (a : U) (F : Stacks N prime) => a = u.user ∧ ∃ y,
+    ParentStageWords (fun i => dst (i.castAdd 2)) dst V y F ∧ effect (data ∘ row) y
+  obtain ⟨z,F,n,exec,bill,⟨same,y,returned,reads⟩,childFrame⟩ :=
+    join Empty.elim body prep code u S seed v _ t (142081*(8*V+10+extra)+1) price weight post loaded (copyBill weight extra wordCost) (by
+      intro a D state shared privateTapes
+      obtain ⟨b,G,k,y,exec,bill,hb,returned,reads⟩ := run (data ∘ row) a D (by
+        constructor
+        · intro i; exact (shared _).1.trans (words.left i)
+        · intro i; exact (shared _).2.trans (words.right i)
+        · intro j l; rw [(shared _).1,(shared _).2]; exact words.controls j l) privateTapes
+      exact ⟨b,G,k,exec,bill,hb.trans (state.trans user),y,returned,reads⟩)
+  refine ⟨z,F,n,y,exec,bill,same,returned,reads,?_⟩
+  intro j outside
+  have keep := childFrame j outside
+  exact ⟨keep.1,keep.2.trans (preparedFrame j (fun i => outside (i.castAdd 2)))⟩
+
 theorem prepareRunChild {P U : Type} {T N Q V price : ℕ} {body : P → Pr P N Q prime U}
     {code} {src dst : Fin (142081+2) ↪ Fin N} {seed : Stacks N prime} {effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop}
     (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ) (extra : ℕ)
@@ -263,29 +310,8 @@ theorem prepareRunChild {P U : Type} {T N Q V price : ℕ} {body : P → Pr P N 
         ParentStageWords (fun i => dst (i.castAdd 2)) dst V y (embStk bank F) ∧
         effect (data ∘ Fin.lastCases 0 id) y ∧
         ∀ j, (∀ i, out i ≠ j) → F.L (j.castAdd N) = S.L j ∧ F.R (j.castAdd N) = S.R j := by
-  obtain ⟨prep,prepare⟩ := prepareChildOwners_exec (P := Empty) (U := U) (Q := Q)
-    Empty.elim live out tmp apart srcTmp dstTmp
-  obtain ⟨bank,_,disjoint,join⟩ := runAdjacentStagesWithCharge (P := Empty) (R := P) (U := U) (q := Q) (A := prime) out src
-  let left := Fin.castAdd N (n := T)
-  refine ⟨bank,Sum.elim (fun e : Empty => embProg left Sum.inl (Empty.elim e)) (fun p => embProg bank Sum.inr (body p)),(embProg left Sum.inl prep).seq (embProg bank Sum.inr code),disjoint,?_⟩
-  intro data u S rep tl tr empty
-  obtain ⟨v,R,t,loaded,paid,user,words,preparedFrame,copyBill⟩ := prepare _ (embDn left u) S rep controls tl tr empty
-  let row : Fin 142081 → Fin 142080 := Fin.lastCases 0 id
-  let post := fun (a : U) (F : Stacks N prime) => a = u.user ∧ ∃ y,
-    ParentStageWords (fun i => dst (i.castAdd 2)) dst V y F ∧ effect (data ∘ row) y
-  obtain ⟨z,F,n,exec,bill,⟨same,y,returned,reads⟩,childFrame⟩ :=
-    join Empty.elim body prep code u S seed v _ t (142081*(8*V+10+extra)+1) price weight post loaded (copyBill weight extra wordCost) (by
-      intro a D state shared privateTapes
-      obtain ⟨b,G,k,y,exec,bill,hb,returned,reads⟩ := run (data ∘ row) a D (by
-        constructor
-        · intro i; exact (shared _).1.trans (words.left i)
-        · intro i; exact (shared _).2.trans (words.right i)
-        · intro j l; rw [(shared _).1,(shared _).2]; exact words.controls j l) privateTapes
-      exact ⟨b,G,k,exec,bill,hb.trans (state.trans user),y,returned,reads⟩)
-  refine ⟨z,F,n,y,exec,bill,same,returned,reads,?_⟩
-  intro j outside
-  have keep := childFrame j outside
-  exact ⟨keep.1,keep.2.trans (preparedFrame j (fun i => outside (i.castAdd 2)))⟩
+  obtain ⟨bank,host,program,apartBank,execute⟩ := prepareRunChildFamily (body := body) code src dst live out tmp apart srcTmp dstTmp controls
+  exact ⟨bank,host,program,apartBank,execute seed weight extra effect wordCost run⟩
 
 -- The time-only preparation statement is available at d5a8b94e.
 
@@ -371,6 +397,65 @@ theorem splitChildStacks_eq {T N : ℕ} (D : Stacks (142082+T+N) prime) (seed : 
         simp only [adjacentStageStacks,Fin.addCases_right]
         first | exact (privateTapes i).1 | exact (privateTapes i).2
 
+theorem runSplitOwnerFamily {P U : Type} {T N Q : ℕ} {body : P → Pr P N Q prime U}
+    (code : Pr P N Q prime U) (src dst : Fin (142081+2) ↪ Fin N)
+    (live : Fin (142080+2) ↪ Fin T) :
+    let H := 142082+T+N
+    let caller := (Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)
+    ∃ (bank : Fin N ↪ Fin H) (host : Empty ⊕ P → Pr (Empty ⊕ P) H Q prime U)
+      (program : Pr (Empty ⊕ P) H Q prime U),
+    (∀ j, (∀ i : Fin 2, live (i.natAdd 142080) ≠ j) → ∀ h, bank h ≠ caller j) ∧
+    ∀ {V price : ℕ} (seed : Stacks N prime)
+      (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ) (extra : ℕ)
+      (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop),
+      (∀ word : List (Fin (prime+4)), word.length = V → weight [] word ≤ weight [] []+extra) →
+      PackedPieceHandoffWithCharge weight V effect body code src dst seed price →
+      ∀ (data : Fin 142080 → Fin V → ZMod 2) u S,
+      HelperFan (live.trans caller) data S →
+      (∀ i : Fin 142082, let j := (i.castAdd T).castAdd N
+        S.L j = [] ∧ S.R j = []) →
+      (∀ i : Fin N, let j := i.natAdd (142082+T)
+        S.L j = seed.L i ∧ S.R j = seed.R i) →
+      ∃ z F n, ∃ y : Fin 142081 → Fin V → ZMod 2, Exec host program (mk u S) n (mk z F) ∧
+        (∀ js : List (Fin H), js.Nodup →
+          n+tapeCharge weight js F ≤ tapeCharge weight js S+(142081*(8*V+10+extra)+1+price)) ∧ z.user = u.user ∧
+        ParentStageWords (fun i => dst (i.castAdd 2)) dst V y (embStk bank F) ∧
+        effect (data ∘ Fin.lastCases 0 id) y ∧
+        HelperFan ((childReturnFan dst).trans bank) (fun r => y r.castSucc) F ∧
+        ∀ j, (∀ i : Fin 2, live (i.natAdd 142080) ≠ j) →
+          let t := (j.natAdd 142082).castAdd N
+          F.L t = S.L t ∧ F.R t = S.R t := by
+  intro H caller
+  let raised := live.trans (Fin.natAddEmb 142082)
+  let tmp := (Fin.last 142081).castAdd T
+  have separate (i : Fin T) (j : Fin 142082) : i.natAdd 142082 ≠ j.castAdd T := by
+    intro eq
+    have h := congrArg Fin.val eq
+    change 142082+i.val = j.val at h
+    omega
+  obtain ⟨bank,host,program,disjoint,exec⟩ := prepareRunChildFamily (body := body) code src dst raised (childInputFan live) tmp
+    (fun i j => by rw [childInputFan_owner]; exact separate _ _) (fun _ => separate _ _)
+    (fun j => by rw [childInputFan_owner]; exact (Fin.castAddEmb T).injective.ne (Fin.castSucc_ne_last j))
+    (childInputFan_control live)
+  refine ⟨bank,host,program,fun j outside => disjoint _ (childInputFan_outside live j outside),?_⟩
+  intro V price seed weight extra effect wordCost run data u D rep empty privateTapes
+  let S := embStk caller D
+  have shape := splitChildStacks_eq D seed empty privateTapes
+  have projected : HelperFan live data S := rep
+  have placed : HelperFan raised data (childOwnerStacks S) := by
+    intro i z
+    simpa [raised,embStk,childOwnerStacks,adjacentStageStacks,Function.comp_def] using projected i z
+  obtain ⟨z,F,n,y,ran,paid,user,words,reads,keep⟩ := exec seed weight extra effect wordCost run data u (childOwnerStacks S)
+    placed (by simp [tmp,childOwnerStacks,adjacentStageStacks]) (by simp [tmp,childOwnerStacks,adjacentStageStacks])
+    (fun i => by simp [childInputFan_owner,childOwnerStacks,adjacentStageStacks])
+  refine ⟨z,F,n,y,?_,?_,user,words,reads,words.returnFan,?_⟩
+  · rw [shape]
+    exact ran
+  · rw [shape]
+    exact paid
+  intro j outside
+  simpa [childOwnerStacks,adjacentStageStacks,S,caller,embStk] using keep _ (childInputFan_outside live j outside)
+
 theorem runSplitOwnersWithCharge {P U : Type} {T N Q V price : ℕ} {body : P → Pr P N Q prime U}
     {code} {src dst : Fin (142081+2) ↪ Fin N} {seed : Stacks N prime} {effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop}
     (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ) (extra : ℕ)
@@ -401,36 +486,8 @@ theorem runSplitOwnersWithCharge {P U : Type} {T N Q V price : ℕ} {body : P �
         ∀ j, (∀ i : Fin 2, live (i.natAdd 142080) ≠ j) →
           let t := (j.natAdd 142082).castAdd N
           F.L t = S.L t ∧ F.R t = S.R t := by
-  intro H caller
-  let raised := live.trans (Fin.natAddEmb 142082)
-  let tmp := (Fin.last 142081).castAdd T
-  have separate (i : Fin T) (j : Fin 142082) : i.natAdd 142082 ≠ j.castAdd T := by
-    intro eq
-    have h := congrArg Fin.val eq
-    change 142082+i.val = j.val at h
-    omega
-  obtain ⟨bank,host,program,disjoint,exec⟩ := prepareRunChild weight extra wordCost run raised (childInputFan live) tmp
-    (fun i j => by rw [childInputFan_owner]; exact separate _ _) (fun _ => separate _ _)
-    (fun j => by rw [childInputFan_owner]; exact (Fin.castAddEmb T).injective.ne (Fin.castSucc_ne_last j))
-    (childInputFan_control live)
-  refine ⟨bank,host,program,fun j outside => disjoint _ (childInputFan_outside live j outside),?_⟩
-  intro data u D rep empty privateTapes
-  let S := embStk caller D
-  have shape := splitChildStacks_eq D seed empty privateTapes
-  have projected : HelperFan live data S := rep
-  have placed : HelperFan raised data (childOwnerStacks S) := by
-    intro i z
-    simpa [raised,embStk,childOwnerStacks,adjacentStageStacks,Function.comp_def] using projected i z
-  obtain ⟨z,F,n,y,ran,paid,user,words,reads,keep⟩ := exec data u (childOwnerStacks S)
-    placed (by simp [tmp,childOwnerStacks,adjacentStageStacks]) (by simp [tmp,childOwnerStacks,adjacentStageStacks])
-    (fun i => by simp [childInputFan_owner,childOwnerStacks,adjacentStageStacks])
-  refine ⟨z,F,n,y,?_,?_,user,words,reads,words.returnFan,?_⟩
-  · rw [shape]
-    exact ran
-  · rw [shape]
-    exact paid
-  intro j outside
-  simpa [childOwnerStacks,adjacentStageStacks,S,caller,embStk] using keep _ (childInputFan_outside live j outside)
+  obtain ⟨bank,host,program,apart,execute⟩ := runSplitOwnerFamily (body := body) code src dst live
+  exact ⟨bank,host,program,apart,execute seed weight extra effect wordCost run⟩
 
 theorem runSplitOwners {P U : Type} {T N Q V price : ℕ} {body : P → Pr P N Q prime U}
     {code src dst seed} {effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop}

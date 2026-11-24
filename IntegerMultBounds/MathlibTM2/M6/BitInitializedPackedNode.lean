@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitNodeHeaderSetup
+public import IntegerMultBounds.MathlibTM2.M6.BitRecordChildRun
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
@@ -46,6 +46,8 @@ theorem initializedPackedNode [M8.Machine.Net] (P U Config : Type) :
         (v.w+1) v.idleWidth (budget c i.val) (binSyms v.root.width.size v.cutoff)) →
     ∃ (R : Type) (T : ℕ) (table : R → Pr R T Q prime U), ∃ code src dst, ∃ seed : Config → Stacks T prime,
       LoadsPackedSeed (nodeSeedWords ∘ input) (CutoffNodeInput.cells ∘ input) seed ∧ LoadsNodeSeedFromRecord input seed ∧
+      SplitRecordChildFamily (P := R) (U := U) (Q := Q) input dst (fun c =>
+        (input c).localCharge localWork assemblyRate+∑ i : Fin nodeChildren5.length, time c i.val) ∧
       ∀ c, let v := input c
         PackedPieceHandoffWithCharge cleanupWeight v.cells (packedChildOutput (v.w+1) v.cells) table code src dst (seed c)
           (v.localCharge localWork assemblyRate+∑ i : Fin nodeChildren5.length, time c i.val) := by
@@ -132,7 +134,10 @@ theorem initializedPackedNode [M8.Machine.Net] (P U Config : Type) :
       · change parentIntervalRead n idleCopies[j.val].2 (v.w+1) (v.idleWidth*142080) word y at read
         simpa only [j,idleCopyIndex_get] using read)
     exact installed)
-  refine ⟨R,T,table,program,src,dst,initial,ready,LoadsPackedSeed.fromNodeRecord ready,?_⟩
+  have fromRecord := LoadsPackedSeed.fromNodeRecord ready
+  refine ⟨R,T,table,program,src,dst,initial,ready,fromRecord,?_⟩
+  apply (fun physical => And.intro (splitRecordChildFamily fromRecord physical) physical)
+
   intro c v x u S words fresh
   obtain ⟨z,F,t,y,exec,paid,user,out,act⟩ := run c x u S words fresh
   refine ⟨z,F,t,y,exec,?_,user,out,act⟩
@@ -143,7 +148,6 @@ theorem initializedPackedNode [M8.Machine.Net] (P U Config : Type) :
     (fun i => by dsimp only [idleCost,overhead]; omega) (fun _ _ => le_rfl)
   simp only [Finset.sum_const,Finset.card_univ,Fintype.card_fin,nsmul_eq_mul,Nat.cast_id] at bill
   have charged := paid js unique
-  dsimp only [v]
   unfold CutoffNodeInput.localCharge
   dsimp only [work,overhead,V,W,CutoffNodeInput.cells] at bill charged ⊢
   omega
