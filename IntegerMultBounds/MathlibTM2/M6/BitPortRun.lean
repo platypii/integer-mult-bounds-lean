@@ -876,7 +876,9 @@ theorem digitSwap_view_owner_cost [M8.Machine.Net] {arity : ℕ} (i j : Fin arit
     let V := (prime^w)^arity*W
     ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
       SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = 3808274*V + price w W ∧
-      (∃ S : Stacks stage.tapes prime, RepT (stage.input 0) S.L S.R) ∧
+      (25 ≤ stage.tapes ∧ (∀ k, (stage.slots k).val = k.val) ∧ stage.metadata = SharedBankStageInput.raw
+        (LabelCall.bank (SharedBank.empty 1 prime) (payloadView prime arity w W)
+          (LabelPrepare.input (payloadView prime arity w W) arity i.val j.val w)) stage.tapes) ∧
       ∀ x, LabelView.Swapped prime (swapView prime w W i j) (ext x) (ext (stage.transform x)) := by
   let io : Fin 1 := 0
   let block := LabelSwap.program io
@@ -913,12 +915,8 @@ theorem digitSwap_view_owner_cost [M8.Machine.Net] {arity : ℕ} (i j : Fin arit
     change GraphContract.Runs block _ (LabelCall.bank (setTape _ io _ 0) v d) _ at run
     rw [word,same,size,view] at run
     exact Blocks.runs_mono run (Nat.add_le_add_left (paid w W hw hW) _)
-  · let payload := List.ofFn fun _ : Fin V => SparseRoleCircuit.encode (a := prime) (0 : ZMod 2)
-    let owners : Stacks 1 prime := ⟨[],[],fun _ => [],fun _ => payload⟩
-    apply swap_bank_seed (by simpa using Fintype.card_le_of_injective block.slots block.slots_injective)
-      (portOwner 0) v d owners
-    intro i z
-    simp [portOwner,owners,payload,readAt_nil_left,putWord_blank_zero]
+  · exact ⟨by simpa using Fintype.card_le_of_injective block.slots block.slots_injective,
+      (fun k => leading (k.castAdd 24)),swap_bank_strip (portOwner 0) slots (fun k => leading (k.castAdd 24)) v d⟩
   · intro x
     have swap := (result x).choose_spec.1
     let y := (result x).choose
@@ -943,8 +941,11 @@ theorem digitSwap_view_owner [M8.Machine.Net] {arity : ℕ} (i j : Fin arity) (l
     simpa only [size,show u.width = w from rfl] using LeafCore.cost_le positive)
   refine ⟨machine,?_⟩
   intro w W hw hW
-  obtain ⟨stage,fixed,price,seed,swap⟩ := build w W hw hW
-  exact ⟨stage,fixed,price,stage.strip_input 0 ▸ HasStackSeed.strip seed stage.slots,swap⟩
+  obtain ⟨stage,fixed,price,⟨fits,_,metadata⟩,swap⟩ := build w W hw hW
+  refine ⟨stage,fixed,price,?_,swap⟩
+  rw [metadata]
+  obtain ⟨owners,rep⟩ := HasStackSeed.empty 1
+  exact swap_bank_seed fits _ _ _ owners rep
 
 open Cover RecursiveInterchangeLayout M8.RevMachine in
 /-- A rank-one recursive transpose of the physical swap view has the digit

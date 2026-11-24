@@ -10,6 +10,106 @@ namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover.Fallback
 open Shared50ModularControl (prime)
 
+/-- Load a swap's private stacks from four external runtime words and return
+its entire 35-tape caller workspace blank. -/
+theorem loadSwapPortFromWords {P U : Type} {T Q K : ℕ} (body : P → Pr P T Q prime U)
+    (bank : Fin (35+(24+K)) ↪ Fin T) (source : Fin 4 → Fin T)
+    (apart : ∀ i j, bank i ≠ source j) (d i j : ℕ) (degree : 2 ≤ d) :
+    let suffix := (Fin.natAddEmb 35 (m := 24+K)).trans bank
+    ∃ rate : ℕ, ∃ code, ∀ w W, 0 < W → ∀ u (S : Stacks T prime),
+      let M := prime^(w+1)
+      S.R (source 0) = binSyms M.size M → S.R (source 1) = binSyms 1 1 →
+      S.R (source 2) = binSyms W.size W → (S.R (source 3)).length = w →
+      (∀ k, S.L (bank k) = [] ∧ S.R (bank k) = []) →
+      ∃ z F n, Exec body code (mk u S) n (mk z F) ∧ z.user = u.user ∧
+        CleanupBound S F n (rate*(M^d*W)) ∧
+        (∀ k, let seed := swapPrivateStacks K (payloadView prime d (w+1) W) d i j (w+1)
+          F.L (suffix k) = seed.L k ∧ F.R (suffix k) = seed.R k) ∧
+        ∀ k, (∀ h, suffix h ≠ k) → F.L k = S.L k ∧ F.R k = S.R k := by
+  classical
+  intro suffix
+  let caller := (Fin.castAddEmb (24+K) (n := 35)).trans bank
+  let slots : Fin 4 ↪ Fin 35 := ⟨![2,28,27,33],by decide⟩
+  have separate (a b) : caller a ≠ suffix b := bank.injective.ne (by
+    intro eq
+    have val := congrArg Fin.val eq
+    change a.val = 35+b.val at val
+    omega)
+  obtain ⟨copy,read⟩ := installChildSeed body caller slots source (caller 0) (caller 1)
+    (fun i j => apart _ _) (fun i => by
+      have h : ∀ i : Fin 4, slots i ≠ 0 ∧ slots i ≠ 1 := by decide
+      simp [List.nodup_cons,Function.Embedding.trans_apply,(apart _ _).symm,caller,
+        bank.injective.eq_iff,(h i).1,(h i).2])
+  obtain ⟨rate,setup,run⟩ := placedSwapPortLoader body bank d i j degree
+  let targets := slots.trans caller
+  let work := (List.finRange 4).map targets
+  have unique := (List.nodup_finRange 4).map targets.injective
+  refine ⟨rate+100,(copy.seq setup).seq (clearWorkTapes work),?_⟩
+  intro w W positive u S M base unit width clock free
+  let words := fun i => S.R (source i)
+  let seed : Stacks 35 prime := ⟨[],[],fun _ => [],Function.extend slots words (fun _ => [])⟩
+  have atSlot (a) : seed.R (slots a) = words a := slots.injective.extend_apply words (fun _ => []) a
+  obtain ⟨v,R,t,exec,user,copied,set,off⟩ := read seed u S (fun a => (atSlot a).symm) (fun _ => (free _).2)
+    (free _).2 (free _).2
+  have stored a : R (caller (slots a)) = words a :=
+    (set _ (fun h => False.elim (h a rfl))).trans (atSlot a)
+  let D := {S with R := R}
+  have noScratch : ∀ k : Fin 35, 3 ≤ k.val → k.val < 9 → ∀ a, slots a ≠ k := by decide
+  obtain ⟨z,G,m,ready,same,bill,out,frame⟩ := run w W positive v D
+    ((stored 0).trans base) ((stored 1).trans unit) ((stored 2).trans width)
+    ((congrArg List.length (stored 3)).trans clock)
+    (fun k lo hi => (off _ (fun a => caller.injective.ne (noScratch k lo hi a))).trans (free _).2)
+    (fun k => ⟨(free _).1,(off _ (fun a => separate _ k)).trans (free _).2⟩)
+  have copyBill : CleanupBound S D t (seedLoadBill words) := by
+    intro js nd
+    change t+tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+seedLoadBill words
+    simpa only [D,atSlot] using copied js nd
+  obtain ⟨last,lastUser,clear⟩ := clearWorkTapes_exec body work unique z G
+  let F := {G with L := fun k => if k ∈ work then [] else G.L k, R := fun k => if k ∈ work then [] else G.R k}
+  have paid := cleanupBound_clearBank (F := F) work unique (copyBill.seq bill)
+    (Nat.le_refl (tapeCharge cleanupWeight work G+1)) (fun k hk => by simp [F,hk])
+    (fun k => by by_cases hk : k ∈ work <;> simp [F,hk])
+  have init : tapeCharge cleanupWeight work S = 16 := by
+    change (work.map (fun k => cleanupWeight (S.L k) (S.R k))).sum = 16
+    rw [List.map_congr_left (g := fun _ => 4) (fun k hk => by
+      obtain ⟨a,_,rfl⟩ := List.mem_map.mp hk
+      change cleanupWeight (S.L (bank _)) (S.R (bank _)) = _
+      rw [(free _).1,(free _).2]
+      rfl)]
+    rfl
+  have vol := Nat.le_mul_of_pos_right (M^d) positive
+  have hm : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
+  have rad := (Nat.le_self_pow (by omega : d ≠ 0) M).trans vol
+  have wt := (Nat.lt_pow_self Shared50ModularControl.prime_prime.one_lt (n := w+1)).le
+  have count := Nat.le_mul_of_pos_left W (pow_pos hm d)
+  have bits (n : ℕ) : n.size ≤ n := Nat.size_le.mpr Nat.lt_two_pow_self
+  have fee : seedLoadBill words+17 ≤ 100*(M^d*W) := by
+    simp [seedLoadBill,Fin.sum_univ_succ,words,base,unit,width,clock,length_binSyms]
+    have := bits M
+    have := bits W
+    change w+1 ≤ M at wt
+    omega
+  refine ⟨last,F,_,(exec.seq ready).seq clear,lastUser.trans (same.trans user),?_,?_,?_⟩
+  · intro js nd
+    have h := paid js nd
+    apply h.trans (Nat.add_le_add_left _ _)
+    rw [init,Nat.add_mul]
+    change seedLoadBill words+rate*(M^d*W)+16+1 ≤ rate*(M^d*W)+100*(M^d*W)
+    omega
+  · intro k
+    have h : suffix k ∉ work := by
+      intro mem
+      obtain ⟨a,_,eq⟩ := List.mem_map.mp mem
+      exact separate _ k eq
+    simpa only [F,ite_eq_right h] using out k
+  · intro k away
+    by_cases h : k ∈ work
+    · obtain ⟨a,_,rfl⟩ := List.mem_map.mp h
+      simp only [F,ite_eq_left h]
+      exact ⟨(free _).1.symm,(free _).2.symm⟩
+    · have orig := off k (fun a eq => h (eq ▸ List.mem_map_of_mem (f := targets) (List.mem_finRange a)))
+      simpa only [F,ite_eq_right h] using And.intro (frame k away).1 ((frame k away).2.trans orig)
+
 noncomputable def basisSeedPorts {d : ℕ} (ops : List (FlatCoordinateSchedule.Op d)) :
     Fin 2 ↪ Fin (FlatCoordinateCleanSchedule.tapeCount ops) :=
   (Fin.natAddEmb 2 (m := 2)).trans (Fin.castLEEmb (by

@@ -16,6 +16,25 @@ def swapHeaderSlots : List (Fin 24) := [0,1,5,8,9,12,13,14,22,23]
 def swapHeaderPort (fits : T+24 ≤ N) : Fin 24 ↪ Fin N :=
   (Fin.natAddEmb T).trans (Fin.castLEEmb fits)
 
+def swapInputWords (view : RecursiveInterchangeLayout.Descriptor) (d i j w : ℕ) :
+    Fin (2+22) → Option (List Bool) := Fin.addCases
+  (fun k : Fin 2 => some (Routines.hdr view (k.castLE (by decide))))
+  (LabelPrepare.input view d i j w)
+
+/-- Exact stacks installed on the 24 private swap headers. -/
+def SwapHeadersReady (fits : T+24 ≤ N) (view : RecursiveInterchangeLayout.Descriptor)
+    (d i j w : ℕ) (S : Stacks N prime) : Prop :=
+  ∀ k, let p := swapHeaderPort fits k
+    let word := swapInputWords view d i j w k
+    S.L p = word.toList.map (fun _ => separator) ∧ S.R p = (word.getD []).map bitSymbol
+
+/-- The private suffix comprises the marked descriptor words followed by blank scratch. -/
+noncomputable def swapPrivateStacks (K : ℕ) (view : RecursiveInterchangeLayout.Descriptor) (d i j w : ℕ) :
+    Stacks (24+K) prime :=
+  let words := swapInputWords view d i j w
+  ⟨[],[],Fin.append (fun k => (words k).toList.map (fun _ => separator)) (fun _ => []),
+    Fin.append (fun k => ((words k).getD []).map bitSymbol) (fun _ => [])⟩
+
 /-- Prepend a fixed word on each selected tape, leaving every other stack alone. -/
 def writeHeaders {A : ℕ} (word : Fin N → List (Fin (A+4))) : List (Fin N) → Act N Q A U
   | [] => .done
@@ -89,6 +108,7 @@ theorem markSwapHeaders_exec (fits : T+24 ≤ N) (body : P → Pr P N Q prime U)
     (∀ k : Fin N, T+24 ≤ k.val → S.L k = [] ∧ S.R k = []) →
     ∃ F, Exec body (markSwapHeaders fits) (mk v S) 1 (mk v F) ∧
       (∀ k : Fin N, k.val < T ∨ T+24 ≤ k.val → F.L k = S.L k ∧ F.R k = S.R k) ∧
+      SwapHeadersReady fits view d i j w F ∧
       RepT (SharedBankStageInput.raw (LabelCall.bank roles view hdr) N) F.L F.R := by
   intro hdr words port role header privateTapes
   let slots := swapHeaderSlots.map port
@@ -99,17 +119,19 @@ theorem markSwapHeaders_exec (fits : T+24 ≤ N) (body : P → Pr P N Q prime U)
     obtain ⟨a,_,rfl⟩ := List.mem_map.mp mem
     change T+a.val < T ∨ T+24 ≤ T+a.val at hk
     omega
-  refine ⟨_,run,?_,swap_bank_rep fits roles view hdr _ ?_ ?_ ?_⟩
+  have installed : SwapHeadersReady fits view d i j w
+      {S with L := fun k => if k ∈ slots then separator :: S.L k else S.L k} := by
+    intro k
+    change (if port k ∈ slots then separator :: S.L (port k) else S.L (port k)) = _ ∧ _
+    refine ⟨?_,(header k).2⟩
+    simp only [slots,List.mem_map,port.injective.eq_iff,exists_eq_right,(header k).1]
+    fin_cases k <;> rfl
+  refine ⟨_,run,?_,installed,swap_bank_rep fits roles view hdr _ ?_ installed ?_⟩
   · intro k hk
     exact ⟨ite_eq_right (fresh k hk),rfl⟩
   · intro k pos
     change _ = readAt blank (if _ ∈ slots then _ else _) _ _
     rw [ite_eq_right (fresh _ (Or.inl k.isLt))]; exact role k pos
-  · intro k
-    change (if port k ∈ slots then separator :: S.L (port k) else S.L (port k)) = _ ∧ _
-    refine ⟨?_,(header k).2⟩
-    simp only [slots,List.mem_map,port.injective.eq_iff,exists_eq_right,(header k).1]
-    fin_cases k <;> rfl
   · intro k hk
     change (if k ∈ slots then _ else _) = [] ∧ _
     rw [ite_eq_right (fresh _ (Or.inr hk))]; exact privateTapes k hk
@@ -129,6 +151,7 @@ theorem finishSwapHeaders_exec (fits : T+24 ≤ N) (body : P → Pr P N Q prime 
     (∀ k : Fin N, T+24 ≤ k.val → S.L k = [] ∧ S.R k = []) →
     ∃ F, Exec body (.seq (writeSwapConstants fits d i j) (markSwapHeaders fits)) (mk v S) 2 (mk v F) ∧
       (∀ k : Fin N, k.val < T ∨ T+24 ≤ k.val → F.L k = S.L k ∧ F.R k = S.R k) ∧
+      SwapHeadersReady fits view d i j (w+1) F ∧
       RepT (SharedBankStageInput.raw (LabelCall.bank roles view (LabelPrepare.input view d i j (w+1))) N) F.L F.R := by
   intro port view role left prefixWord exponent width empty privateTapes
   have disjoint : ∀ k ∈ fixedSlots, k ≠ 5 ∧ k ≠ 8 ∧ k ≠ 14 := by decide

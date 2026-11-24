@@ -86,6 +86,30 @@ theorem portSwapBank_rep {T K : ℕ} (roles : Tapes T prime) (io : Fin T)
       simpa only [port,portSwapPlacement,Function.Embedding.coeFn_mk,Function.comp_apply,Fin.addCases_right,SharedBankStageInput.raw,Fin.val_natAdd,
         dite_eq_right left,dite_eq_right right] using cell
 
+/-- The same suffix installed by the runtime initializer represents the
+digit-swap metadata when the owner slot is stripped. -/
+theorem swapPrivateStacks_rep (K : ℕ) (view : RecursiveInterchangeLayout.Descriptor) (d i j w : ℕ) :
+    let seed := swapPrivateStacks K view d i j w
+    let bank := LabelCall.bank (SharedBank.empty 1 prime) view (LabelPrepare.input view d i j w)
+    RepT (SharedBankStageInput.raw bank (1+(24+K)))
+      (Fin.append (fun _ : Fin 1 => []) seed.L) (Fin.append (fun _ : Fin 1 => []) seed.R) := by
+  intro seed bank
+  let S : Stacks (1+(24+K)) prime := ⟨[],[],Fin.append (fun _ : Fin 1 => []) seed.L,
+    Fin.append (fun _ : Fin 1 => []) seed.R⟩
+  apply swap_bank_rep (by omega : 1+24 ≤ 1+(24+K)) _ _ _ S
+  · intro k pos
+    have eq : (k.castAdd 24).castLE (by omega : 1+24 ≤ 1+(24+K)) = k.castAdd (24+K) := Fin.ext rfl
+    simp [eq,S,SharedBank.empty,readAt_nil_left,wordTape_nil]
+  · intro k
+    have eq : (k.natAdd 1).castLE (by omega : 1+24 ≤ 1+(24+K)) = (k.castAdd K).natAdd 1 := Fin.ext rfl
+    simp only [eq,S,Fin.append_right,seed,swapPrivateStacks,Fin.append_left]
+    exact ⟨rfl,rfl⟩
+  · intro k beyond
+    let a : Fin K := ⟨k.val-25,by omega⟩
+    have eq : k = (a.natAdd 24).natAdd 1 := Fin.ext (by dsimp [a]; omega)
+    rw [eq]
+    simp [S,seed,swapPrivateStacks]
+
 private theorem dimensionPower_noCalls {P U : Type} {T Q : ℕ} (r : Fin 10 ↪ Fin T) (d : ℕ) :
     WordCmd.NoCalls (dimensionPower (P := P) (Q := Q) (A := prime) (U := U) r d) := by
   induction d generalizing r with
@@ -117,16 +141,114 @@ theorem preparePortSwap {T K Q : ℕ} {P U : Type}
       Exec body setup (mk u S) n (mk z F) ∧
       CleanupBound S F n ((1+6*Fast.Main.mnProgPush setup)*setupTime) ∧
       (∀ k : Fin T, F.L (k.castAdd _) = S.L (k.castAdd _) ∧ F.R (k.castAdd _) = S.R (k.castAdd _)) ∧
+      (∀ k : Fin (24+K), let seed := swapPrivateStacks K view d i j (w+1)
+        F.L (k.natAdd T) = seed.L k ∧ F.R (k.natAdd T) = seed.R k) ∧
       RepT (SharedBankStageInput.raw (LabelCall.bank one view (LabelPrepare.input view d i j (w+1))) (1+(24+K)))
         (F.L ∘ port) (F.R ∘ port) := by
   intro fits hdr one port view setup setupTime power spectator exponent u S base unit width clock scratch represented fresh tail
-  obtain ⟨z,F,n,user,time,exec,keep,ready⟩ := swapSetupAt_exec fits r body roles d i j w W H J baseFits widthFits
+  obtain ⟨z,F,n,user,time,exec,keep,headers,ready⟩ := swapSetupAt_exec fits r body roles d i j w W H J baseFits widthFits
     u S power spectator exponent base unit width clock scratch represented fresh tail
   have closed : WordCmd.NoCalls setup := ⟨⟨⟨dimensionPower_noCalls _ _,by repeat constructor⟩,by repeat constructor⟩,by repeat constructor⟩
   have charge := nativeCleanupBound exec (WordCmd.native_of_noCalls closed le_rfl)
-  refine ⟨z,F,n,user,time,exec,?_,fun k => keep _ (Or.inl k.isLt),portSwapBank_rep roles io view _ F ready⟩
-  intro js distinct
-  exact (charge js distinct).trans (Nat.add_le_add_left (Nat.mul_le_mul_left _ time) _)
+  refine ⟨z,F,n,user,time,exec,?_,fun k => keep _ (Or.inl k.isLt),?_,portSwapBank_rep roles io view _ F ready⟩
+  · intro js distinct
+    exact (charge js distinct).trans (Nat.add_le_add_left (Nat.mul_le_mul_left _ time) _)
+  · intro k
+    induction k using Fin.addCases with
+    | left k =>
+      have index : swapHeaderPort fits k = (k.castAdd K).natAdd T := Fin.ext rfl
+      simpa only [index,view,swapPrivateStacks,Fin.append_left] using headers k
+    | right k =>
+      have beyond : T+24 ≤ ((k.natAdd 24).natAdd T).val := by simp
+      have off := keep _ (Or.inr beyond)
+      simpa only [swapPrivateStacks,Fin.append_right] using
+        And.intro (off.1.trans (tail _ beyond).1) (off.2.trans (tail _ beyond).2)
+
+/-- The quadratic arithmetic on the radix header fits in two of the chart's
+digits, uniformly in the spectator count. -/
+theorem swapPortSetupTime_le (d w W : ℕ) (degree : 2 ≤ d) (pos : 0 < W) :
+    let M := prime^(w+1)
+    let V := M^d*W
+    dimensionTime M.size 1 d + (4*(d*M.size+1)+6) + (10*W.size+12) + (21*(w+1)+12) + 2 ≤
+      (30*d^2+80*d+100)*V := by
+  intro M V
+  have hm : 0 < M := pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos _
+  have size (n : ℕ) : n.size ≤ n := Nat.size_le.mpr Nat.lt_two_pow_self
+  have mass : M^d ≤ V := Nat.le_mul_of_pos_right _ pos
+  have radix : M ≤ V := (Nat.le_self_pow (by omega : d ≠ 0) M).trans mass
+  have square : M.size*M.size ≤ V := (Nat.mul_le_mul (size M) (size M)).trans
+    ((sq M).symm ▸ (Nat.pow_le_pow_right hm degree).trans mass)
+  have width := (size M).trans radix
+  have clock : w+1 ≤ V := (Nat.lt_pow_self IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.one_lt).le.trans radix
+  have spectator : W ≤ V := Nat.le_mul_of_pos_left _ (pow_pos hm _)
+  have unit := pos.trans_le spectator
+  have quadratic := Nat.mul_le_mul_left (12*d^2) square
+  have linear := Nat.mul_le_mul_left (18*d^2+36*d) width
+  have fixed := Nat.mul_le_mul_left (44*d) (show 1 ≤ V from unit)
+  have dims := dimensionTime_le M.size 1 d
+  have rest := (size W).trans spectator
+  nlinarith only [quadratic,linear,fixed,dims,rest,clock,unit]
+
+/-- Install one correction's private suffix at an arbitrary host placement.
+The 35 caller registers and every off-bank tape retain both stacks. -/
+theorem placedSwapPortLoader {P U : Type} {T Q K : ℕ} (body : P → Pr P T Q prime U)
+    (bank : Fin (35+(24+K)) ↪ Fin T) (d i j : ℕ) (degree : 2 ≤ d) :
+    let caller := (Fin.castAddEmb (24+K) (n := 35)).trans bank
+    let suffix := (Fin.natAddEmb 35 (m := 24+K)).trans bank
+    ∃ rate : ℕ, ∃ code, ∀ w W, 0 < W → ∀ u (S : Stacks T prime),
+      let M := prime^(w+1)
+      S.R (caller 2) = binSyms M.size M → S.R (caller 28) = binSyms 1 1 →
+      S.R (caller 27) = binSyms W.size W → (S.R (caller 33)).length = w →
+      (∀ k : Fin 35, 3 ≤ k.val → k.val < 9 → S.R (caller k) = []) →
+      (∀ k, S.L (suffix k) = [] ∧ S.R (suffix k) = []) →
+      ∃ z F n, Exec body code (mk u S) n (mk z F) ∧ z.user = u.user ∧
+        CleanupBound S F n (rate*(M^d*W)) ∧
+        (∀ k, let seed := swapPrivateStacks K (payloadView prime d (w+1) W) d i j (w+1)
+          F.L (suffix k) = seed.L k ∧ F.R (suffix k) = seed.R k) ∧
+        ∀ k, (∀ h, suffix h ≠ k) → F.L k = S.L k ∧ F.R k = S.R k := by
+  intro caller suffix
+  let fits : 59 ≤ 35+(24+K) := by omega
+  let r := swapSetupPorts.trans (Fin.castLEEmb fits)
+  let setup : Pr Empty (35+(24+K)) Q prime U := swapSetup fits d i j
+  let factor := 1+6*Fast.Main.mnProgPush setup
+  refine ⟨factor*(30*d^2+80*d+100),embProg bank Empty.elim setup,?_⟩
+  intro w W pos u S M base one width clock scratch free
+  let D := embStk bank S
+  let roles : Tapes 35 prime := ⟨fun _ => 0,fun k => readAt blank (D.L (k.castAdd _)) (D.R (k.castAdd _))⟩
+  obtain ⟨v,G,n,user,_,run,charge,kept,loaded,_⟩ := preparePortSwap (P := Empty) (U := U) (Q := Q)
+    Empty.elim roles 0 r d i j w W M.size W.size (Nat.lt_size_self _) (Nat.lt_size_self _) rfl rfl rfl
+    (embDn bank u) D base one width clock (by
+      intro k lo hi
+      let h : Fin 35 := k.castLE (by decide)
+      have reg : ∀ k : Fin 14, 3 ≤ k.val → k.val < 9 → (swapSetupPorts k).val = k.val := by decide
+      have eq : r k = h.castAdd (24+K) := Fin.ext (reg k lo hi)
+      change S.R (bank (r k)) = []
+      rw [eq]
+      exact scratch h lo hi)
+    (by intro k h; simp [roles]) (fun k => free (k.castAdd K)) (by
+      intro k beyond
+      let h : Fin (24+K) := ⟨k.val-35,by omega⟩
+      have eq : k = h.natAdd 35 := Fin.ext (by dsimp [h]; omega)
+      rw [eq]
+      exact free h)
+  obtain ⟨z,F,exec,_,same,view,off⟩ := exec_emb (ι := Empty.elim) (body' := body) bank.injective
+    (fun f => nomatch f) run u rfl S rfl
+  refine ⟨z,F,n,exec,same.trans user,?_,?_,?_⟩
+  · have bound := Nat.mul_le_mul_left factor (swapPortSetupTime_le d w W degree pos)
+    rw [← Nat.mul_assoc] at bound
+    rw [← view] at charge
+    intro js nd
+    exact (placedCleanup_cost_le bank S F cleanupWeight n _ off charge js nd).trans (Nat.add_le_add_left bound _)
+  · intro k
+    rw [← view] at loaded
+    exact loaded k
+  · intro k outside
+    by_cases hit : ∃ h, bank h = k
+    · obtain ⟨h,rfl⟩ := hit
+      induction h using Fin.addCases with
+      | left h => rw [← view] at kept; exact kept h
+      | right h => exact False.elim (outside h rfl)
+    · exact off k (fun h eq => hit ⟨h,eq⟩)
 
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos w).ne'⟩
 
@@ -173,7 +295,7 @@ theorem runPortSwap [M8.Machine.Net] {T K Q : ℕ} {P U : Type}
   have size : RecursiveInterchangeLayout.volume prime view = (prime^(w+1))^d*W := by
     simp [view,payloadView,RecursiveInterchangeLayout.volume,← pow_mul,Nat.mul_comm]
   have word := (funext owner).trans (sourceWord_cast size x).symm
-  obtain ⟨v,D,l,same,_,start,charge,kept,ready⟩ := preparePortSwap body roles io r d i j w W H J baseFits widthFits
+  obtain ⟨v,D,l,same,_,start,charge,kept,_,ready⟩ := preparePortSwap body roles io r d i j w W H J baseFits widthFits
     power spectator exponent u S base unit width clock scratch represented fresh tail
   let one : Tapes 1 prime := ⟨fun _ => roles.head io,fun _ => roles.tape io⟩
   obtain ⟨y,swap,effect⟩ := swapPayload_runs i j lt (Nat.succ_pos w) pos one 0 (fun k => x (k.cast size)) rfl word

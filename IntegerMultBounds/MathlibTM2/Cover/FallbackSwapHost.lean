@@ -80,6 +80,46 @@ theorem swap_bank_rep {T N : ℕ} (fits : T+24 ≤ N) (roles : Tapes T prime)
   · obtain ⟨left,right⟩ := privateTapes i (by omega)
     simp [raw,small,left,right,readAt_nil_left,wordTape_nil]
 
+/-- Stripping the live owner slots leaves exactly the raw swap bank with
+blank owners. Its descriptor and scratch tapes retain their original layout. -/
+theorem swap_bank_strip {T N : ℕ} (roles : Tapes T prime) (slots : Fin T → Fin N)
+    (leading : ∀ i, (slots i).val = i.val) (v : RecursiveInterchangeLayout.Descriptor)
+    (headers : Fin 22 → Option (List Bool)) :
+    SharedBank.strip (raw (LabelCall.bank roles v headers) N) slots =
+      raw (LabelCall.bank (SharedBank.empty T prime) v headers) N := by
+  classical
+  have cell (j : Fin N) :
+      let a := SharedBank.strip (raw (LabelCall.bank roles v headers) N) slots
+      let b := raw (LabelCall.bank (SharedBank.empty T prime) v headers) N
+      a.head j = b.head j ∧ a.tape j = b.tape j := by
+    by_cases inside : j.val < T+24
+    · let i : Fin (T+24) := ⟨j.val,inside⟩
+      have index : i.val = j.val := rfl
+      change _ = (raw _ N).head j ∧ _ = (raw _ N).tape j
+      simp only [SharedBank.strip,raw,dite_eq_left inside]
+      change (if ∃ k, slots k = j then _ else (LabelCall.bank roles v headers).head i) = _ ∧
+        (if ∃ k, slots k = j then _ else (LabelCall.bank roles v headers).tape i) = _
+      change _ = (LabelCall.bank (SharedBank.empty T prime) v headers).head i ∧
+        _ = (LabelCall.bank (SharedBank.empty T prime) v headers).tape i
+      clear_value i
+      induction i using Fin.addCases with
+      | left k =>
+        have hit : ∃ m, slots m = j := ⟨k,Fin.ext ((leading k).trans index)⟩
+        simp [hit,LabelCall.bank,Tapes.append,SharedBank.empty]
+      | right k =>
+        have off : ¬ ∃ m, slots m = j := by
+          rintro ⟨m,eq⟩
+          have h := (leading m).symm.trans (congrArg Fin.val eq)
+          change T+k.val = j.val at index
+          omega
+        simp [off,LabelCall.bank,Tapes.append]
+    · have off : ¬ ∃ m, slots m = j := by
+        rintro ⟨m,eq⟩
+        have h := (leading m).symm.trans (congrArg Fin.val eq)
+        omega
+      simp [SharedBank.strip,off,raw,inside]
+  exact congrArg₂ Tapes.mk (funext fun j => (cell j).1) (funext fun j => (cell j).2)
+
 /-- Extend represented owner tapes with the two row words, the descriptor words,
 and blank workspace of the swap machine. -/
 theorem swap_bank_seed {T N : ℕ} (fits : T+24 ≤ N) (roles : Tapes T prime)

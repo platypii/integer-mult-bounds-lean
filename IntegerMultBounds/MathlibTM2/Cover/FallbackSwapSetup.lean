@@ -34,6 +34,7 @@ theorem swapSetupAt_exec {T : ℕ} (fits : T+24 ≤ N) (r : Fin 14 ↪ Fin N) (b
     ∃ z F n, z.user = v.user ∧ n ≤ dimensionTime H 1 d + (4*(d*H+1)+6) + (10*J+12) + (21*(w+1)+12) + 2 ∧
       Exec body ((swapRuntimeHeaders r d).seq ((writeSwapConstants fits d i j).seq (markSwapHeaders fits))) (mk v S) n (mk z F) ∧
       (∀ k : Fin N, k.val < T ∨ T+24 ≤ k.val → F.L k = S.L k ∧ F.R k = S.R k) ∧
+      SwapHeadersReady fits view d i j (w+1) F ∧
       RepT (SharedBankStageInput.raw (LabelCall.bank roles view (LabelPrepare.input view d i j (w+1))) N) F.L F.R := by
   intro port view powerPort spectator exponent base one width clock scratch role header privateTapes
   obtain ⟨z,n,hz,hn,generate⟩ := swapRuntimeHeaders_exec body r d H J _ W w hm hw v S base one width clock
@@ -78,6 +79,9 @@ theorem swapSetup_exec (fits : 59 ≤ N) (body : P → Pr P N Q prime U) (roles 
       (∀ k : Fin N, k.val < 35 ∨ 59 ≤ k.val → F.L k = S.L k ∧ F.R k = S.R k) ∧
       RepT (SharedBankStageInput.raw (LabelCall.bank roles view (LabelPrepare.input view d i j (w+1))) N) F.L F.R := by
   intro r port view
-  exact swapSetupAt_exec fits r body roles d i j w W H J hm hw v S rfl rfl rfl
+  intro base unit width clock scratch role header tail
+  obtain ⟨z,F,n,user,time,exec,keep,_,rep⟩ := swapSetupAt_exec fits r body roles d i j w W H J hm hw v S
+    rfl rfl rfl base unit width clock scratch role header tail
+  exact ⟨z,F,n,user,time,exec,keep,rep⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
