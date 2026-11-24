@@ -13,7 +13,8 @@ field permutations. The caller reads the result at its inherited addresses. -/
 theorem packedPhaseChild [M8.Machine.Net] {P U : Type} {T Q : ℕ}
     (capacity : rowSwapBlock.states ≤ Q) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
     (body : P → Pr P T Q prime U) (entry worker : P) (edge : ℕ × ℕ)
-    (checked : Geometry.Moves.CheckedPair edge) (positive : 0 < Geometry.moveRank edge.1 edge.2) :
+    (checked : Geometry.Moves.CheckedPair edge) (positive : 0 < Geometry.moveRank edge.1 edge.2)
+    (extra : List (Fin T) := []) (apart : ∀ j ∈ extra, ∀ i, ports i ≠ j := by simp) :
     let lo := min (Geometry.Dimensions.value edge.1) (Geometry.Dimensions.value edge.2)
     let hi := max (Geometry.Dimensions.value edge.1) (Geometry.Dimensions.value edge.2)
     let order := phasePackSchedule lo hi
@@ -30,11 +31,11 @@ theorem packedPhaseChild [M8.Machine.Net] {P U : Type} {T Q : ℕ}
       ∃ packed : Fin (volume prime child) ≃ Fin V,
         (∀ k, (packed k).val = (CopyChildLayout.packActive child k).val) ∧
         ∀ position : Fin (volume prime child) ≃ Fin V, InheritedIntervalPositions child lane size position →
-        ∀ record price, ScheduledChildExec p.node child p.w W ports record packed body worker price true →
+        ∀ record price, ScheduledChildExec p.node child p.w W ports record packed body worker price true extra →
         ScheduledChildExec p.node child p.w W ports record position body entry
-          (price+4+(setup+swaps*swapVolumeRate p.w)*V) true := by
+          (price+4+(setup+swaps*swapVolumeRate p.w)*V) true extra := by
   intro lo hi order pack installed
-  obtain ⟨setup,swaps,compile⟩ := phasePackedCall_exec true capacity edge checked positive ports body worker
+  obtain ⟨setup,swaps,compile⟩ := phasePackedCall_exec true capacity edge checked positive ports body worker extra apart
   refine ⟨setup,swaps,?_⟩
   intro p i rank child
   generalize hW : p.stageWidth = tail
@@ -112,7 +113,7 @@ theorem packedCompactPhase [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (a
   have checked (j : J) := Geometry.Moves.phase_checked (edge j) (mem j).1
   have positive (j : J) : 0 < Geometry.moveRank (edge j).1 (edge j).2 := Nat.pos_of_ne_zero (bne_iff_ne.mp (mem j).2)
   choose base swaps adapt using fun j : J => packedPhaseChild room (regs j) (body j) (some (.active none))
-    (some (.active (some (f j)))) (edge j) (checked j) (positive j) (installed j none)
+    (some (.active (some (f j)))) (edge j) (checked j) (positive j) [] (by simp) (installed j none)
   refine ⟨body,fun j g => installed j (some g),code,localRate,base,swaps,setup,?_⟩
   intro c W V child
   obtain ⟨position,size,coords,prepare⟩ := phase c
