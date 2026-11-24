@@ -15,7 +15,7 @@ theorem recordPayload_castInput {T m n : ℕ} (size : m = n) (slot : Fin T)
   subst n
   exact record
 
-private theorem parentReadOfPhysicalTranspose (i : Fin 9) (j : Fin 222) (a W : ℕ)
+theorem parentReadOfPhysicalTranspose (i : Fin 9) (j : Fin 222) (a W : ℕ)
     (wide : Descriptor) (shape : wide = phaseIntervalChild ((idleInterval i j).1+1) ((idleInterval i j).2+1) a W 64)
     (cells : volume prime wide = (prime^a)^128*W) (word : Fin ((prime^a)^128*W) → ZMod 2)
     (y : Fin (volume prime wide) → ZMod 2)

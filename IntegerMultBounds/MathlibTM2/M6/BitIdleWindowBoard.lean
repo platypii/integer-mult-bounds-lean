@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitCompiledIdleRecord
+public import IntegerMultBounds.MathlibTM2.M6.BitScheduledIdleRecord
 public import IntegerMultBounds.MathlibTM2.M6.BitIdleParentArchive
 
 @[expose] public section
