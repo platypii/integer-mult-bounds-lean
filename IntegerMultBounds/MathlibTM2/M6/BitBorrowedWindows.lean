@@ -34,12 +34,12 @@ private theorem workerSetup_volume (w W : ℕ) (pos : 0 < W) :
 
 /-- Header preparation and cleanup cost linear volume plus a fixed number of
 leaf-core calls. The coefficient is independent of the stopping width. -/
-theorem stoppedCopyBudget_bound [M8.Machine.Net] (tapes : ℕ) :
+theorem stoppedCopyBudget_bound [M8.Machine.Net] (tapes : ℕ) (headerExtra : ℕ := 4) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ w W width : ℕ, 0 < W →
       let V := (prime^w)^16*W
-      (stoppedCopyBudget tapes w W V width : ℝ) ≤
+      (stoppedCopyBudget tapes w W V width headerExtra : ℝ) ≤
         (C*((max 1 width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)*V := by
-  let A := 113+1301*(tapes+5)+6+tapes*(36+8*1301)+1
+  let A := 113+1301*(tapes+5)+6+tapes*(20+4*headerExtra+8*1301)+1
   let B := tapes+5+8*tapes
   refine ⟨(A : ℝ)+(B : ℝ)*|LeafCore.C|,by positivity,?_⟩
   intro w W width pos V
@@ -52,12 +52,13 @@ theorem stoppedCopyBudget_bound [M8.Machine.Net] (tapes : ℕ) :
   have h := FlatCoordinateDimensions.bits_length_le_twice atom volume
   have s := FlatCoordinateDimensions.bits_length_le_twice suffix volume
   let core := LeafCore.coreCost V width
-  have localCost : stoppedCopyBudget tapes w W V width ≤ A*V+B*core := by
+  have localCost : stoppedCopyBudget tapes w W V width headerExtra ≤ A*V+B*core := by
     unfold stoppedCopyBudget
     dsimp only [core]
     dsimp only [A,B]
     nlinarith only [atom,h,s,volume,Nat.mul_le_mul_left tapes h,Nat.mul_le_mul_left tapes s,
-      Nat.mul_le_mul_left tapes (show 1 ≤ V from volume)]
+      Nat.mul_le_mul_left tapes (show 1 ≤ V from volume),
+      Nat.mul_le_mul_left (tapes*headerExtra) (show 1 ≤ V from volume)]
   let power := ((max 1 width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
   have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast le_max_left 1 width)
     M8.Machine.BudgetBound.exponent_range.1.le

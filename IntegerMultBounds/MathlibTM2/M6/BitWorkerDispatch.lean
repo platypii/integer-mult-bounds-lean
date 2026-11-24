@@ -1014,34 +1014,91 @@ theorem scheduledTwoFieldMove [M8.Machine.Net] {T Q : ℕ} {P U : Type}
 
 open Fast.Main in
 private theorem loadCopyLeaf_native {P U : Type} {T Q : ℕ}
-    (record : Fin 35 ↪ Fin T) (bank : Fin 24 ↪ Fin T) :
-    mnNativePushBound 16 (loadCopyLeafRecord (P := P) (Q := Q) (U := U) record bank) := by
+    (record : Fin 35 ↪ Fin T) (bank : Fin 24 ↪ Fin T) (rank : ℕ) (bound : rank ≤ 8) :
+    mnNativePushBound 16 (loadCopyLeafRecord (P := P) (Q := Q) (U := U) record bank rank) := by
   unfold loadCopyLeafRecord
   repeat first | apply And.intro | (change _ ≤ (16 : ℕ); exact of_decide_eq_true rfl)
+  all_goals interval_cases rank <;> repeat first | apply And.intro | (change _ ≤ (16 : ℕ); exact of_decide_eq_true rfl)
 
 open Fast.Main in
 private theorem copyAssembly_native {P U : Type} {T k Q : ℕ}
     (record : Fin 35 ↪ Fin T) (headers : Fin 24 ↪ Fin T)
-    (bank : Fin k ↪ Fin T) (M : Program k Q prime) (work : List (Fin T)) :
-    mnNativePushBound 16 (((loadCopyLeafRecord (P := P) (Q := Q) (U := U) record headers).seq
+    (bank : Fin k ↪ Fin T) (M : Program k Q prime) (work : List (Fin T)) (rank : ℕ) (bound : rank ≤ 8) :
+    mnNativePushBound 16 (((loadCopyLeafRecord (P := P) (Q := Q) (U := U) record headers rank).seq
       (embProg bank (Empty.elim : Empty → P) (foreign M))).seq (clearWorkTapes work)) := by
   have clear (js : List (Fin T)) : mnNativePushBound 16 (clearWorkTapes (P := P) (Q := Q) (A := prime) (U := U) js) := by
     induction js with
     | nil => exact Nat.zero_le _
     | cons j js ih => exact ⟨by repeat first | apply And.intro | (change _ ≤ (16 : ℕ); exact of_decide_eq_true rfl),ih⟩
-  exact ⟨⟨loadCopyLeaf_native _ _,mnNativePushBound_mono (by decide : 2 ≤ 16)
+  exact ⟨⟨loadCopyLeaf_native _ _ rank bound,mnNativePushBound_mono (by decide : 2 ≤ 16)
     (embProg_native (e := bank.toFun) Empty.elim _ (foreign_native M))⟩,clear work⟩
 
 open Fast.Main in
-private theorem stoppedCopy_native [M8.Machine.Net] {P U : Type} {T Q : ℕ}
-    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fits : stoppedCopyMachine.1 ≤ Q) :
-    mnNativePushBound 16 (stoppedCopyProgram (P := P) (U := U) ports fits) := by
+theorem stoppedInterval_native [M8.Machine.Net] {P U : Type} {T Q : ℕ}
+    (lo hi : ℕ) (within : hi ≤ 8) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fits : (stoppedIntervalMachine lo hi).1 ≤ Q) :
+    mnNativePushBound 16 (stoppedIntervalProgram (P := P) (U := U) lo hi ports fits) := by
   let localBank := (copyLeafPlacement copyLeafFitsRowSwap).trans ports
   let headers := (Fin.castAddEmb (n := 24) 1).trans ((Fin.castLEEmb copyLeafCallerFits).trans localBank)
   let work := ((List.finRange (M8.Machine.ArbitraryWidthOriginalZeroBranch.count 25)).filter
     fun i => i.val ≠ 24).map localBank
   exact copyAssembly_native (P := P) (U := U) (scheduledRecordPorts ports) headers localBank
-    (liftQ stoppedCopyMachine.2 fits) work
+    (liftQ (stoppedIntervalMachine lo hi).2 fits) work (hi-lo) (by omega)
+
+/-- The stopped interval worker returns its archive and pays the cleanup charge
+on every selected set of tapes, including the caller's live owner tapes. -/
+theorem stoppedIntervalChild_charged [M8.Machine.Net] {P U : Type} {lo hi T Q : ℕ}
+    (ordered : lo ≤ hi) (within : hi ≤ 8) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
+    (fits : (stoppedIntervalMachine lo hi).1 ≤ Q) (body : P → Pr P T Q prime U) (f : P)
+    (installed : body f = stoppedIntervalProgram lo hi ports fits)
+    (node child : Descriptor) (w W : ℕ) (record : List (Fin (prime+4)))
+    (position : Fin (volume prime child) ≃ Fin ((prime^(w+1))^16*W))
+    (coords : InheritedIntervalPositions child (phaseIntervalChild lo hi (w+1) W)
+      (phaseIntervalChild_volume ordered within (w+1) W) position)
+    (width : child.width = (hi-lo)*(w+1)) (pos : 0 < W) :
+    ScheduledChildExec node child w W ports record position body f
+      (97*stoppedCopyBudget (M8.Machine.ArbitraryWidthOriginalZeroBranch.count 25) (w+1) W
+        ((prime^(w+1))^16*W) child.width (max 2 (1+(FlatCoordinateSchedule.bits (hi-lo)).length))) true := by
+  have run := stoppedIntervalChild_exec ordered within ports fits body f installed node child w W
+    record position coords width pos
+  intro smaller u S word ready clean
+  obtain ⟨z,F,t,y,exec,paid,rest⟩ := run smaller u S word ready clean
+  refine ⟨z,F,t,y,exec,?_,rest⟩
+  rw [installed] at exec
+  exact workerCost.weaken (charged := true)
+    (nativeCleanupBound exec (stoppedInterval_native lo hi within ports fits)) (Nat.mul_le_mul_left 97 paid)
+
+/-- A fixed phase interval has one leaf coefficient for all atom and spectator widths. -/
+theorem stoppedIntervalChild_budget [M8.Machine.Net] {lo hi : ℕ} (ordered : lo < hi) (within : hi ≤ 8) :
+    ∃ C : ℝ, ∀ {P U : Type} {T Q : ℕ} (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
+      (fits : (stoppedIntervalMachine lo hi).1 ≤ Q) (body : P → Pr P T Q prime U) (f : P),
+      body f = stoppedIntervalProgram lo hi ports fits →
+      ∀ (node child : Descriptor) (w W : ℕ) record position,
+      InheritedIntervalPositions child (phaseIntervalChild lo hi (w+1) W)
+        (phaseIntervalChild_volume ordered.le within (w+1) W) position →
+      child.width = (hi-lo)*(w+1) → 0 < W → ∀ rate : ℝ, C ≤ rate →
+      ScheduledChildExec node child w W ports record position body f
+        ⌊(rate*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime child⌋₊ true := by
+  obtain ⟨C,_,bound⟩ := stoppedCopyBudget_bound (M8.Machine.ArbitraryWidthOriginalZeroBranch.count 25)
+    (max 2 (1+(FlatCoordinateSchedule.bits (hi-lo)).length))
+  refine ⟨97*C,?_⟩
+  intro P U T Q ports fits body f installed node child w W record position coords width pos rate room
+  have run := stoppedIntervalChild_charged ordered.le within ports fits body f installed node child w W
+    record position coords width pos
+  have size := Fintype.card_congr position
+  simp only [Fintype.card_fin] at size
+  have paid := bound (w+1) W child.width pos
+  have wide : 1 ≤ child.width := width ▸ Nat.mul_pos (Nat.sub_pos_of_lt ordered) (Nat.succ_pos _)
+  rw [max_eq_right wide] at paid
+  have scaled := mul_le_mul_of_nonneg_left paid (by norm_num : (0 : ℝ) ≤ 97)
+  have enough := mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right room
+    (by positivity : 0 ≤ (child.width : ℝ)^M8.Machine.BudgetBound.tau)) (Nat.cast_nonneg (α := ℝ) (volume prime child))
+  rw [size] at enough
+  intro smaller u S word ready clean
+  obtain ⟨z,F,t,y,exec,cost,rest⟩ := run smaller u S word ready clean
+  refine ⟨z,F,t,y,exec,workerCost.weaken cost (Nat.le_floor ?_),rest⟩
+  rw [size,Nat.cast_mul,Nat.cast_ofNat]
+  apply le_trans scaled
+  simpa only [mul_assoc] using enough
 
 private theorem stoppedCopyChargedBudget [M8.Machine.Net] (charged : Bool) :
     ∃ C : ℝ, ∀ {P U : Type} {T Q : ℕ} (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
@@ -1065,7 +1122,7 @@ private theorem stoppedCopyChargedBudget [M8.Machine.Net] (charged : Bool) :
   obtain ⟨z,F,t,y,exec,time,user,out,free,frame,action⟩ := run smaller u S word ready clean
   refine ⟨z,F,t,y,exec,?_,user,out,free,frame,action⟩
   rw [installed] at exec
-  apply workerCost.weaken (charged := true) (nativeCleanupBound exec (stoppedCopy_native ports fits))
+  apply workerCost.weaken (charged := true) (nativeCleanupBound exec (stoppedInterval_native 0 7 (by decide) ports fits))
   change t ≤ ⌊(rate/97*(desc.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime desc⌋₊ at time
   apply Nat.le_floor
   have paid := (Nat.cast_le.mpr time : (t : ℝ) ≤ _).trans (Nat.floor_le (by positivity))
@@ -1107,6 +1164,36 @@ theorem archiveCutoffDispatch (charged : Bool) [M8.Machine.Net] {P U : Type} {T 
   · intro js distinct
     have := cost js distinct
     omega
+
+/-- In inherited order the same record serves both branches. Only the child
+above the cutoff requires a recursive execution witness. -/
+theorem cutoffIntervalProgram [M8.Machine.Net] {lo hi : ℕ} (ordered : lo < hi) (within : hi ≤ 8) :
+    ∃ C : ℝ, ∀ {P U : Type} {T Q : ℕ} (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
+      (fits : (stoppedIntervalMachine lo hi).1 ≤ Q) (body : P → Pr P T Q prime U) (entry large leaf : P),
+      body leaf = stoppedIntervalProgram lo hi ports fits →
+      let cmp := cutoffColumnSlots.trans (scheduledRecordPorts ports)
+      body entry = (ordinaryCutoffTest cmp (hi-lo)).seq
+        (.cond (fun z => symBit (z.scan (cmp 7))) (body large) (body leaf)) →
+      ∀ (node child : Descriptor) (w W L cutoff : ℕ), child.width = (hi-lo)*(w+1) →
+      cutoff < 2^L → child.width.size ≤ L → ∀ position,
+      InheritedIntervalPositions child (phaseIntervalChild lo hi (w+1) W)
+        (phaseIntervalChild_volume ordered.le within (w+1) W) position → 0 < W →
+      ∀ (rate : ℝ) (recursiveTime : ℕ), C ≤ rate →
+      let worker := fun f budget => ScheduledChildExec node child w W ports (binSyms L cutoff) position body f budget true
+      let price := if cutoff < child.width then recursiveTime else
+        ⌊(rate*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime child⌋₊
+      (cutoff < child.width → worker large recursiveTime) →
+      worker entry (4*w+23*child.width+22*L+51+price) := by
+  obtain ⟨C,stopped⟩ := stoppedIntervalChild_budget ordered within
+  refine ⟨C,?_⟩
+  intro P U T Q ports fits body entry large leaf installed cmp dispatch node child w W L cutoff width
+    cutFits room position coords pos rate time enough worker price recurse
+  apply archiveCutoffDispatch true body entry large leaf ports (hi-lo) dispatch node child w W L cutoff price
+    (width.trans (Nat.mul_comm ..)) cutFits room position
+  by_cases active : cutoff < child.width
+  · simpa only [price,ite_eq_left active] using recurse active
+  · simpa only [price,ite_eq_right active] using
+      stopped ports fits body leaf installed node child w W _ position coords width pos rate enough
 
 -- The tagged MOVE dispatcher and generic archive wrapper are available in 21524d7e.
 
