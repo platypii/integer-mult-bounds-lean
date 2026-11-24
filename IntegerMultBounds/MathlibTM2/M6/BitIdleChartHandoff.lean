@@ -39,6 +39,7 @@ theorem uniformRemainderWindow {U : Type} {Q : ℕ} (i : Fin 9) :
       (inner : ∀ k, P k → Pr (P k) (T k) Q prime U) (code : ∀ k, Pr (P k) (T k) Q prime U),
     ∃ (H : ℕ) (host : (Σ k, P k) → Pr (Σ k, P k) H Q prime U) (worker : Pr (Σ k, P k) H Q prime U)
       (src dst : Fin (142081+2) ↪ Fin H) (origin : Fin H → Option (Σ k, Fin (T k))),
+    (∃ a b, a ≠ b ∧ origin a = none ∧ origin b = none) ∧
     ∀ w W, let V := (prime^w)^128*W
       ∀ (seed : ∀ k, Stacks (T k) prime) (budget : Fin nodeChildren5.length → ℕ),
       (∀ k (word : Fin V → ZMod 2) v (D : Stacks (T k) prime), D.L (slot k) = [] →
@@ -60,7 +61,20 @@ theorem uniformRemainderWindow {U : Type} {Q : ℕ} (i : Fin 9) :
   let place := SweepFile.Exit.chart 0 H
   classical
   let origin := Function.extend place source (fun _ => none)
-  refine ⟨_,fun f => embProg place id (host f),worker,fan.trans place,returnedFan fan,origin,?_⟩
+  refine ⟨_,fun f => embProg place id (host f),worker,fan.trans place,returnedFan fan,origin,?_,?_⟩
+  · let crop := fun j : Fin 12 => (Fintype.equivFin (SweepFile.Exit.Register 0 H)) (.crop j)
+    have empty (j) : origin (crop j) = none := by
+      have outside : ¬ ∃ k, place k = crop j := by
+        rintro ⟨k,h⟩
+        have bad : SweepFile.Exit.Register.chart k = (.crop j : SweepFile.Exit.Register 0 H) :=
+          (Fintype.equivFin _).injective h
+        cases bad
+      simp [origin,outside]
+    refine ⟨crop 0,crop 1,?_,empty 0,empty 1⟩
+    intro h
+    have bad : (SweepFile.Exit.Register.crop 0 : SweepFile.Exit.Register 0 H) = .crop 1 :=
+      (Fintype.equivFin _).injective h
+    exact (by decide : (0 : Fin 12) ≠ 1) (SweepFile.Exit.Register.crop.inj bad)
   intro w W V seed budget each
   let price := fun k => budget (idleDirectoryIndex (i,idleCopyIndex k))
   let initial := idleWindowSeed source seed

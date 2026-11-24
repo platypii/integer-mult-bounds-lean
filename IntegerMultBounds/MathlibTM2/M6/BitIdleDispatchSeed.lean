@@ -77,12 +77,12 @@ theorem idleDispatchSeed (N : ℕ) :
 /-- These are all the nonempty registers in a prepared remainder occurrence. -/
 def idleSeedPorts : Fin 6 ↪ Fin 72 := ⟨![2,28,53,71,5,6],by decide⟩
 
-private theorem idleDispatchWord_blank (w W L cutoff j : ℕ)
+theorem idleDispatchWord_blank (w W L cutoff j : ℕ)
     (outside : ∀ i, j ≠ (idleSeedPorts i).val) : idleDispatchWord w W L cutoff j = [] := by
   have ne {r : ℕ} (i : Fin 6) (eq : (idleSeedPorts i).val = r) : j ≠ r := eq ▸ outside i
   simp [idleDispatchWord,ne (r := 2) 0 rfl,ne (r := 28) 1 rfl,ne (r := 53) 2 rfl,ne (r := 71) 3 rfl,ne (r := 5) 4 rfl,ne (r := 6) 5 rfl]
 
-private theorem idleDispatchSeed_cost (w W L cutoff : ℕ) :
+theorem idleDispatchSeed_cost (w W L cutoff : ℕ) :
     seedLoadBill (fun i => idleDispatchWord w W L cutoff (idleSeedPorts i).val) =
       8*((prime^(w+1)).size+W.size+2*w+L)+53 := by
   simp [seedLoadBill,Fin.sum_univ_succ,idleSeedPorts,idleDispatchWord,length_binSyms]
@@ -143,7 +143,7 @@ noncomputable def remainderDispatchSeed {H N : ℕ} (origin : Fin H → Option (
     (w W L cutoff : ℕ) : Stacks H prime :=
   ⟨[],[],fun _ => [],fun j => (origin j).elim [] (fun k => idleDispatchWord w W L cutoff k.val)⟩
 
-private theorem seedLoadBill_le {k H price : ℕ} (slots : Fin k ↪ Fin H)
+theorem seedLoadBill_le {k H price : ℕ} (slots : Fin k ↪ Fin H)
     (words : Fin k → List (Fin (prime+4))) (each : ∀ i, 8*(words i).length+6 ≤ price) :
     seedLoadBill words ≤ H*price+1 := by
   have sum := Finset.sum_le_sum (fun i (_ : i ∈ Finset.univ) => each i)
@@ -254,7 +254,7 @@ theorem dispatchedRemainder [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : co
   let Job := (Fin 32 × Fin 5) × Fin 222
   have worker (k : Job) := build body leaf installed i (idleCopyIndex k) label
   let slot := (Fin.castAddEmb N (n := 72)) 24
-  obtain ⟨H,host,code,src,dst,origin,assemble⟩ := uniformRemainderWindow i (fun _ => 72+N) (fun _ => P)
+  obtain ⟨H,host,code,src,dst,origin,_,assemble⟩ := uniformRemainderWindow i (fun _ => 72+N) (fun _ => P)
     (fun _ => slot) (fun _ => body) (fun k => (worker k).choose)
   refine ⟨H,_,host,code,src,dst,fun j => (origin j).map Sigma.snd,?_⟩
   intro root path depth b cutoff w groups levels base alignment stop node a active width split W V positive recursiveBudget child budget recurse
