@@ -428,4 +428,203 @@ theorem runRecordPortChart {P U : Type} {T Q w W d : ℕ}
   intro h
   simpa only [sub_zero,portOwner_record] using (out h).symm
 
+/-- Transport the loader's representation to the actual composed stage.
+The only size casts come from the two basis schedules and the fold of swaps. -/
+theorem loadedChartStage_rep {d V T l r : ℕ}
+    (a b : SharedBankStage.Stage _ 1 prime (@portOwner V))
+    (swaps : {p : Fin d × Fin d // p.1 < p.2} → SharedBankStage.Stage _ 1 prime (@portOwner V))
+    (pairs : List {p : Fin d × Fin d // p.1 < p.2})
+    (machine : {p : Fin d × Fin d // p.1 < p.2} → SharedBankSkeleton.Skeleton 1 prime)
+    (fixed : ∀ p, SharedBankSkeleton.ofStage (swaps p) = machine p)
+    (raw : {p : Fin d × Fin d // p.1 < p.2} → (n : ℕ) → Tapes n prime)
+    (privateBank : ∀ p, (swaps p).metadata = raw p (swaps p).tapes)
+    (la : a.tapes = l) (rb : b.tapes = r) (L : Stacks l prime) (R : Stacks r prime)
+    (left : RepT a.metadata (L.L ∘ Fin.cast la) (L.R ∘ Fin.cast la))
+    (right : RepT b.metadata (R.L ∘ Fin.cast rb) (R.R ∘ Fin.cast rb))
+    (full : Fin (1+(1+r+(digitSwapSkeleton machine pairs).tapes)+l) ↪ Fin T) (F : Stacks T prime)
+    (loaded : ∀ (A : Tapes l prime) (B : Tapes r prime), RepT A L.L L.R → RepT B R.L R.R →
+      RepT (((SharedBank.empty 1 prime).append (((SharedBank.empty 1 prime).append B).append
+        (digitPermutationMetadata machine (fun p => raw p (machine p).tapes) pairs))).append A)
+        (F.L ∘ full) (F.R ∘ full)) :
+    let stage := SharedBankStage.compose (SharedBankStage.compose b (digitSwapStage swaps pairs)) a
+    ∃ size : stage.tapes = 1+(1+r+(digitSwapSkeleton machine pairs).tapes)+l,
+      RepT stage.metadata (F.L ∘ full ∘ Fin.cast size) (F.R ∘ full ∘ Fin.cast size) := by
+  subst l r
+  have eq := funext fixed
+  subst machine
+  have rep := loaded a.metadata b.metadata left right
+  have banks := funext privateBank
+  have data := digitSwapStage_metadata swaps pairs
+  rw [banks] at data
+  have dims : (digitSwapStage swaps pairs).tapes =
+      (digitSwapSkeleton (fun p => SharedBankSkeleton.ofStage (swaps p)) pairs).tapes := by
+    clear rep loaded data full
+    induction pairs with
+    | nil => rfl
+    | cons p ps ih => exact congrArg (fun n => 1+n+(swaps p).tapes) ih
+  have transport {m n : ℕ} (eq : m = n) {pm : Tapes m prime} {qm : Tapes n prime} (same : HEq pm qm)
+      (place : Fin (1+(1+b.tapes+n)+a.tapes) ↪ Fin T) :
+      let metaBank := fun {k} (v : Tapes k prime) =>
+        ((SharedBank.empty 1 prime).append (((SharedBank.empty 1 prime).append b.metadata).append v)).append a.metadata
+      RepT (metaBank qm) (F.L ∘ place) (F.R ∘ place) →
+        RepT (metaBank pm) (F.L ∘ place ∘ Fin.cast (congrArg (fun k => 1+(1+b.tapes+k)+a.tapes) eq))
+          (F.R ∘ place ∘ Fin.cast (congrArg (fun k => 1+(1+b.tapes+k)+a.tapes) eq)) := by
+    cases eq
+    cases eq_of_heq same
+    exact fun h => h
+  exact ⟨_,transport dims data full rep⟩
+
+/-- Runtime contract for a chart on the live child row, including initialization,
+cleanup charges and preservation outside the chart and owner. -/
+def RunsRecordChart [M8.Machine.Net] (d : ℕ)
+    (effect : ∀ w W : ℕ, (Fin ((prime^(w+1))^d*W) → ZMod 2) → (Fin ((prime^(w+1))^d*W) → ZMod 2) → Prop) : Prop :=
+    ∃ (machine : SharedBankSkeleton.Skeleton 1 prime) (c k : ℕ),
+      ∀ {P User : Type} {T Q : ℕ} (body : P → Pr P T Q prime User) (_capacity : machine.states ≤ Q)
+        (chart : Fin (machine.tapes+35) ↪ Fin T) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
+        (precision : Fin T), (∀ i j, chart i ≠ ports j) → (∀ i, chart i ≠ precision) →
+      ∃ (rate : ℕ) (code : Pr P T Q prime User), ∀ w W, 0 < W → ∀ u (S : Stacks T prime),
+        let M := prime^(w+1)
+        let V := M^d*W
+        ∀ (record : List (Fin (prime+4))) (x : Fin V → ZMod 2),
+        let ready := fun y D => RecordReady (b := prime) (w := w) (d := d) (W := W) (scheduledRecordPorts ports)
+          M.size W.size record SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 y D
+        ready x S → S.R precision = binSyms (w+1).size (w+1) →
+        (∀ i, S.L (chart i) = [] ∧ S.R (chart i) = []) →
+        ∃ z F n y, Exec body code (mk u S) n (mk z F) ∧ z.user = u.user ∧
+          CleanupBound S F n (rate*V+13*((c*V+k*(3808274*V+LeafCore.coreCost V (w+1)+1)+2)*(machine.tapes+5)+6)) ∧
+          ready y F ∧ effect w W x y ∧
+          ∀ j, j ≠ scheduledRecordPorts ports 24 → (∀ i, chart i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j
+
+theorem RunsRecordChart.implies [M8.Machine.Net] {d : ℕ} {effect result}
+    (run : RunsRecordChart d effect) (imp : ∀ w W x y, effect w W x y → result w W x y) :
+    RunsRecordChart d result := by
+  obtain ⟨machine,c,k,build⟩ := run
+  refine ⟨machine,c,k,?_⟩
+  intro P User T Q body capacity chart ports precision apart outside
+  obtain ⟨rate,code,exec⟩ := build body capacity chart ports precision apart outside
+  refine ⟨rate,code,?_⟩
+  intro w W pos u S M V record x ready stored prec free
+  obtain ⟨z,F,n,y,e,user,bill,out,action,off⟩ := exec w W pos u S record x stored prec free
+  exact ⟨z,F,n,y,e,user,bill,out,imp w W x y action,off⟩
+
+open Matrix IntegerMultBounds.Swap.Modular in
+/-- Initialize and execute either direction of a bounded chart on the scheduled record.
+The swap list, basis schedules and compiled skeleton are fixed across widths. -/
+theorem initializedRecordChart [M8.Machine.Net] {d : ℕ} (U : Matrix (Fin d) (Fin d) ℚ)
+    (unit : IsUnit U) (degree : 2 ≤ d) (bound : d ≤ 529)
+    (entries : ∀ i j, (U i j).num.natAbs ≤ 10^10000 ∧ (U i j).den ≤ 10^10000) (backward : Bool := false) :
+    RunsRecordChart d (fun w _ x y => ∀ v j, routedCell backward x y (FlatCoordinateLayout.index v j)
+      (FlatCoordinateLayout.index (reduce (prime^(w+1)) U *ᵥ v) j)) := by
+  obtain ⟨left,right,pairs,ma,mb,swaps,build⟩ := flatChart_withHeaders U unit (by omega) bound entries backward
+  let machine := SharedBankSkeleton.compose (SharedBankSkeleton.compose mb (digitSwapSkeleton swaps pairs)) ma
+  obtain ⟨a₀,b₀,leaf₀,⟨la₀,_⟩,⟨rb₀,_⟩,meta₀,fa₀,fb₀,_⟩ := build 1 1 (by decide) (by decide)
+  have la : ma.tapes = FlatCoordinateCleanSchedule.tapeCount left :=
+    (congrArg SharedBankSkeleton.Skeleton.tapes fa₀).symm.trans la₀
+  have rb : mb.tapes = FlatCoordinateCleanSchedule.tapeCount right :=
+    (congrArg SharedBankSkeleton.Skeleton.tapes fb₀).symm.trans rb₀
+  have fits p : 25 ≤ (swaps p).tapes :=
+    (meta₀ p).2.1.trans (congrArg SharedBankSkeleton.Skeleton.tapes (meta₀ p).1).le
+  refine ⟨machine,FlatCoordinateCleanSchedule.constant left + FlatCoordinateCleanSchedule.constant right,pairs.length,?_⟩
+  intro P User T Q body capacity chart ports precision external precOff
+  let shape := chartTapeCount (FlatCoordinateCleanSchedule.tapeCount left)
+    (FlatCoordinateCleanSchedule.tapeCount right) (digitSwapSkeleton swaps pairs).tapes 35
+  have dims : shape = machine.tapes+35 := by
+    change 1+(1+_+_)+_+35 = 1+(1+mb.tapes+_)+ma.tapes+35
+    rw [la,rb]
+  let bank := (Fin.castLEEmb dims.le).trans chart
+  obtain ⟨rate,load,init⟩ := loadChartFromRecord degree (by decide : 35 ≤ 35) left right pairs swaps fits
+    body bank ports precision (fun i j => external _ _) (fun i => precOff _)
+  let r := scheduledRecordPorts ports
+  let full := (Fin.castAddEmb 35).trans chart
+  let live := chartLivePorts full (machine.slots 0) (r 24) (fun _ => external _ _)
+  refine ⟨rate,load.seq (embProg live Empty.elim (foreign (liftQ machine.program capacity))),?_⟩
+  intro w W pos u S M V record x ready stored prec free
+  obtain ⟨v,D,t,start,user,charged,readyD,_,_,loaded,keep⟩ :=
+    init w W pos u S record x stored prec (fun i => free _)
+  obtain ⟨a,b,leaf,⟨sa,repA⟩,⟨sb,repB⟩,metadata,_,_,fixed,cost,action⟩ := build (w+1) W (by omega) pos
+  let stage := SharedBankStage.compose (SharedBankStage.compose b (digitSwapStage leaf pairs)) a
+  let raw := fun (p : {p : Fin d × Fin d // p.1 < p.2}) n => SharedBankStageInput.raw
+    (LabelCall.bank (SharedBank.empty 1 prime) (payloadView prime d (w+1) W)
+      (LabelPrepare.input (payloadView prime d (w+1) W) d p.val.1 p.val.2 (w+1))) n
+  obtain ⟨size,rep⟩ := loadedChartStage_rep a b leaf pairs swaps (fun p => (metadata p).1) raw
+    (fun p => (metadata p).2.2) sa sb _ _ repA repB _ D loaded
+  have same : SharedBankSkeleton.ofStage stage = machine := fixed
+  have run (m : SharedBankSkeleton.Skeleton 1 prime) (eq : SharedBankSkeleton.ofStage stage = m)
+      (cap : m.states ≤ Q) (place : Fin m.tapes ↪ Fin T) (away : ∀ i j, place i ≠ r j)
+      (stock : RepT stage.metadata (D.L ∘ place ∘ Fin.cast (congrArg SharedBankSkeleton.Skeleton.tapes eq))
+        (D.R ∘ place ∘ Fin.cast (congrArg SharedBankSkeleton.Skeleton.tapes eq))) :
+      ∃ z F n, Exec body (embProg (chartLivePorts place (m.slots 0) (r 24) (fun i => away i 24))
+        Empty.elim (foreign (liftQ m.program cap))) (mk v D) n (mk z F) ∧ z.user = v.user ∧
+        CleanupBound D F n (13*(stage.cost*(stage.tapes+5)+6)) ∧
+        RecordReady (b := prime) (w := w) (d := d) (W := W) r M.size W.size record SparseRoleCircuit.encode
+          (fun _ => blank) (fun _ => blank) 0 0 (stage.transform x) F ∧
+        ∀ j, j ≠ r 24 → (∀ i, place i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j :=
+    by
+      subst m
+      exact runRecordPortChart stage cap body place r away record x v D stock readyD
+  obtain ⟨z,F,n,exec,last,bill,out,off⟩ := run machine same capacity full (fun _ _ => external _ _) (by
+    intro i h
+    have cell := rep i h
+    have eq : full (i.cast (congrArg SharedBankSkeleton.Skeleton.tapes same)) =
+        bank ((i.cast size).castAdd 35) := congrArg chart (Fin.ext rfl)
+    change stage.metadata.tape i h = readAt blank (D.L (full (i.cast _))) (D.R (full (i.cast _))) _
+    exact cell.trans (congrArg (fun j => readAt blank (D.L j) (D.R j) (h-stage.metadata.head i)) eq.symm))
+  refine ⟨z,F,t+n,stage.transform x,start.seq exec,last.trans user,?_,out,action x,?_⟩
+  · have tape := congrArg SharedBankSkeleton.Skeleton.tapes same
+    change stage.tapes = machine.tapes at tape
+    change stage.cost = _ at cost
+    simpa only [cost,tape] using charged.seq bill
+  · intro j ne outside
+    have f := off j ne (fun _ => outside _)
+    have e := keep j (fun _ => outside _) (fun _ => outside _)
+    exact ⟨f.1.trans e.1,f.2.trans e.2⟩
+
+open Matrix IntegerMultBounds.Swap.Modular Certificates.PR589 Certificates.PR589.Nine in
+theorem initializedPairedChart [M8.Machine.Net] {ι : Type} [Fintype ι] [DecidableEq ι]
+    (H : Matrix ι Axis ℚ) (J : Matrix Axis ι ℚ) (hJ : H*J = 1)
+    {height : ℕ} (bounded : ∀ i j, (H i j).num.natAbs ≤ height ∧ (H i j).den ≤ height)
+    (order : Fin 128 ≃ ι ⊕ ι) (backward : Bool) (height_le : height ≤ 10^10000) :
+    RunsRecordChart 128 (fun w _ x y => ∀ (s : Swap.Shear.State Axis (ZMod (prime^(w+1)))) j,
+      routedCell backward x y (FlatCoordinateLayout.index (Sum.elim s.1 s.2 ∘ flatParentOrder) j)
+        (FlatCoordinateLayout.index (Sum.elim (reduce (prime^(w+1)) H *ᵥ s.1)
+          (reduce (prime^(w+1)) H *ᵥ s.2) ∘ order) j)) := by
+  let D := fromBlocks H 0 0 H
+  let U := D.submatrix order flatParentOrder
+  let inv := (fromBlocks J 0 0 J).submatrix flatParentOrder order
+  have cancel : U*inv = 1 := by
+    dsimp only [U,inv]
+    rw [submatrix_mul_equiv]
+    simp [D,fromBlocks_multiply,hJ,submatrix_one_equiv]
+  have entries (i j) : (U i j).num.natAbs ≤ 10^10000 ∧ (U i j).den ≤ 10^10000 := by
+    change ((fromBlocks H 0 0 H) (order i) (flatParentOrder j)).num.natAbs ≤ _ ∧ _
+    dsimp only [U,D,submatrix_apply]
+    cases order i <;> cases flatParentOrder j
+    all_goals first
+      | exact ⟨(bounded _ _).1.trans height_le,(bounded _ _).2.trans height_le⟩
+      | exact ⟨Nat.zero_le _, Nat.one_le_pow 10000 10 (by decide)⟩
+  apply (initializedRecordChart U (isUnit_iff_exists.mpr ⟨_,cancel,mul_eq_one_comm.mp cancel⟩)
+    (by decide) (by decide) entries backward).implies
+  intro w W x y read s j
+  let F := reduce (prime^(w+1)) H
+  have mat : reduce (prime^(w+1)) U = (fromBlocks F 0 0 F).submatrix order flatParentOrder := by
+    ext i j
+    change ratMod _ (D (order i) (flatParentOrder j)) = (fromBlocks F 0 0 F) _ _
+    cases order i <;> cases flatParentOrder j <;> first | rfl | exact ratMod_zero _
+  have action : reduce (prime^(w+1)) U *ᵥ (Sum.elim s.1 s.2 ∘ flatParentOrder) = (Sum.elim (F *ᵥ s.1) (F *ᵥ s.2) ∘ order) := by
+    rw [mat,submatrix_mulVec_equiv]
+    simp [Function.comp_assoc,fromBlocks_mulVec,F]
+  rw [← action]
+  exact read _ j
+
+open Certificates.PR589 Certificates.PR589.Nine in
+/-- Both directions of a certified PR589 helper slot on the live record row. -/
+theorem initializedHelperChart [M8.Machine.Net] (c : PortCertificate) (hc : c.Checked)
+    (slot : Option (Fin 56)) (backward : Bool) :
+    RunsRecordChart 128 (fun w _ x y => ∀ (s : Swap.Shear.State Axis (ZMod (prime^(w+1)))) j,
+      routedCell backward x y (FlatCoordinateLayout.index (Sum.elim s.1 s.2 ∘ flatParentOrder) j)
+        (FlatCoordinateLayout.index (helperSlotField c slot (w+1) s) j)) := by
+  exact initializedPairedChart (height := 2) c.fullChart.transpose c.fullChart (c.fullChart_orthonormal hc)
+    (fun i j => fullChart_entry c hc j i) (helperFieldOrder slot) backward
+    ((by decide : 2 ≤ 10^1).trans (pow_le_pow_right₀ (by decide : 1 ≤ (10:ℕ)) (by decide)))
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

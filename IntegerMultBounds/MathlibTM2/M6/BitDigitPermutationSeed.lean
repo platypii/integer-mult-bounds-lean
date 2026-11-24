@@ -48,7 +48,7 @@ open Matrix Cover RecursiveInterchangeLayout IntegerMultBounds.Swap.Modular M8.R
 on the stages that execute the factorization. -/
 theorem flatChart_withHeaders [M8.Machine.Net] {d : ℕ} (U : Matrix (Fin d) (Fin d) ℚ)
     (unit : IsUnit U) (pos : 1 ≤ d) (bound : d ≤ 529)
-    (entries : ∀ i j, (U i j).num.natAbs ≤ 10^10000 ∧ (U i j).den ≤ 10^10000) :
+    (entries : ∀ i j, (U i j).num.natAbs ≤ 10^10000 ∧ (U i j).den ≤ 10^10000) (backward : Bool := false) :
     ∃ (left right : List (FlatCoordinateSchedule.Op d))
       (pairs : List {p : Fin d × Fin d // p.1 < p.2})
       (ma mb : SharedBankSkeleton.Skeleton 1 prime)
@@ -71,27 +71,58 @@ theorem flatChart_withHeaders [M8.Machine.Net] {d : ℕ} (U : Matrix (Fin d) (Fi
           (SharedBankSkeleton.compose mb (digitSwapSkeleton machine pairs)) ma ∧
         chart.cost = (FlatCoordinateCleanSchedule.constant left + FlatCoordinateCleanSchedule.constant right)*V +
           pairs.length*(3808274*V + LeafCore.coreCost V w + 1) + 2 ∧
-        ∀ x v j, chart.transform x (FlatCoordinateLayout.index (reduce (prime^w) U *ᵥ v) j) =
-          x (FlatCoordinateLayout.index v j) := by
+        ∀ x v j, routedCell backward x (chart.transform x) (FlatCoordinateLayout.index v j)
+          (FlatCoordinateLayout.index (reduce (prime^w) U *ᵥ v) j) := by
   obtain ⟨A,B,π,factors,action⟩ := chartFactors U unit pos bound entries
-  obtain ⟨pairs,rfl⟩ := exists_digitSwapPairs π
   have left := factors A (by simp)
   have right := factors B (by simp)
-  obtain ⟨opsA,ma,runA⟩ := triangularPort_withHeaders A left.1 left.2 false
-  obtain ⟨opsB,mb,runB⟩ := triangularPort_withHeaders B right.1 right.2 false
-  obtain ⟨machine,runP⟩ := digitPermutation_owner pairs
-  refine ⟨opsA,opsB,pairs,ma,mb,machine,?_⟩
-  intro w W hw hW V Stage headers
-  obtain ⟨a,fa,ta,sa,readA⟩ := runA w W hW
-  obtain ⟨b,fb,tb,sb,readB⟩ := runB w W hW
-  obtain ⟨swaps,metadata,fp,tp,readP⟩ := runP w W hw hW
-  refine ⟨a,b,swaps,sa,sb,metadata,fa,fb,?_,?_,?_⟩
-  · simp only [SharedBankSkeleton.ofStage_compose,fa,fb,fp]
-  · change b.cost+(digitSwapStage swaps pairs).cost+1+a.cost+1 = _
-    rw [ta,tb,tp]; ring
-  · intro x v j
-    rw [action]
-    exact (readA _ _ j).trans ((readP _ _ j).trans (readB x v j))
+  obtain ⟨opsA,ma,runA⟩ := triangularPort_withHeaders A left.1 left.2 backward
+  obtain ⟨opsB,mb,runB⟩ := triangularPort_withHeaders B right.1 right.2 backward
+  cases backward with
+  | false =>
+    obtain ⟨pairs,rfl⟩ := exists_digitSwapPairs π
+    obtain ⟨machine,runP⟩ := digitPermutation_owner pairs
+    refine ⟨opsA,opsB,pairs,ma,mb,machine,?_⟩
+    intro w W hw hW V Stage headers
+    obtain ⟨a,fa,ta,sa,readA⟩ := runA w W hW
+    obtain ⟨b,fb,tb,sb,readB⟩ := runB w W hW
+    obtain ⟨swaps,metadata,fp,tp,readP⟩ := runP w W hw hW
+    refine ⟨a,b,swaps,sa,sb,metadata,fa,fb,?_,?_,?_⟩
+    · simp only [SharedBankSkeleton.ofStage_compose,fa,fb,fp]
+    · change b.cost+(digitSwapStage swaps pairs).cost+1+a.cost+1 = _
+      rw [ta,tb,tp]; ring
+    · intro x v j
+      change _ = x (FlatCoordinateLayout.index v j)
+      rw [action]
+      exact (readA _ _ j).trans ((readP _ _ j).trans (readB x v j))
+  | true =>
+    obtain ⟨pairs,perm⟩ := exists_digitSwapPairs π.symm
+    obtain ⟨machine,runP⟩ := digitPermutation_owner pairs
+    refine ⟨opsB,opsA,pairs,mb,ma,machine,?_⟩
+    intro w W hw hW V Stage headers
+    obtain ⟨a,fa,ta,sa,readA⟩ := runA w W hW
+    obtain ⟨b,fb,tb,sb,readB⟩ := runB w W hW
+    obtain ⟨swaps,metadata,fp,tp,readP⟩ := runP w W hw hW
+    refine ⟨b,a,swaps,sb,sa,metadata,fb,fa,?_,?_,?_⟩
+    · simp only [SharedBankSkeleton.ofStage_compose,fa,fb,fp]
+    · change a.cost+(digitSwapStage swaps pairs).cost+1+b.cost+1 = _
+      rw [ta,tb,tp]; ring
+    · intro x v j
+      change (SharedBankStage.compose (SharedBankStage.compose a (digitSwapStage swaps pairs)) b).transform x
+          (FlatCoordinateLayout.index v j) = x (FlatCoordinateLayout.index (reduce (prime^w) U *ᵥ v) j)
+      rw [action]
+      let y := reduce (prime^w) B *ᵥ v
+      let z := y ∘ π
+      have undo (E : Matrix (Fin d) (Fin d) (ZMod (prime^w))) (unit : IsUnit E) (u : Fin d → _) :
+          E⁻¹ *ᵥ (E *ᵥ u) = u := by rw [mulVec_mulVec,nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).mp unit),one_mulVec]
+      have ra := readA x (reduce (prime^w) A *ᵥ z) j
+      have rp := readP (a.transform x) z j
+      have rb := readB ((digitSwapStage swaps pairs).transform (a.transform x)) y j
+      simp only [ite_true,undo _ (left.2 w).2] at ra
+      simp only [ite_true,y,undo _ (right.2 w).2] at rb
+      have cancel : z ∘ π.symm = y := by funext i; exact congrArg y (π.apply_symm_apply i)
+      rw [perm,cancel] at rp
+      exact rb.trans (rp.trans ra)
 
 /-- The shared slots introduced by composition are empty. All other
 metadata belongs to a particular occurrence of a swap. -/
