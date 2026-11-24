@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitIdleWindowBranch
+public import IntegerMultBounds.MathlibTM2.M6.BitIdleWindowTraversal
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
