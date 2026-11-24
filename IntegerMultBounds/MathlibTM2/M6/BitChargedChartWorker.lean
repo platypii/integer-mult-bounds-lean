@@ -202,16 +202,19 @@ theorem allocatedChartWorkerWithCharge {t Q : ℕ} {P U : Type}
     allocatedChartWorkerWithReserve localFan body code entry ret qa qb (fun _ => 0) 0 (by simp)
 
 /-- Apply fixed entry and return charts while preserving the recursive worker budget. -/
-theorem flatChartWorkerWithCharge [M8.Machine.Net] :
+theorem flatChartWorkerWithReserve [M8.Machine.Net] :
     ∃ (C : ℝ) (states : ℕ), ∀ {P U : Type} {t Q : ℕ} (n : Fin 9)
-      (fan : Fin (142081+2) ↪ Fin t) (body : P → Pr P t Q prime U) (worker : Pr P t Q prime U),
+      (fan : Fin (142081+2) ↪ Fin t) (body : P → Pr P t Q prime U) (worker : Pr P t Q prime U)
+      (reserve : Stacks t prime → ℕ)
+      (_growth : ∀ {H} (bank : Fin t ↪ Fin H) (S F : Stacks H prime) (k : ℕ), CleanupBound S F k (13*k) →
+        reserve (embStk bank F) ≤ reserve (embStk bank S)+12*k),
     states ≤ Q → ∃ (T : ℕ) (place : Fin t ↪ Fin T) (program : Pr P T Q prime U),
     let live := fan.trans place
     ∀ {w W N : ℕ} (size : (prime^w)^128*W = N) (price : ℕ) (initial : Stacks t prime),
     0 < w → 0 < W →
     (∀ x u S, HelperFan fan x S →
       (∀ j, (∀ i, fan i ≠ j) → S.L j = initial.L j ∧ S.R j = initial.R j) →
-      ∃ z F k y, Exec body worker (mk u S) k (mk z F) ∧ (∀ js : List _, js.Nodup → k+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price) ∧ z.user = u.user ∧
+      ∃ z F k y, Exec body worker (mk u S) k (mk z F) ∧ (∀ js : List _, js.Nodup → k+reserve F+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price+reserve S) ∧ z.user = u.user ∧
         HelperFan fan y F ∧ ∀ j : Fin W, sweepRoles n 0 j (sweepView size y) =
           (Piece.stage n).run (sweepRoles n 0 j (sweepView size x))) →
       ∀ X : Stacks 142081 prime, ∃ prepared : Stacks T prime,
@@ -219,8 +222,8 @@ theorem flatChartWorkerWithCharge [M8.Machine.Net] :
         ∀ x u S, HelperFan live x S →
           (∀ j, (∀ i, live i ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
           ∃ z F k y, Exec (fun f => embProg place id (body f)) program (mk u S) k (mk z F) ∧
-            (∀ js : List _, js.Nodup → (k : ℝ)+tapeCharge cleanupWeight js F ≤
-              tapeCharge cleanupWeight js S+price+C*N*(w : ℝ)^M8.Machine.BudgetBound.tau) ∧ z.user = u.user ∧
+            (∀ js : List _, js.Nodup → (k : ℝ)+reserve (embStk place F)+tapeCharge cleanupWeight js F ≤
+              tapeCharge cleanupWeight js S+price+reserve (embStk place S)+C*N*(w : ℝ)^M8.Machine.BudgetBound.tau) ∧ z.user = u.user ∧
             HelperFan live y F ∧ ∀ j : Fin W,
               let address := fun z => (flatWindowEquiv w W (windowState w z,j)).cast size
               readRoles address y = (Piece.stage n).run (readRoles address x) := by
@@ -228,10 +231,10 @@ theorem flatChartWorkerWithCharge [M8.Machine.Net] :
   choose machine build using fun p : Fin 9 × Bool => charts p.1 p.2
   obtain ⟨states,qs⟩ := Finite.exists_le (fun p => (machine p).states)
   obtain ⟨tapes,ts⟩ := Finite.exists_le (fun p => (machine p).tapes)
-  refine ⟨13*(2*C*(tapes+5)+12),states,?_⟩
-  intro P U t Q n fan body worker room
-  obtain ⟨T,place,program,allocate⟩ := allocatedChartWorkerWithCharge fan body worker
-    (machine (n,false)) (machine (n,true)) ((qs _).trans room) ((qs _).trans room)
+  refine ⟨25*(2*C*(tapes+5)+12),states,?_⟩
+  intro P U t Q n fan body worker reserve growth room
+  obtain ⟨T,place,program,allocate⟩ := allocatedChartWorkerWithReserve fan body worker
+    (machine (n,false)) (machine (n,true)) ((qs _).trans room) ((qs _).trans room) reserve 12 growth
   refine ⟨T,place,program,?_⟩
   intro live w W N size price initial hw hW run
   subst N
@@ -267,6 +270,34 @@ theorem flatChartWorkerWithCharge [M8.Machine.Net] :
     have leave := sweepRoles_of_flat n (B.transform y) (sweepView rfl y) (fun r i => (rb y r i).symm) j
     simpa only [address,flatWindowEquiv_read,Fin.cast_refl,id_eq] using
       leave.symm.trans ((act j).trans (congrArg (Piece.stage n).run enter))
+
+theorem flatChartWorkerWithCharge [M8.Machine.Net] :
+    ∃ (C : ℝ) (states : ℕ), ∀ {P U : Type} {t Q : ℕ} (n : Fin 9)
+      (fan : Fin (142081+2) ↪ Fin t) (body : P → Pr P t Q prime U) (worker : Pr P t Q prime U),
+    states ≤ Q → ∃ (T : ℕ) (place : Fin t ↪ Fin T) (program : Pr P T Q prime U),
+    let live := fan.trans place
+    ∀ {w W N : ℕ} (size : (prime^w)^128*W = N) (price : ℕ) (initial : Stacks t prime),
+    0 < w → 0 < W →
+    (∀ x u S, HelperFan fan x S →
+      (∀ j, (∀ i, fan i ≠ j) → S.L j = initial.L j ∧ S.R j = initial.R j) →
+      ∃ z F k y, Exec body worker (mk u S) k (mk z F) ∧ (∀ js : List _, js.Nodup → k+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price) ∧ z.user = u.user ∧
+        HelperFan fan y F ∧ ∀ j : Fin W, sweepRoles n 0 j (sweepView size y) =
+          (Piece.stage n).run (sweepRoles n 0 j (sweepView size x))) →
+      ∀ X : Stacks 142081 prime, ∃ prepared : Stacks T prime,
+        embStk ((Fin.castAddEmb 2).trans live) prepared = X ∧
+        ∀ x u S, HelperFan live x S →
+          (∀ j, (∀ i, live i ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
+          ∃ z F k y, Exec (fun f => embProg place id (body f)) program (mk u S) k (mk z F) ∧
+            (∀ js : List _, js.Nodup → (k : ℝ)+tapeCharge cleanupWeight js F ≤
+              tapeCharge cleanupWeight js S+price+C*N*(w : ℝ)^M8.Machine.BudgetBound.tau) ∧ z.user = u.user ∧
+            HelperFan live y F ∧ ∀ j : Fin W,
+              let address := fun z => (flatWindowEquiv w W (windowState w z,j)).cast size
+              readRoles address y = (Piece.stage n).run (readRoles address x) := by
+  obtain ⟨C,states,run⟩ := flatChartWorkerWithReserve
+  refine ⟨C,states,?_⟩
+  intro P U t Q n fan body worker room
+  simpa only [Nat.add_zero,Nat.cast_zero,add_zero] using
+    run n fan body worker (fun _ => 0) (by intros; exact Nat.zero_le _) room
 
 /-- Correct all active ports and return the whole borrowed bank in flat node order. -/
 theorem borrowedFlatChartWithCharge [M8.Machine.Net] :
