@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderOrdinaryOwner
 public import IntegerMultBounds.MathlibTM2.M6.BitPhaseRun
+public import IntegerMultBounds.MathlibTM2.M6.BitStagePlacement
 
 /-! Assemble the private correction stacks from the individual port workspaces. -/
 @[expose] public section
@@ -28,6 +29,47 @@ theorem compiledPort_fixed {k v w : ℕ} {α : Type*} (slot : α → Fin (k+1)) 
   simp only [SharedBankSkeleton.ofStage_compile,List.map_map]
   exact congrArg _ (List.map_congr_left fun j hj => placePort_fixed _ _ _ (fixed j hj))
 
+def blankPortStacks (t : ℕ) : Stacks t prime := ⟨[],[],fun _ => [],fun _ => []⟩
+
+private theorem blankPortStacks_rep (t : ℕ) : RepT (SharedBank.empty t prime)
+    (blankPortStacks t).L (blankPortStacks t).R := by
+  intro i z
+  simp [blankPortStacks,SharedBank.empty,readAt_nil_left,wordTape_nil]
+
+private theorem adjacentPortStacks_rep {n m : ℕ} {a : Tapes n prime} {b : Tapes m prime}
+    {L : Stacks n prime} {R : Stacks m prime} (left : RepT a L.L L.R) (right : RepT b R.L R.R) :
+    RepT (a.append b) (adjacentStageStacks L R).L (adjacentStageStacks L R).R := by
+  intro i z
+  induction i using Fin.addCases with
+  | left i => simpa only [adjacentStageStacks,Tapes.append,Fin.addCases_left] using left i z
+  | right i => simpa only [adjacentStageStacks,Tapes.append,Fin.addCases_right] using right i z
+
+/-- Stack layout of the compiled chart, with the individual port seeds in
+execution order and blank stacks in every extra slot. -/
+noncomputable def compiledPortStacks {k V : ℕ} {α : Type*} (slot : α → Fin (k+1))
+    (port : α → SharedBankStage.Stage _ 1 prime (@portOwner V))
+    (seed : ∀ j, Stacks (port j).tapes prime) (jobs : List α) :
+    Stacks (SharedBankStage.compile _ (Nat.zero_lt_succ k)
+      (jobs.map fun j => placePort (slot j) (port j))).tapes prime :=
+  match jobs with
+  | [] => blankPortStacks _
+  | j :: js => adjacentStageStacks
+      (adjacentStageStacks (blankPortStacks _) (adjacentStageStacks (seed j) (blankPortStacks k)))
+      (compiledPortStacks slot port seed js)
+
+theorem compiledPortStacks_rep {k V : ℕ} {α : Type*} (slot : α → Fin (k+1))
+    (port : α → SharedBankStage.Stage _ 1 prime (@portOwner V)) (seed : ∀ j, Stacks (port j).tapes prime)
+    (jobs : List α) (ready : ∀ j ∈ jobs, RepT (port j).metadata (seed j).L (seed j).R) :
+    let stage := SharedBankStage.compile _ (Nat.zero_lt_succ k) (jobs.map fun j => placePort (slot j) (port j))
+    let S := compiledPortStacks slot port seed jobs
+    RepT stage.metadata S.L S.R := by
+  induction jobs with
+  | nil => exact blankPortStacks_rep _
+  | cons j js ih =>
+    exact adjacentPortStacks_rep (adjacentPortStacks_rep (blankPortStacks_rep _)
+      (adjacentPortStacks_rep (ready j List.mem_cons_self) (blankPortStacks_rep k)))
+      (ih (fun i hi => ready i (List.mem_cons_of_mem _ hi)))
+
 /-- Placing and sequencing any number of ports requires only the private
 words used by each one-port pass. Shared owner slots start blank in the seed. -/
 theorem compiledPortSeed {k V : ℕ} {α : Type*} (slot : α → Fin (k+1))
@@ -36,15 +78,11 @@ theorem compiledPortSeed {k V : ℕ} {α : Type*} (slot : α → Fin (k+1))
     let stage := SharedBankStage.compile _ (Nat.zero_lt_succ k) (jobs.map fun j => placePort (slot j) (port j))
     ∃ S, ChartPrivateReady stage S := by
   intro stage
-  have rep : HasStackSeed stage.metadata := by
-    induction jobs with
-    | nil => exact HasStackSeed.empty _
-    | cons j js ih =>
-      have localSeed := (seed j List.mem_cons_self).append (HasStackSeed.empty k)
-      exact ((HasStackSeed.empty _).append localSeed).append
-        (ih (fun a ha => seed a (List.mem_cons_of_mem _ ha)))
-  obtain ⟨S,read⟩ := rep
-  exact ⟨S,fun i _ => read i⟩
+  classical
+  let S (j : α) := if h : j ∈ jobs then (seed j h).choose else blankPortStacks (port j).tapes
+  have rep := compiledPortStacks_rep slot port S jobs (fun j hj => by
+    simpa only [S,dite_eq_left hj] using (seed j hj).choose_spec)
+  exact ⟨compiledPortStacks slot port S jobs,fun i _ => rep i⟩
 
 theorem compileSeededPorts {k V : ℕ} {α : Type*} (slot : α ↪ Fin (k+1))
     (port : α → SharedBankStage.Stage _ 1 prime (@portOwner V)) (ts : List α) (unique : ts.Nodup)

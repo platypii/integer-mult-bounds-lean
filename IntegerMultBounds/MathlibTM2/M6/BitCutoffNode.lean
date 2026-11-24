@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitPackedMoveCaller
 public import IntegerMultBounds.MathlibTM2.M6.BitCutoffStage
 import IntegerMultBounds.MathlibTM2.M6.BitPackedSweepCharge
 public import IntegerMultBounds.MathlibTM2.M6.BitAlignedNodeBill
@@ -1488,6 +1489,47 @@ theorem callCutoffRemainderFromRecord {P A U : Type} {H N T Q : ℕ}
 noncomputable def remainderEntryWord (c : CutoffNodeInput) (i : Fin 16) : List (Fin (prime+4)) :=
   if i = 0 then List.replicate c.w 0 else if i = 1 then binSyms 1 1 else
     if i = 2 then binSyms c.root.width.size c.cutoff else []
+
+
+/-- Only the first three raw registers carry data into a remainder. -/
+theorem remainderEntryLoader {T : ℕ} (raw : Fin 16 ↪ Fin T) :
+    let words := fun c (i : Fin 3) => remainderEntryWord c (i.castLE (by decide))
+    LoadsPackedSeed words CutoffNodeInput.cells (fun c => ⟨[],[],fun _ => [],
+      Function.extend raw (remainderEntryWord c) (fun _ => [])⟩) := by
+  classical
+  intro words
+  let slots := (Fin.castLEEmb (by decide : 3 ≤ 16)).trans raw
+  have copied := LoadsPackedSeed.headers words CutoffNodeInput.cells slots id (raw 3) (raw 4)
+    (raw.injective.ne (by decide))
+    (fun i => raw.injective.ne (show i.castLE (by decide : 3 ≤ 16) ≠ 3 by fin_cases i <;> decide))
+    (fun i => raw.injective.ne (show i.castLE (by decide : 3 ≤ 16) ≠ 4 by fin_cases i <;> decide))
+    142 (fun c => by
+      have bound := c.remainderSetup_le 1
+      simp [seedLoadBill,Fin.sum_univ_succ,words,remainderEntryWord,length_binSyms]
+      simp only [Nat.one_mul] at bound
+      omega)
+  have contents (c : CutoffNodeInput) : Function.extend raw (remainderEntryWord c) (fun _ => []) =
+      Function.extend slots (fun i => words c (id i)) (fun _ => []) := by
+    funext j
+    by_cases hit : ∃ i, raw i = j
+    · obtain ⟨i,rfl⟩ := hit
+      rw [raw.injective.extend_apply]
+      by_cases small : i.val < 3
+      · let k : Fin 3 := ⟨i.val,small⟩
+        have eq : raw i = slots k := rfl
+        rw [eq,slots.injective.extend_apply]
+        rfl
+      · rw [Function.extend_apply' _ _ _ (by
+          rintro ⟨k,eq⟩
+          have h := congrArg Fin.val (raw.injective eq)
+          change k.val = i.val at h
+          omega)]
+        simp [remainderEntryWord,show i ≠ 0 by rintro rfl; contradiction,
+          show i ≠ 1 by rintro rfl; contradiction,show i ≠ 2 by rintro rfl; contradiction]
+    · rw [Function.extend_apply' _ _ _ hit,Function.extend_apply' _ _ _ (by
+        rintro ⟨k,eq⟩
+        exact hit ⟨_,eq⟩)]
+  simpa only [contents] using copied
 
 
 theorem packedCutoffRemainderOnBank {P A U : Type} {H N T Q : ℕ}

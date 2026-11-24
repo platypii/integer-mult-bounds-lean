@@ -334,4 +334,255 @@ theorem packedRowsFromPayload {P R U : Type} {T H Q : ℕ} (body : P → Pr P T 
     have h := off j ne (by simpa [dest] using (hj (bank (Fin.succ 0))).symm)
     exact ⟨h.1.trans (keep _ hj).1,h.2.trans (keep _ hj).2⟩
 
+/-- A uniform program prepares the private tapes from the caller's header
+words, preserving all tapes outside the selected bank. -/
+def LoadsPackedSeed {Config : Type} {k N : ℕ}
+    (words : Config → Fin k → List (Fin (prime+4))) (volume : Config → ℕ)
+    (seed : Config → Stacks N prime) : Prop :=
+  ∃ rate : ℕ, ∀ {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (bank : Fin N ↪ Fin T) (source : Fin k → Fin T),
+    (∀ i j, bank i ≠ source j) →
+    ∃ code, ∀ c u (S : Stacks T prime), (∀ i, S.R (source i) = words c i) →
+      (∀ i, S.L (bank i) = [] ∧ S.R (bank i) = []) →
+      ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        CleanupBound S F t (rate*volume c) ∧
+        (∀ i, F.L (bank i) = (seed c).L i ∧ F.R (bank i) = (seed c).R i) ∧
+        ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j
+
+private theorem fixedPortCharge {T : ℕ} (S : Stacks T prime) (j : Fin T) (l r : List (Fin (prime+4))) :
+    let D := {S with L := Function.update S.L j l, R := Function.update S.R j r}
+    CleanupBound S D 1 (1+4*l.length+2*r.length) := by
+  intro D js distinct
+  induction js with
+  | nil => simp [tapeCharge]; omega
+  | cons i js ih =>
+    change 1+(cleanupWeight (D.L i) (D.R i)+tapeCharge cleanupWeight js D) ≤
+      cleanupWeight (S.L i) (S.R i)+tapeCharge cleanupWeight js S+_
+    by_cases hit : i = j
+    · subst i
+      have tail : tapeCharge cleanupWeight js D = tapeCharge cleanupWeight js S := by
+        unfold tapeCharge
+        apply congrArg List.sum
+        apply List.map_congr_left
+        intro i mem
+        have ne : i ≠ j := fun eq => distinct.notMem (eq ▸ mem)
+        simp [D,Function.update_of_ne ne]
+      rw [tail]
+      simp [D,cleanupWeight]
+      omega
+    · have head : cleanupWeight (D.L i) (D.R i) = cleanupWeight (S.L i) (S.R i) := by
+        simp [D,Function.update_of_ne hit]
+      have bound : 1+tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+(1+4*l.length+2*r.length) := ih distinct.tail
+      rw [head]
+      omega
+
+private theorem loadFixedPorts {N : ℕ} (seed : Stacks N prime) (order : List (Fin N)) (distinct : order.Nodup) :
+    ∃ price : ℕ, ∀ {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) (bank : Fin N ↪ Fin T),
+    ∃ code, ∀ u (S : Stacks T prime), (∀ i ∈ order, S.L (bank i) = [] ∧ S.R (bank i) = []) →
+      ∃ F t, Exec body code (mk u S) t (mk u F) ∧ CleanupBound S F t price ∧
+        (∀ i ∈ order, F.L (bank i) = seed.L i ∧ F.R (bank i) = seed.R i) ∧
+        ∀ j, (∀ i ∈ order, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  induction order with
+  | nil =>
+    refine ⟨1,fun body bank => ⟨Prog.act .done,fun u S _ => ⟨S,1,Exec.act .done _,?_,by simp,by simp⟩⟩⟩
+    intro js _
+    omega
+  | cons i rest ih =>
+    obtain ⟨price,load⟩ := ih distinct.tail
+    refine ⟨(1+4*(seed.L i).length+2*(seed.R i).length)+price,?_⟩
+    intro P U T Q body bank
+    obtain ⟨code,run⟩ := load body bank
+    let write : Act T Q prime U := Cover.LabelCycle.pushWord (bank i) (seed.R i)
+      (WordCmd.pushL (bank i) (seed.L i).reverse)
+    refine ⟨(Prog.act write).seq code,?_⟩
+    intro u S free
+    let D := {S with L := Function.update S.L (bank i) (seed.L i), R := Function.update S.R (bank i) (seed.R i)}
+    have step : Exec body (Prog.act write) (mk u S) 1 (mk u D) := by
+      simpa only [write,Cover.LabelCycle.pushWord_run,WordCmd.pushL_run,List.reverse_reverse,
+        (free i List.mem_cons_self).1,(free i List.mem_cons_self).2,List.append_nil,D] using
+        Exec.act (body := body) write (mk u S)
+    have away j (h : j ∈ rest) : bank j ≠ bank i := bank.injective.ne (fun eq => distinct.notMem (eq ▸ h))
+    obtain ⟨F,t,exec,paid,set,off⟩ := run u D (fun j h => by
+      simpa [D,Function.update_of_ne (away j h)] using free j (List.mem_cons_of_mem i h))
+    refine ⟨F,1+t,step.seq exec,(fixedPortCharge S (bank i) _ _).seq paid,?_,?_⟩
+    · intro j mem
+      rcases List.mem_cons.mp mem with rfl | h
+      · simpa [D] using off (bank j) (fun m hm => away m hm)
+      · exact set j h
+    · intro j h
+      simpa [D,Function.update_of_ne (h i List.mem_cons_self).symm] using
+        off j (fun m hm => h m (List.mem_cons_of_mem _ hm))
+
+theorem LoadsPackedSeed.fixed {Config : Type} {k N : ℕ} (words : Config → Fin k → List (Fin (prime+4)))
+    (V : Config → ℕ) (positive : ∀ c, 0 < V c) (seed : Stacks N prime) :
+    LoadsPackedSeed words V (fun _ => seed) := by
+  obtain ⟨price,load⟩ := loadFixedPorts seed (List.finRange N) (List.nodup_finRange N)
+  refine ⟨price,?_⟩
+  intro P U T Q body bank source apart
+  obtain ⟨code,run⟩ := load body bank
+  refine ⟨code,?_⟩
+  intro c u S header free
+  obtain ⟨F,t,exec,paid,set,off⟩ := run u S (fun i _ => free i)
+  refine ⟨u,F,t,exec,rfl,?_,fun i => set i (by simp),fun j h => off j (fun i _ => h i)⟩
+  intro js nd
+  exact (paid js nd).trans (Nat.add_le_add_left (Nat.le_mul_of_pos_right _ (positive c)) _)
+
+/-- Copy runtime headers into designated right stacks. Two other slots in the
+private bank serve as scratch and are returned blank. -/
+theorem LoadsPackedSeed.headers {Config : Type} {k N h : ℕ}
+    (words : Config → Fin k → List (Fin (prime+4))) (V : Config → ℕ)
+    (slots : Fin h ↪ Fin N) (field : Fin h → Fin k) (tmp saved : Fin N)
+    (distinct : tmp ≠ saved) (freeTmp : ∀ i, slots i ≠ tmp) (freeSaved : ∀ i, slots i ≠ saved)
+    (rate : ℕ) (bill : ∀ c, seedLoadBill (fun i => words c (field i)) ≤ rate*V c) :
+    LoadsPackedSeed words V (fun c => ⟨[],[],fun _ => [],
+      Function.extend slots (fun i => words c (field i)) (fun _ => [])⟩) := by
+  classical
+  refine ⟨rate,?_⟩
+  intro P U T Q body bank source apart
+  let seed (c : Config) : Stacks N prime := ⟨[],[],fun _ => [],
+    Function.extend slots (fun i => words c (field i)) (fun _ => [])⟩
+  have atSlot c i : (seed c).R (slots i) = words c (field i) :=
+    slots.injective.extend_apply (fun j => words c (field j)) (fun _ => []) i
+  obtain ⟨code,run⟩ := installChildSeed body bank slots (fun i => source (field i)) (bank tmp) (bank saved)
+    (fun i j => apart _ _) (fun i => by
+      simp [List.nodup_cons,(apart _ _).symm,bank.injective.ne (freeTmp i),
+        bank.injective.ne (freeSaved i),bank.injective.ne distinct])
+  refine ⟨code,?_⟩
+  intro c u S headers vacant
+  obtain ⟨z,R,t,exec,user,paid,loaded,off⟩ := run (seed c) u S
+    (fun i => (headers _).trans (atSlot c i).symm) (fun i => (vacant _).2) (vacant _).2 (vacant _).2
+  refine ⟨z,_,t,exec,user,?_,?_,fun j outside => ⟨rfl,off j (fun i => outside _)⟩⟩
+  · intro js nd
+    exact (paid js nd).trans (Nat.add_le_add_left (by simpa only [atSlot] using bill c) _)
+  · intro j
+    refine ⟨(vacant j).1,loaded j (fun absent => ?_)⟩
+    exact (vacant j).2.trans (Function.extend_apply' (fun i => words c (field i)) (fun _ => []) j (by
+      rintro ⟨i,eq⟩
+      exact absent i eq)).symm
+
+/-- The flat handoff adds blank tapes around the chart. Running the same
+initializer on the embedded chart bank retains its cleanup bound. -/
+theorem LoadsPackedSeed.flatStage {Config : Type} {k N : ℕ} {V : Config → ℕ}
+    {words : Config → Fin k → List (Fin (prime+4))} {seed : Config → Stacks N prime}
+    (initial : LoadsPackedSeed words V seed) :
+    LoadsPackedSeed words V (fun c => flatStageSeed (seed c)) := by
+  obtain ⟨rate,load⟩ := initial
+  refine ⟨rate,?_⟩
+  intro P U T Q body bank source apart
+  let place := SweepFile.Exit.chart 0 N
+  obtain ⟨code,run⟩ := load body (place.trans bank) source (fun i j => apart _ j)
+  refine ⟨code,?_⟩
+  intro c u S headers vacant
+  obtain ⟨z,F,t,exec,user,bill,set,off⟩ := run c u S headers (fun i => vacant (place i))
+  refine ⟨z,F,t,exec,user,bill,?_,fun j away => off j (fun i => away _)⟩
+  intro j
+  by_cases hit : ∃ i, place i = j
+  · obtain ⟨i,rfl⟩ := hit
+    simpa only [flatStageSeed,place,Function.Embedding.trans_apply,Function.Injective.extend_apply,Function.Embedding.injective] using set i
+  · have keep := off (bank j) (fun i => bank.injective.ne (fun eq => hit ⟨i,eq⟩))
+    have left := keep.1.trans (vacant j).1
+    have right := keep.2.trans (vacant j).2
+    dsimp only [place] at hit
+    simpa only [flatStageSeed,Function.extend_apply' _ _ _ hit] using And.intro left right
+
+/-- Adjacent pieces use the same runtime headers. Their setup rates add. -/
+theorem LoadsPackedSeed.join {Config : Type} {k m n : ℕ} {words : Config → Fin k → List (Fin (prime+4))}
+    {V : Config → ℕ} {L : Config → Stacks m prime} {R : Config → Stacks n prime}
+    (left : LoadsPackedSeed words V L) (right : LoadsPackedSeed words V R) :
+    LoadsPackedSeed words V (fun c => adjacentStageStacks (L c) (R c)) := by
+  obtain ⟨a,loadL⟩ := left
+  obtain ⟨b,loadR⟩ := right
+  refine ⟨a+b,?_⟩
+  intro P U T Q body bank source apart
+  let l := (Fin.castAddEmb n).trans bank
+  let r := (Fin.natAddEmb m).trans bank
+  have disjoint (i j) : l i ≠ r j := bank.injective.ne (by
+    intro eq
+    have h := congrArg Fin.val eq
+    change i.val = m+j.val at h
+    omega)
+  obtain ⟨x,first⟩ := loadL body l source (fun i j => apart _ _)
+  obtain ⟨y,last⟩ := loadR body r source (fun i j => apart _ _)
+  refine ⟨x.seq y,?_⟩
+  intro c u S header free
+  obtain ⟨v,D,t,start,user,charge,ls,frame⟩ := first c u S header (fun i => free _)
+  obtain ⟨z,F,s,finish,same,paid,rs,keep⟩ := last c v D
+    (fun j => (frame _ (fun i => apart _ _)).2.trans (header j))
+    (fun j => ⟨(frame _ (fun i => disjoint i j)).1.trans (free _).1,
+      (frame _ (fun i => disjoint i j)).2.trans (free _).2⟩)
+  refine ⟨z,F,t+s,start.seq finish,same.trans user,?_,?_,?_⟩
+  · simpa only [Nat.add_mul] using charge.seq paid
+  · intro i
+    induction i using Fin.addCases with
+    | left i =>
+      have off := keep _ (fun j => (disjoint i j).symm)
+      simpa [l,r,adjacentStageStacks] using And.intro (off.1.trans (ls i).1) (off.2.trans (ls i).2)
+    | right j => simpa [l,r,adjacentStageStacks] using rs j
+  · intro j off
+    exact ⟨(keep j (fun i => off _)).1.trans (frame j (fun i => off _)).1,
+      (keep j (fun i => off _)).2.trans (frame j (fun i => off _)).2⟩
+
+/-- Split and merge on the installed child's actual input and output banks.
+Only the three return tapes need blank entries in the child's private seed. -/
+theorem packedRowsOnChildBank {P R U : Type} {T H Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
+    (src dst : Fin (142081+2) ↪ Fin T) (ret : Fin 3 ↪ Fin T)
+    (srcOff : ∀ i j, ret i ≠ src j) (dstOff : ∀ i j, ret i ≠ childReturnFan dst j)
+    (tmp buf : Fin T) (srcTmp : ∀ i, src i ≠ tmp) (srcBuf : ∀ i, src i ≠ buf)
+    (retTmp : ∀ i, ret i ≠ tmp) (retBuf : ∀ i, ret i ≠ buf) (distinct : tmp ≠ buf)
+    (place : Fin T ↪ Fin H) (label : P → R) (host : R → Pr R H Q prime U)
+    (installed : ∀ f, host (label f) = embProg place label (body f))
+    (payload count saved aux : Fin H)
+    (outside : ∀ i, place i ≠ payload ∧ place i ≠ count ∧ place i ≠ saved ∧ place i ≠ aux)
+    (separate : [count,place (ret 0),payload,saved,aux].Nodup)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    ∃ code : Pr R H Q prime U, ∀ (child : Descriptor) (atom price : ℕ) seed,
+      child.width = 64*atom → 142080 ∣ child.rows →
+      let W := CopyChildLayout.spectators child / 142080
+      let lane := packedDescriptor (64*atom) W
+      let m := volume prime lane
+      let run := fun (wide : Descriptor) => ∀ (x : Fin (volume prime wide) → ZMod 2) u (S : Stacks H prime),
+      let B := embStk place S
+      RecordPayload (N := volume prime wide) payload (fun _ => blank) 0 x S →
+      S.R count = [] → S.R saved = [] → S.L aux = [] → S.R aux = [] →
+      (∀ i, B.L (src i) = [] ∧ B.R (src i) = []) →
+      (∀ i, B.L (ret i) = [] ∧ B.R (ret i) = []) →
+      B.L tmp = [] → B.R tmp = [] → B.R buf = [] →
+      (∀ i, seed.L (ret i) = [] ∧ seed.R (ret i) = []) →
+      (∀ j, (∀ i, src i ≠ j) → (∀ i, ret i ≠ j) → B.L j = seed.L j ∧ B.R j = seed.R j) →
+      ∃ z F t, Exec host code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        CleanupBound S F t (price+1000000034*volume prime wide+49) ∧
+        RecordPayload (N := volume prime wide) payload (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (v := wide) (one_dvd wide.rows) x) F ∧
+        ∀ j, j ≠ payload → (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j
+      PackedPieceHandoffWithCharge cleanupWeight m (packedChildOutput atom m) body (body entry) src dst seed price →
+      0 < m → run (packedDescriptor child.width (CopyChildLayout.spectators child)) := by
+  obtain ⟨bank,fanEq,retEq,cover⟩ := splitBankForInput src ret srcOff
+  have retAt (i) := congrArg (fun e : Fin 3 ↪ Fin T => e i) retEq
+  have destination : bank (Fin.succ 0) = ret 0 := retAt 0
+  have excludes (j : Fin T) (a : ∀ i, src i ≠ j) (b : ∀ i, ret i ≠ j) (k) : bank k ≠ j := by
+    rcases cover k with ⟨i,h⟩ | ⟨i,h⟩ <;> rw [h]
+    · exact b i
+    · exact a i
+  obtain ⟨code,execute⟩ := packedRowsFromPayload body entry bank tmp buf
+    (excludes tmp srcTmp retTmp) (excludes buf srcBuf retBuf) distinct place label host installed
+    payload count saved aux outside (destination ▸ separate) capacity dst (fun i j => (retAt i) ▸ dstOff i j)
+  refine ⟨code,?_⟩
+  intro child atom price seed aligned groups W lane m run worker pos x u S B word hc hs al ar owners returns tl tr br vacant rest
+  refine execute child atom price seed aligned groups (fanEq ▸ worker) pos x u S word hc hs al ar ?_ tl tr br ?_ ?_
+  · intro j
+    rcases cover j with ⟨i,h⟩ | ⟨i,h⟩ <;> rw [h]
+    · exact returns i
+    · exact owners i
+  · intro j off
+    rcases cover j with ⟨i,h⟩ | ⟨i,h⟩
+    · exact h ▸ vacant i
+    · exact False.elim (off i ((congrArg (fun e : Fin (142081+2) ↪ Fin T => e i) fanEq).trans h.symm))
+  · intro j off
+    apply rest
+    · intro i
+      rw [← fanEq]
+      exact off _
+    · intro i
+      rw [← retAt i]
+      exact off _
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

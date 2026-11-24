@@ -107,6 +107,152 @@ theorem loadStageCallerSeed {k H T Q : ℕ} {P U : Type} (body : P → Pr P T Q 
       | last => exact Ne.symm hit
       | cast i => exact away i
 
+/-- Initialize a basis pass of a correction chart from its atom width and
+spectator count. The first two slots double as temporary copy registers. -/
+theorem basisPortLoader {Config : Type} {d : ℕ} (ops : List (FlatCoordinateSchedule.Op d))
+    (dimension : 0 < d) (w W : Config → ℕ) (positive : ∀ c, 0 < W c) :
+    let words := fun c => (![binSyms (A := prime) (w c).size (w c),binSyms (W c).size (W c)] :
+      Fin 2 → List (Fin (prime+4)))
+    LoadsPackedSeed words (fun c => (prime^(w c))^d*W c) (fun c => basisHeaderStacks ops (w c) (W c)) := by
+  intro words
+  refine ⟨40,?_⟩
+  intro P U T Q body bank source apart
+  let ports := basisSeedPorts ops
+  let tmp : Fin (FlatCoordinateCleanSchedule.tapeCount ops) := ⟨0,by
+    have := (ports 0).isLt
+    change 2 < _ at this
+    omega⟩
+  let saved : Fin (FlatCoordinateCleanSchedule.tapeCount ops) := ⟨1,by
+    have := (ports 0).isLt
+    change 2 < _ at this
+    omega⟩
+  have a (i) : ports i ≠ tmp := by
+    intro eq
+    have h := congrArg Fin.val eq
+    change 2+i.val = 0 at h
+    omega
+  have b (i) : ports i ≠ saved := by
+    intro eq
+    have h := congrArg Fin.val eq
+    change 2+i.val = 1 at h
+    omega
+  obtain ⟨code,run⟩ := loadBasisWorkerSeed body ops bank source (bank tmp) (bank saved)
+    (fun i j => apart _ _) (fun i => by
+      simp [List.nodup_cons,(apart _ _).symm,bank.injective.eq_iff,
+        (show tmp ≠ saved by intro h; exact Nat.zero_ne_one (congrArg Fin.val h))]
+      exact ⟨a i,b i⟩)
+  refine ⟨code,?_⟩
+  intro c u S header vacant
+  obtain ⟨z,F,t,exec,user,bill,set,off⟩ := run (w c) (W c) u S (fun _ => True) (fun _ => trivial)
+    (header 0) (header 1) (fun j _ => vacant j) (vacant tmp).2 (vacant saved).2
+  refine ⟨z,F,t,exec,user,?_,fun j => set j trivial,fun j away => off j (fun i => away _)⟩
+  have p := pow_pos Shared50ModularControl.prime_prime.pos (w c)
+  have h := Nat.le_self_pow dimension.ne' (prime^(w c))
+  have width := (Nat.lt_pow_self Shared50ModularControl.prime_prime.one_lt (n := w c)).le
+  have left := Nat.le_mul_of_pos_right ((prime^(w c))^d) (positive c)
+  have right := Nat.le_mul_of_pos_left (W c) (pow_pos p d)
+  have bits (n : ℕ) : n.size ≤ n := Nat.size_le.mpr Nat.lt_two_pow_self
+  intro js nd
+  have cost : 8*((w c).size+(W c).size)+24 ≤ 40*((prime^(w c))^d*W c) := by
+    have := bits (w c)
+    have := bits (W c)
+    have := positive c
+    omega
+  exact (bill js nd).trans (Nat.add_le_add_left cost _)
+
+/-- A fixed chart schedule can run each port initializer on its own bank.
+The resulting program has one linear rate for the complete list. -/
+theorem compiledPortLoader {Config α : Type} {k h N : ℕ} (slot : α → Fin (k+1))
+    (port : α → SharedBankStage.Stage _ 1 prime (@portOwner N))
+    (words : Config → Fin h → List (Fin (prime+4))) (V : Config → ℕ) (positive : ∀ c, 0 < V c)
+    (seed : Config → ∀ j, Stacks (port j).tapes prime) (jobs : List α)
+    (load : ∀ j ∈ jobs, LoadsPackedSeed words V (fun c => seed c j)) :
+    LoadsPackedSeed words V (fun c => compiledPortStacks slot port (seed c) jobs) := by
+  have blank (t) : LoadsPackedSeed words V (fun _ => blankPortStacks t) := by
+    refine ⟨1,?_⟩
+    intro P U T Q body bank source apart
+    refine ⟨Prog.act .done,?_⟩
+    intro c u S headers vacant
+    refine ⟨u,S,1,Exec.act .done _,rfl,?_,vacant,fun _ _ => ⟨rfl,rfl⟩⟩
+    intro js unique
+    have := positive c
+    omega
+  induction jobs with
+  | nil => exact blank _
+  | cons j js ih =>
+    exact ((blank _).join ((load j List.mem_cons_self).join (blank k))).join
+      (ih (fun i hi => load i (List.mem_cons_of_mem _ hi)))
+
+/-- The dispatched sweep's inner caller needs just the cutoff word and the six
+descriptor words. All other registers, including the copy scratch, start blank. -/
+theorem stageCallerLoader {k H : ℕ} (fan : Fin (k+1) ↪ Fin H) :
+    let words := fun (c : CutoffNodeInput) => Fin.cons (binSyms (A := prime) c.root.width.size c.cutoff)
+      (fun i => (Routines.hdr c.node i).map bitSymbol)
+    LoadsPackedSeed words CutoffNodeInput.cells (fun c => callerSeed fan (words c 0)
+      (callerHeaderBank (fun i => words c i.succ))) := by
+  classical
+  intro words
+  let ext := Fin.natAddEmb H (m := 37)
+  let last := (fan (Fin.last k)).castAdd 37
+  have apart (i : Fin 37) : last ≠ ext i := by
+    intro eq
+    have h := congrArg Fin.val eq
+    change (fan (Fin.last k)).val = H+i.val at h
+    omega
+  let slots : Fin 7 ↪ Fin (H+37) := ⟨Fin.cons last (ext ∘ callerHeaderPorts),by
+    intro i j eq
+    induction i using Fin.cases <;> induction j using Fin.cases <;> simp_all [ext.injective.eq_iff,callerHeaderPorts.injective.eq_iff]
+    exact apart _ eq.symm⟩
+  have away (j : Fin 37) (high : 6 ≤ j.val) (i : Fin 7) : slots i ≠ ext j := by
+    induction i using Fin.cases with
+    | zero => exact apart j
+    | succ i =>
+      apply ext.injective.ne
+      intro eq
+      have h := congrArg Fin.val eq
+      change i.val = j.val at h
+      omega
+  have load := LoadsPackedSeed.headers words CutoffNodeInput.cells slots id (ext 6) (ext 7)
+    (ext.injective.ne (by decide)) (away 6 (by decide)) (away 7 (by decide)) (142+133*142080)
+    (fun c => by
+      have setup := c.remainderSetup_le 1
+      have pos : 0 < volume prime c.node := by
+        rw [← c.cells_share]
+        have h := c.idlePositive
+        unfold CutoffNodeInput.cells
+        have hp := Shared50ModularControl.prime_prime.pos
+        positivity
+      have bill := descriptorSeedBill c.node pos
+      rw [← c.cells_share] at bill
+      simp only [seedLoadBill,Fin.sum_univ_succ (n := 6),id_eq,words,Fin.cons_zero,Fin.cons_succ,length_binSyms]
+      change (∑ i : Fin 6, (8*((Routines.hdr c.node i).map (bitSymbol (a := prime))).length+6))+1 ≤ _ at bill
+      simp only [Nat.one_mul] at setup
+      omega)
+  have contents (c : CutoffNodeInput) : (callerSeed fan (words c 0)
+      (callerHeaderBank (fun i => words c i.succ))).R = Function.extend slots (words c) (fun _ => []) := by
+    funext j
+    by_cases hit : ∃ i, slots i = j
+    · obtain ⟨i,rfl⟩ := hit
+      rw [slots.injective.extend_apply]
+      induction i using Fin.cases with
+      | zero =>
+        change Fin.append _ _ ((fan (Fin.last k)).castAdd 37) = _
+        rw [Fin.append_left,Function.update_self]
+      | succ i =>
+        change Fin.append _ _ ((callerHeaderPorts i).natAdd H) = _
+        rw [Fin.append_right]
+        exact dite_eq_left i.isLt
+    · rw [Function.extend_apply' _ _ _ hit]
+      induction j using Fin.addCases with
+      | left j =>
+        have ne : j ≠ fan (Fin.last k) := by rintro rfl; exact hit ⟨0,rfl⟩
+        simp [callerSeed,Function.update_of_ne ne]
+      | right j =>
+        have outside : ¬ j.val < 6 := fun h => hit ⟨(⟨j.val,h⟩ : Fin 6).succ,rfl⟩
+        simp [callerSeed,callerHeaderBank,outside]
+  change LoadsPackedSeed words _ (fun c => ⟨[],[],fun _ => [],(callerSeed fan (words c 0) _).R⟩)
+  simpa only [contents,id_eq] using load
+
 private theorem helperFan_trans {k V H M : ℕ} (fan : Fin (k+2) ↪ Fin H) (place : Fin H ↪ Fin M)
     (x : Fin k → Fin V → ZMod 2) (S : Stacks M prime) :
     HelperFan (fan.trans place) x S ↔ HelperFan fan x (embStk place S) := Iff.rfl
