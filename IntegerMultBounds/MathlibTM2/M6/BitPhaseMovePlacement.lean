@@ -125,14 +125,14 @@ addresses, with both field permutations included in its recursive bill. -/
 theorem selectedRoutedBandMoves {U : Type} (stage : Fin 9) (run : StageRun) (afterCopy : Bool) :
     let _ := BinaryRadixEqualShared.supplierNet
     let J := Fin (selectedPhaseSchedule afterCopy).1.length
-    let edge := selectedMoveEdge afterCopy
     ∃ states : ℕ, ∀ {Q : ℕ}, states ≤ Q → ∃ minimum leafRate : ℝ, ∀ D, minimum ≤ D →
       ∃ (T : ℕ) (fits : rowSwapBlock.tapes+35 ≤ T) (P : J → Type)
         (tables : ∀ j, Option (P j) → Pr (Option (P j)) T Q prime U) (rate : ℕ) (base swaps : J → ℕ),
       ∀ (p : CutoffNodeInput) (blocks : ℕ) (j : J),
         RoutedPhaseMove stage run afterCopy j fits (tables j) none D leafRate rate (base j) (swaps j) p blocks := by
-  intro inst J edge
+  intro inst J
   classical
+  let edge := selectedMoveEdge afterCopy
   obtain ⟨states,compile⟩ := selectedScheduledBandMoves (U := U) stage run afterCopy
   refine ⟨max states rowSwapBlock.states,?_⟩
   intro Q enough
@@ -171,5 +171,103 @@ theorem selectedRoutedBandMoves {U : Type} (stage : Fin 9) (run : StageRun) (aft
   obtain ⟨z,F,t,y,exec,paid,user,out,clean,frame,act⟩ := call smaller u S x ready free
   exact ⟨z,F,t,y,stateMap_exec id id (fun _ => rfl) some (body' := table j) (fun _ => rfl) exec,
     paid,user,out,clean,frame,act⟩
+
+
+/-- A call from a scalar phase realizes the physical interval transposition
+on its record. The schedule determines both the child and its address map. -/
+theorem RoutedPhaseMove.call {U P : Type} {T Q : ℕ}
+    {stage : Fin 9} {run : StageRun} {afterCopy : Bool}
+    {j : Fin (selectedPhaseSchedule afterCopy).1.length} {fits : rowSwapBlock.tapes+35 ≤ T}
+    {body : P → Pr P T Q prime U} {entry : P} {D leafRate : ℝ} {rate base swaps : ℕ}
+    {p : CutoffNodeInput} {blocks : ℕ}
+    (move : RoutedPhaseMove stage run afterCopy j fits body entry D leafRate rate base swaps p blocks)
+    (root : p.root.Positive) (rows : 142080^(p.depth+1) ∣ p.root.rows)
+    (label : p.root.beforeH = blocks*prime^(64*p.root.width)) (band : 49*(p.w+1) ≤ 64*p.cutoff) :
+    let edge := selectedMoveEdge afterCopy j
+    let a := Geometry.Dimensions.value edge.1
+    let b := Geometry.Dimensions.value edge.2
+    let lane := phaseIntervalChild (min a b) (max a b) (p.w+1) p.stageWidth
+    let V := (prime^(p.w+1))^16*p.stageWidth
+    let bank := scheduledRecordPorts (Fin.castLEEmb fits)
+    let stored := RecordReady (b := prime) (w := p.w) (W := p.stageWidth) (d := 16) bank
+      (prime^(p.w+1)).size p.stageWidth.size (binSyms p.root.width.size p.cutoff) SparseRoleCircuit.encode
+      (fun _ => blank) (fun _ => blank) 0 0
+    let child := scheduledChild prime p.node (phaseChildPositions.choose (stage,run,selectedPhaseIndex afterCopy j))
+    let price := cutoffTreeBudget D leafRate p.cutoff (p.depth-(p.path.length+1)) child
+    ∃ size : volume prime lane = V, ∀ (word : Fin V → ZMod 2) u S, stored word S →
+      (∀ k, 35 ≤ k.val → S.L k = [] ∧ S.R k = []) →
+      let after := fun k : Fin V => Shared50RecursiveNodeRows.transpose (v := lane)
+        (one_dvd _) (fun h => word (h.cast size)) (k.cast size.symm)
+      ∃ z F t, Exec body ((Prog.call entry).seq (compactOwner (bank 24) (bank 0) (bank 1))) (mk u S) t (mk z F) ∧
+        CleanupBound S F t (price+rate*p.cells+6+(base+swaps*swapVolumeRate p.w)*V+
+          cleanupWeight (S.L (bank 24)) (S.R (bank 24))+14*V+19) ∧
+        z.user = u.user ∧ stored after F ∧ F.L (bank 24) = [] ∧
+        F.R (bank 24) = List.ofFn (fun i => SparseRoleCircuit.encode (after i)) ∧
+        ∀ k, 35 ≤ k.val → F.L k = [] ∧ F.R k = [] := by
+  intro edge a b lane V bank stored child price
+  let i := phaseChildPositions.choose (stage,run,selectedPhaseIndex afterCopy j)
+  have mem := List.mem_filter.mp (List.getElem_mem (l := Geometry.Moves.phaseEdges.filter positiveMove) (selectedPhaseIndex afterCopy j).isLt)
+  have checked := Geometry.Moves.phase_checked edge mem.1
+  have pos : 0 < Geometry.moveRank edge.1 edge.2 := Nat.pos_of_ne_zero (bne_iff_ne.mp mem.2)
+  have rank := (phaseChildPositions.choose_spec stage run (selectedPhaseIndex afterCopy j)).1
+  have smaller : child.width < p.node.width := by
+    have h := Nat.mul_lt_mul_of_pos_right ((nodeChildren5_le i).trans_lt (by decide : 42 < 64)) (Nat.succ_pos p.w)
+    simpa only [child,i,scheduledChild,rankDescriptor,p.width,Nat.mul_div_cancel_left _ (by decide : 0 < 64)] using h
+  have align : p.B*prime^(64*((p.w+1)*64))*((prime^(p.w+1))^112*
+      (p.node.beforeRows*p.rowsPerStage*p.node.between*p.node.afterD)) = p.stageWidth := by
+    unfold CutoffNodeInput.stageWidth CutoffNodeInput.stageFactor
+    ring
+  have coords := scheduledPhaseCoordinates p.node i edge checked (p.w+1) p.B p.rowsPerStage rank p.width p.rows p.label
+  dsimp only at coords
+  rw [align] at coords
+  obtain ⟨e,address,_⟩ := coords
+  have size : volume prime lane = V := phaseIntervalChild_volume (phaseInterval_bounds checked pos).1.le
+    (phaseInterval_bounds checked pos).2 _ _
+  let position := e.symm.trans (finCongr size)
+  have inherited : InheritedIntervalPositions child lane size position := by
+    intro k
+    simpa [position] using address (e.symm k)
+  have width : lane.width = child.width := by
+    change lane.width = nodeChildren5[i.val]*(p.node.width/64)
+    rw [rank,p.width,Nat.mul_div_cancel_left _ (by decide : 0 < 64)]
+    exact phaseIntervalChild_width checked (p.w+1) p.stageWidth
+  refine ⟨size,?_⟩
+  intro word u S ready free after
+  obtain ⟨z,F,t,y,exec,paid,user,out,fresh,_,action⟩ :=
+    move root rows label band position size inherited smaller u S word ready ((suffixClean fits S).2 free)
+  have eq : y = after := (inherited.transpose_iff width word y).1 action
+  subst y
+  have wordAt : WordAtZero after (F.L (bank 24)) (F.R (bank 24)) := by
+    intro k
+    rw [← encodedOwnerCell]
+    simpa only [sub_zero,List.map_ofFn] using out.src k
+  obtain ⟨v,same,finish⟩ := compactOwner_exec body (bank 24) (bank 0) (bank 1)
+    (by simp [List.nodup_cons,bank.injective.eq_iff]) after z F wordAt
+    (out.scratch 0 (by decide)).1 (out.scratch 0 (by decide)).2 (out.scratch 1 (by decide)).2
+  let xs := List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (after i)
+  let G := {F with L := Function.update F.L (bank 24) [], R := Function.update F.R (bank 24) xs}
+  have kept k (ne : k ≠ bank 24) : G.L k = F.L k ∧ G.R k = F.R k := by simp [G,ne]
+  have zl : G.L (bank 24) = [] := by simp [G]
+  have zr : G.R (bank 24) = xs := by simp [G]
+  have bill : CleanupBound S F (t+2) (price+rate*p.cells+6+(base+swaps*swapVolumeRate p.w)*V) := by
+    intro js nd
+    have h := paid js nd
+    change t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+      (price+rate*p.cells+4+(base+swaps*swapVolumeRate p.w)*V) at h
+    change _+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+_
+    omega
+  refine ⟨v,G,_,(Exec.call exec).seq finish,?_,same.trans user,?_,zl,zr,?_⟩
+  · simpa only [xs,List.length_ofFn] using compactCharge (bank 24) S F xs bill
+  · apply out.returnPayload (outBank := bank) (fun i hi => kept _ (bank.injective.ne hi))
+    intro k
+    rw [zl,zr,sub_zero]
+    rw [← List.map_ofFn,encodedOwnerCell,readAt_nil_left,putWord_blank_zero]
+  · intro k hk
+    have ne : k ≠ bank 24 := fun eq => by
+      have h := congrArg Fin.val eq
+      change k.val = 24 at h
+      omega
+    obtain ⟨l,r⟩ := (suffixClean fits F).1 fresh k hk
+    exact ⟨(kept k ne).1.trans l,(kept k ne).2.trans r⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

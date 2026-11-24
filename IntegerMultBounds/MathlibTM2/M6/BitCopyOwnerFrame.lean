@@ -11,7 +11,7 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover.Fallb
 open RecursiveInterchangeLayout
 open Shared50ModularControl (prime)
 
-private theorem compactCharge {T : ℕ} (j : Fin T) (S D : Stacks T prime)
+theorem compactCharge {T : ℕ} (j : Fin T) (S D : Stacks T prime)
     (xs : List (Fin (prime+4))) {n price : ℕ} (paid : CleanupBound S D n price) :
     let G := {D with L := Function.update D.L j [], R := Function.update D.R j xs}
     CleanupBound S G (n+(12*xs.length+19+4*(D.L j).length+2*(D.R j).length))
