@@ -82,6 +82,40 @@ private theorem placedFrameCharge {k t h : ℕ} (fan : Fin k ↪ Fin t) (bank : 
       tapeCharge cleanupWeight (frameSlots (fan.trans bank)) S := by
   simp [tapeCharge,frameSlots,List.map_reverse,Function.comp_def,embStk]
 
+/-- Sequence preparation with a worker embedded in the prepared bank.
+The preparation allowance covers both the selected tapes and the live frame. -/
+theorem runPreparedStage {T H Q k V : ℕ} {P U : Type} (bank : Fin T ↪ Fin H)
+    (fan : Fin (k+2) ↪ Fin T) (body : P → Pr P T Q prime U) (worker : Pr P T Q prime U)
+    (setup : Pr P H Q prime U) (u v : HS H Q prime U) (S D : Stacks H prime)
+    (n setupCost : ℕ) (effect : (Fin k → Fin V → ZMod 2) → Prop)
+    (start : Exec (fun f => embProg bank id (body f)) setup (mk u S) n (mk v D))
+    (user : v.user = u.user) (paid : CleanupBound S D n setupCost)
+    {z F m y} (run : Exec body worker (mk (embDn bank v) (embStk bank D)) m (mk z F))
+    (same : z.user = v.user) (done : HelperFan fan y F) (act : effect y) :
+    ∃ w G, Exec (fun f => embProg bank id (body f)) (setup.seq (embProg bank id worker))
+        (mk u S) (n+m) (mk w G) ∧ w.user = u.user ∧ HelperFan (fan.trans bank) y G ∧ effect y ∧
+      ∀ price, (∀ js, js.Nodup →
+        m+tapeCharge cleanupWeight (frameSlots fan) F+tapeCharge cleanupWeight js F ≤
+          tapeCharge cleanupWeight js (embStk bank D)+price+tapeCharge cleanupWeight (frameSlots fan) (embStk bank D)) →
+        ∀ js, js.Nodup →
+          n+m+tapeCharge cleanupWeight (frameSlots (fan.trans bank)) G+tapeCharge cleanupWeight js G ≤
+          tapeCharge cleanupWeight js S+(2*setupCost+price)+tapeCharge cleanupWeight (frameSlots (fan.trans bank)) S := by
+  obtain ⟨w,G,placed,_,last,view,off⟩ := exec_emb (ι := id) (body' := fun f => embProg bank id (body f))
+    bank.injective (fun _ => rfl) run v rfl D rfl
+  subst F
+  refine ⟨w,G,start.seq placed,last.trans (same.trans user),done,act,?_⟩
+  intro price bill js nd
+  let slots := frameSlots (fan.trans bank)
+  have after := placedCleanup_cost_le bank D G cleanupWeight (m+tapeCharge cleanupWeight slots G)
+    (price+tapeCharge cleanupWeight slots D) off (fun is unique => by
+      simpa only [placedFrameCharge,Nat.add_assoc,slots] using bill is unique) js nd
+  have pre := paid js nd
+  have frame := paid slots (frameSlots_nodup _)
+  change n+tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+setupCost at pre
+  change n+tapeCharge cleanupWeight slots D ≤ tapeCharge cleanupWeight slots S+setupCost at frame
+  change n+m+tapeCharge cleanupWeight slots G+_ ≤ _+_+tapeCharge cleanupWeight slots S
+  omega
+
 private theorem cutoffScale_le [M8.Machine.Net] (c : CutoffNodeInput) (σ : ℝ) (nonneg : 0 ≤ σ)
     (positive : 0 < c.cutoff) : (c.cutoff : ℝ)^M8.Machine.BudgetBound.tau ≤
       (c.node.width : ℝ)^σ*(c.cutoff : ℝ)^(M8.Machine.BudgetBound.tau-σ) := by
@@ -339,6 +373,55 @@ theorem loadCompactStageInputs {P U : Type} {H Q : ℕ} (body : P → Pr P H Q p
   · intro j h ar out d
     exact ⟨(frame j ar out d).1.trans (keep j h).1,(frame j ar out d).2.trans (keep j h).2⟩
 
+/-- Place the preparation workspace beyond the worker's tapes. All tapes of
+the stage core, including its live data and its scratch, survive preparation. -/
+theorem prepareCompactWorker (H : ℕ) {P U : Type} {Q : ℕ}
+    (body : P → Pr P (((H+37)+7)+(353+6+11)) Q prime U)
+    (capacity : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q) :
+    let bank := Fin.castAddEmb (353+6+11) (n := (H+37)+7)
+    let core := ((Fin.castAddEmb 37 (n := H)).trans (Fin.castAddEmb 7)).trans bank
+    let header := ((Fin.natAddEmb H (m := 37)).trans (Fin.castAddEmb 7)).trans bank
+    let dims := (Fin.natAddEmb (H+37) (m := 7)).trans bank
+    let extra := Fin.natAddEmb ((H+37)+7) (m := 353+6+11)
+    let archive := ((Fin.castAddEmb 6 (n := 353)).trans (Fin.castAddEmb 11)).trans extra
+    let outer := ((Fin.natAddEmb 353 (m := 6)).trans (Fin.castAddEmb 11)).trans extra
+    let source := Fin.cons (α := fun _ : Fin 12 => Fin (((H+37)+7)+(353+6+11))) (dims 6)
+      ((Fin.natAddEmb (353+6) (m := 11)).trans extra)
+    ∃ code rate, ∀ (c : CutoffNodeInput) u S, (∀ i, S.R (source i) = nodeSeedWords c i) →
+      (∀ i, S.L (header i) = [] ∧ S.R (header i) = []) →
+      (∀ i, S.L (archive i) = [] ∧ S.R (archive i) = []) →
+      (∀ i, S.R (outer i) = []) → (∀ i : Fin 6, S.R (dims (i.castAdd 1)) = []) →
+      ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧ CleanupBound S F t (rate*c.cells) ∧
+        (∀ i, F.R (header i) = (compactHeaderSeed c).R i) ∧
+        (∀ i, F.R (dims i) = (compactDimensionSeed c).R i) ∧
+        (∀ i : Fin 4, F.R (outer (i.castAdd 2)) = stageChartWords (c.w+1) (c.idleWidth*142080) false i) ∧
+        ∀ i, F.L (core i) = S.L (core i) ∧ F.R (core i) = S.R (core i) := by
+  intro bank core header dims extra archive outer source
+  have separate {a b : ℕ} {f : Fin a ↪ Fin (((H+37)+7)+(353+6+11))} {g : Fin b ↪ Fin (((H+37)+7)+(353+6+11))}
+      (h : ∀ i j, (f i).val ≠ (g j).val) (i) (j) : f i ≠ g j := fun eq => h i j (congrArg Fin.val eq)
+  obtain ⟨code,rate,run⟩ := loadCompactStageInputs body archive outer dims header source rfl capacity
+    (by apply separate; intro i j; change ((H+37)+7)+(353+i.val) ≠ ((H+37)+7)+j.val; omega)
+    (by apply separate; intro i j; change H+37+i.val ≠ ((H+37)+7)+j.val; omega)
+    (by apply separate; intro i j; change ((H+37)+7)+(353+i.val) ≠ H+37+j.val; omega)
+    (by intro i j; induction j using Fin.cases <;> intro eq <;> have h := congrArg Fin.val eq
+        · change ((H+37)+7)+i.val = H+37+6 at h; omega
+        · rename_i j; change ((H+37)+7)+i.val = ((H+37)+7)+(359+j.val) at h; omega)
+    (by apply separate; intro i j; change H+i.val ≠ ((H+37)+7)+j.val; omega)
+    (by apply separate; intro i j; change H+i.val ≠ ((H+37)+7)+(353+j.val); omega)
+    (by apply separate; intro i j; change H+i.val ≠ H+37+j.val; omega)
+    (by intro i j; induction j using Fin.cases <;> intro eq <;> have h := congrArg Fin.val eq
+        · change H+i.val = H+37+6 at h; omega
+        · rename_i j; change H+i.val = ((H+37)+7)+(359+j.val) at h; omega)
+  refine ⟨code,rate,?_⟩
+  intro c u S words free vacant clear blank
+  obtain ⟨z,F,t,exec,user,paid,heads,dimensions,flat,keep⟩ := run c u S words free vacant clear blank
+  refine ⟨z,F,t,exec,user,paid,heads,dimensions,flat,fun i => keep _ ?_ ?_ ?_ ?_⟩
+  all_goals intro j eq; have h := congrArg Fin.val eq
+  · change H+j.val = i.val at h; omega
+  · change ((H+37)+7)+j.val = i.val at h; omega
+  · change ((H+37)+7)+(353+j.val) = i.val at h; omega
+  · change H+37+j.val = i.val at h; omega
+
 private noncomputable def compactWorkerSeed (H : ℕ) (c : CutoffNodeInput) : Stacks ((H+37)+7) prime :=
   ⟨[],[],fun _ => [],Fin.addCases (Fin.addCases (fun _ => []) (compactHeaderSeed c).R) (compactDimensionSeed c).R⟩
 
@@ -392,6 +475,67 @@ private theorem owner_ne_scratch {T L : ℕ} (i : Fin T) (j : Fin L) :
   have v := congrArg Fin.val h
   change 80+i.val = 80+(T+273+j.val) at v
   omega
+
+/-- Execute a stopping-band stage directly from the node record and live data. -/
+theorem preparedCompactBandStage [M8.Machine.Net] (n : Fin 9) :
+    ∃ (H states : ℕ) (fan : Fin (142081+2) ↪ Fin H),
+    let bank := Fin.castAddEmb (353+6+11) (n := (H+37)+7)
+    let core := ((Fin.castAddEmb 37 (n := H)).trans (Fin.castAddEmb 7)).trans bank
+    let header := ((Fin.natAddEmb H (m := 37)).trans (Fin.castAddEmb 7)).trans bank
+    let dims := (Fin.natAddEmb (H+37) (m := 7)).trans bank
+    let extra := Fin.natAddEmb ((H+37)+7) (m := 353+6+11)
+    let archive := ((Fin.castAddEmb 6 (n := 353)).trans (Fin.castAddEmb 11)).trans extra
+    let outer := ((Fin.natAddEmb 353 (m := 6)).trans (Fin.castAddEmb 11)).trans extra
+    let source := Fin.cons (α := fun _ : Fin 12 => Fin (((H+37)+7)+(353+6+11))) (dims 6)
+      ((Fin.natAddEmb (353+6) (m := 11)).trans extra)
+    ∀ {U : Type} {Q : ℕ}, states ≤ Q →
+    ∃ (P : Type) (host : P → Pr P (((H+37)+7)+(353+6+11)) Q prime U) (code : Pr P (((H+37)+7)+(353+6+11)) Q prime U) (rate : ℕ) (stageRate : ℝ),
+      ∀ (c : CutoffNodeInput), 7*(c.w+1) ≤ c.cutoff →
+      ∀ (x : Fin 142081 → Fin ((prime^(c.w+1))^16*c.stageWidth) → ZMod 2) u S,
+      HelperFan (fan.trans core) x S → (∀ i, (∀ j, fan j ≠ i) → S.L (core i) = [] ∧ S.R (core i) = []) →
+      (∀ i, S.R (source i) = nodeSeedWords c i) →
+      (∀ i, S.L (header i) = [] ∧ S.R (header i) = []) →
+      (∀ i, S.L (archive i) = [] ∧ S.R (archive i) = []) →
+      (∀ i, S.R (outer i) = []) → (∀ i : Fin 6, S.R (dims (i.castAdd 1)) = []) →
+      ∃ z F t y, Exec host code (mk u S) t (mk z F) ∧ z.user = u.user ∧ HelperFan (fan.trans core) y F ∧
+        RestoredBorrowedStage n (c.w+1) c.B c.stageFactor x y ∧
+        ∀ σ : ℝ, 0 ≤ σ → ∀ js, js.Nodup →
+          t+tapeCharge cleanupWeight (frameSlots (fan.trans core)) F+tapeCharge cleanupWeight js F ≤
+          tapeCharge cleanupWeight js S+(rate*c.cells+
+            ⌊stageRate*((c.node.width : ℝ)^σ*(c.cutoff : ℝ)^(M8.Machine.BudgetBound.tau-σ)*c.cells)⌋₊)+
+            tapeCharge cleanupWeight (frameSlots (fan.trans core)) S := by
+  obtain ⟨T,q,localFan,build⟩ := compactBandStage n
+  generalize _h : LeafCore.small = L at build
+  let H := 80+((T+273)+L)
+  let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb L)).trans (Fin.natAddEmb 80)
+  let fan := localFan.trans owner
+  refine ⟨H,max q ((fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080)),fan,?_⟩
+  intro bank core header dims extra archive outer source U Q fits
+  obtain ⟨P,body,worker,price,run⟩ := build (U := U) ((le_max_left ..).trans fits)
+  let host := fun f => embProg bank id (body f)
+  obtain ⟨setup,r,prepare⟩ := prepareCompactWorker H host ((le_max_right ..).trans fits)
+  refine ⟨P,host,setup.seq (embProg bank id worker),2*r,price,?_⟩
+  intro c band x u S live free words vacant clean clear blank
+  obtain ⟨v,D,a,start,user,paid,heads,dim,_,keep⟩ := prepare c u S words vacant clean clear blank
+  have ready : HelperFan (fan.trans core) x D := by
+    intro i j
+    change _ = readAt _ (D.L (core (fan i))) (D.R (core (fan i))) _
+    rw [(keep _).1,(keep _).2]
+    exact live i j
+  have empty i (away : ∀ j, fan j ≠ i) :=
+    And.intro ((keep i).1.trans (free i away).1) ((keep i).2.trans (free i away).2)
+  obtain ⟨z,F,m,y,exec,same,done,act,bill⟩ := run c band x (embDn bank v) (embStk bank D) ready heads
+    (fun j => empty _ (fun i => ((archiveSetupPlacement_frame j).1 (localFan i)).symm))
+    (fun j => empty _ (fun i => owner_ne_scratch (localFan i) j))
+    (fun j away => empty _ (fun i h => away i (owner.injective h)))
+    (dim 0) (dim 1) (dim 2) (dim 3) (dim 4) (dim 5) (dim 6)
+  let inside := (fan.trans (Fin.castAddEmb 37)).trans (Fin.castAddEmb 7)
+  obtain ⟨w,G,placed,last,out,action,cost⟩ := runPreparedStage bank inside body worker setup u v S D a (r*c.cells)
+    (RestoredBorrowedStage n (c.w+1) c.B c.stageFactor x) start user paid exec same done act
+  refine ⟨w,G,a+m,y,placed,last,out,action,?_⟩
+  intro σ nonneg js nd
+  have ports : inside.trans bank = fan.trans core := by ext i; rfl
+  simpa only [ports,Nat.mul_assoc] using cost _ (bill σ nonneg) js nd
 
 /-- The packed caller supplies a single private-tape seed for each node.
 The worker and its live tape placement are independent of that node. -/
