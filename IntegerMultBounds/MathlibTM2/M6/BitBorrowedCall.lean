@@ -81,16 +81,17 @@ theorem scheduledWindows_exec {T Q : ℕ} {P U X : Type} (charged : Bool) (body 
     (ready : X → Stacks T prime → Prop) (saved : Fin Copy.lifecycles.length → Stacks T prime → Prop)
     (price : Fin Copy.lifecycles.length → ℕ)
     (code : Fin Copy.lifecycles.length → Pr P T Q prime U)
+    (reserve : Stacks T prime → ℕ)
     (window : ∀ i, ∀ x u S, ready x S → saved i S →
-      ∃ z F t y, Exec body (code i) (mk u S) t (mk z F) ∧ workerCost charged S F t (price i) ∧ z.user = u.user ∧ ready y F ∧
+      ∃ z F t y, Exec body (code i) (mk u S) t (mk z F) ∧ workerCost charged S F (t+reserve F) (price i+reserve S) ∧ z.user = u.user ∧ ready y F ∧
         effect i x y ∧
         ∀ j, j ≠ i → saved j S → saved j F)
     (ls : List (Fin Copy.lifecycles.length)) (unique : ls.Nodup) :
     ∀ x u S, ready x S → (∀ i ∈ ls, saved i S) →
-      ∃ z F t y, Exec body (ls.foldr (fun i tail => (code i).seq tail) (.act .done)) (mk u S) t (mk z F) ∧ workerCost charged S F t ((ls.map price).sum+1) ∧ z.user = u.user ∧ ready y F ∧
+      ∃ z F t y, Exec body (ls.foldr (fun i tail => (code i).seq tail) (.act .done)) (mk u S) t (mk z F) ∧ workerCost charged S F (t+reserve F) ((ls.map price).sum+1+reserve S) ∧ z.user = u.user ∧ ready y F ∧
         trace ls x y := by
   induction ls with
-  | nil => exact fun x u S ok _ => ⟨u,S,1,x,Exec.act ..,by cases charged <;> simp [workerCost,CleanupBound,Nat.add_comm],rfl,ok,empty x⟩
+  | nil => exact fun x u S ok _ => ⟨u,S,1,x,Exec.act ..,by cases charged <;> simp [workerCost,CleanupBound,Nat.add_comm,Nat.add_left_comm],rfl,ok,empty x⟩
   | cons i ls ih =>
     have run := window i
     have rest := ih (List.nodup_cons.mp unique).2
@@ -99,7 +100,18 @@ theorem scheduledWindows_exec {T Q : ℕ} {P U X : Type} (charged : Bool) (body 
     obtain ⟨z,F,m,y,done,paid,same,final,trace⟩ := rest a v D mid (fun j hj =>
       keep j (fun eq => (List.nodup_cons.mp unique).1 (eq ▸ hj)) (fresh j (List.mem_cons_of_mem _ hj)))
     refine ⟨z,F,_,y,Exec.seq exec done,?_,same.trans user,final,cons i ls x a y act trace⟩
-    simpa only [List.map_cons,List.sum_cons,Nat.add_assoc] using workerCost.seq charge paid
+    simp only [List.map_cons,List.sum_cons]
+    cases charged with
+    | false =>
+      change k+reserve D ≤ _ at charge
+      change m+reserve F ≤ _ at paid
+      change k+m+reserve F ≤ _
+      omega
+    | true =>
+      intro js nd
+      have h := charge js nd
+      have h' := paid js nd
+      omega
 
 open Certificates.PR589 Cover in
 /-- An ordered trace of the individual COPY windows acts by the selected COPY
@@ -148,16 +160,16 @@ Every label sees the selected COPY word, and unrelated owners retain their data.
 theorem commonWindows_exec {T Q w B K : ℕ} {P U : Type} (charged : Bool) (body : P → Pr P T Q prime U)
     (n : Fin 9) (r : Fin 32) (d : Fin 5) (fan : Fin (142081+2) ↪ Fin T)
     (saved : Fin Copy.lifecycles.length → Stacks T prime → Prop)
-    (price : Fin Copy.lifecycles.length → ℕ) (code : Fin Copy.lifecycles.length → Pr P T Q prime U) :
+    (price : Fin Copy.lifecycles.length → ℕ) (code : Fin Copy.lifecycles.length → Pr P T Q prime U) (reserve : Stacks T prime → ℕ := fun _ => 0) :
     let V := (prime^w)^16*(B*prime^(64*(w*64))*K)
     let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
     let X := Fin 142081 → Fin V → ZMod 2
     (∀ i, ∀ (x : X) u S, HelperFan fan x S → saved i S →
-      ∃ z F t y, Exec body (code i) (mk u S) t (mk z F) ∧ workerCost charged S F t (price i) ∧ z.user = u.user ∧ HelperFan fan y F ∧
+      ∃ z F t y, Exec body (code i) (mk u S) t (mk z F) ∧ workerCost charged S F (t+reserve F) (price i+reserve S) ∧ z.user = u.user ∧ HelperFan fan y F ∧
         CopyFanoutEffect n r d _ (List.getElem_mem (l := Copy.lifecycles) i.isLt) w B K x y ∧
         ∀ j, j ≠ i → saved j S → saved j F) →
     ∀ (x : X) u S, HelperFan fan x S → (∀ i, saved i S) →
-      ∃ z F t y, Exec body ((List.finRange _).foldr (fun i tail => (code i).seq tail) (.act .done)) (mk u S) t (mk z F) ∧ workerCost charged S F t ((List.ofFn price).sum+1) ∧
+      ∃ z F t y, Exec body ((List.finRange _).foldr (fun i tail => (code i).seq tail) (.act .done)) (mk u S) t (mk z F) ∧ workerCost charged S F (t+reserve F) ((List.ofFn price).sum+1+reserve S) ∧
         z.user = u.user ∧ HelperFan fan y F ∧
         (∀ g (cell : LabelEntry.Cell (copyLabelLayout w B K) B),
           phaseRead owner y (labelSpectator g cell) =
@@ -167,7 +179,7 @@ theorem commonWindows_exec {T Q w B K : ℕ} {P U : Type} (charged : Bool) (body
   let trace := fun (ls : List (Fin Copy.lifecycles.length)) (x y : X) => ls.foldr (fun i next a =>
     ∃ b, CopyFanoutEffect n r d _ (List.getElem_mem (l := Copy.lifecycles) i.isLt) w B K a b ∧ next b) (fun a => a = y) x
   have run := scheduledWindows_exec charged body _ trace (fun _ => rfl)
-    (fun _ _ _ y _ act tail => ⟨y,act,tail⟩) (HelperFan fan) saved price code window (List.finRange _) (List.nodup_finRange _)
+    (fun _ _ _ y _ act tail => ⟨y,act,tail⟩) (HelperFan fan) saved price code reserve window (List.finRange _) (List.nodup_finRange _)
   intro x u S rep fresh
   obtain ⟨z,F,t,y,exec,paid,user,done,steps⟩ := run x u S rep (fun i _ => fresh i)
   exact ⟨z,F,t,y,exec,by simpa only [List.ofFn_eq_map] using paid,user,done,copyWindowTrace n r d x y steps⟩

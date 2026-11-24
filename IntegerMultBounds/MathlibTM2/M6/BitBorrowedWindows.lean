@@ -207,7 +207,7 @@ theorem borrowedWindows_host [M8.Machine.Net] (charged : Bool) (n : Fin 9) (p : 
   have project (j : J) (S : Stacks T prime) : embStk (owners j) (embStk (bank j) S) = embStk fan S := by
     simp only [embStk,Function.comp_def,sharedAt]
   let price := fun j => work j + budget j
-  have exec := commonWindows_exec (w := w+1) (B := blocks) (K := K) charged body n p.1 p.2 fan saved price placed (fun j => by
+  have exec := commonWindows_exec (w := w+1) (B := blocks) (K := K) charged body n p.1 p.2 fan saved price placed (fun _ => 0) (fun j => by
     intro data u S rep fresh
     obtain ⟨v,D,t,out,run,paid,user,done,act⟩ := step j data (embDn (bank j) u) (embStk (bank j) S)
       (by simpa only [HelperFan,project] using rep) fresh
@@ -228,7 +228,7 @@ theorem borrowedWindows_host [M8.Machine.Net] (charged : Bool) (n : Fin 9) (p : 
     obtain ⟨l,r⟩ := fresh _ (apart i k priv).1
     exact ⟨l.trans (stored i k priv).1,r.trans (stored i k priv).2⟩)
   refine ⟨z,F,t,out,run,?_,user,done,act⟩
-  simpa only [price,List.sum_ofFn,Finset.sum_add_distrib] using paid
+  simpa only [price,List.sum_ofFn,Finset.sum_add_distrib,Nat.add_zero] using paid
 
 /-- When the rank-seven children stop, the whole COPY sweep executes with
 one fixed table of leaf procedures. Each lifecycle charges its directory
