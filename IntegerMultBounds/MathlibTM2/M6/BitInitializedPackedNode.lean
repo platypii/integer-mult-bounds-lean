@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitDispatchedPackedStage
+public import IntegerMultBounds.MathlibTM2.M6.BitFlatDispatchedHandoff
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
@@ -50,7 +50,7 @@ theorem initializedPackedNode [M8.Machine.Net] (P U Config : Type) :
           (v.localCharge localWork assemblyRate+∑ i : Fin nodeChildren5.length, time c i.val) := by
   classical
   intro l r I
-  have stages := dispatchedPackedStage
+  have stages := flatDispatchedHandoff
   dsimp only at stages
   choose pre post ts states ports rates build using stages
   obtain ⟨q,assemble⟩ := alignedPackedNodeFamily (U := U) (Config := Config)
@@ -65,7 +65,7 @@ theorem initializedPackedNode [M8.Machine.Net] (P U Config : Type) :
   intro large f idleLarge idleEntry
   let idleBody : Unit ⊕ P → Pr (Unit ⊕ P) (72+N) Q prime U :=
     Sum.elim (fun g => embProg (Function.Embedding.refl _) Sum.inl (leaf g)) idleLarge
-  choose body active tapes src dst host code cost bound step using fun n => build n
+  choose body active tapes src dst host code cost seed _ bound step using fun n => build n
     ((Finset.le_sup (Finset.mem_univ n)).trans ((Nat.le_max_left ..).trans capacity)) (large n) (f n)
   refine ⟨body,idleBody,active,fun _ => rfl,?_⟩
   obtain ⟨assemblyRate,join⟩ := assemble ((Nat.le_max_left ..).trans room)
@@ -112,9 +112,10 @@ theorem initializedPackedNode [M8.Machine.Net] (P U Config : Type) :
     · change parentIntervalRead n idleCopies[j.val].2 (v.w+1) (v.idleWidth*142080) word y at read
       simpa only [j,idleCopyIndex_get] using read
   intro n
-  choose seed run using fun c => runs c n (budget c) rate ((Finset.le_sup' rates (Finset.mem_univ n)).trans ((le_max_right _ _).trans enough)) (recurse c n)
-  refine ⟨_,tapes n,host n,code n,src n,dst n,seed,?_⟩
+  refine ⟨_,tapes n,host n,code n,src n,dst n,fun c => seed n (input c),?_⟩
   intro c
-  exact stageCast n (input c).stageTail _ (cost n ((input c).w+1)) (run c)
+  have run := runs c n (budget c) rate ((Finset.le_sup' rates (Finset.mem_univ n)).trans
+    ((le_max_right _ _).trans enough)) (recurse c n)
+  exact stageCast n (input c).stageTail _ (cost n ((input c).w+1)) run
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
